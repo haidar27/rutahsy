@@ -48,6 +48,8 @@
         .btn-success:hover { background: #059669; }
         .btn-danger { background: var(--danger); }
         .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: var(--warning); color: #fff; }
+        .btn-warning:hover { background: #d97706; }
         
         /* App Layout */
         #app-screen { display: none; height: 100vh; }
@@ -256,7 +258,7 @@
             <section id="sec-master" class="content-section">
                 <div class="section-header">
                     <h2>Master Data RUTASY</h2>
-                    <div>
+                    <div id="master-action-buttons">
                         <button class="btn" onclick="openModalGuru()">+ Tambah Guru & Payroll</button>
                         <button class="btn btn-success" onclick="openModalSantri()">+ Tambah Santri</button>
                     </div>
@@ -282,7 +284,7 @@
                     <br>
                     <table>
                         <thead>
-                            <tr>
+                            <tr id="table-guru-head">
                                 <th>ID</th><th>Nama Guru</th><th>Jabatan</th><th>Gaji Harian</th><th>Username</th>
                             </tr>
                         </thead>
@@ -295,8 +297,67 @@
 
             <!-- 3. PROGRES SANTRI (PPS) -->
             <section id="sec-progress" class="content-section">
+                
+                <!-- Setoran Form Khusus Guru -->
+                <div id="guru-setoran-box" style="display:none; background:white; padding:20px; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:25px;">
+                    <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-book-open"></i> Input Setoran Anak-anak</h3>
+                    <div class="grid-cards" style="grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:0;">
+                        <div class="form-group">
+                            <label>Cari & Pilih Nama Santri</label>
+                            <select id="setoran-santri-id" onchange="loadSantriDataForSetoran()">
+                                <!-- Injected via JS -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Kategori Kelas</label>
+                            <select id="setoran-kelas" onchange="toggleSetoranInputs()">
+                                <option value="">-- Pilih Kategori --</option>
+                                <option value="Kelas Iqro">Kelas Iqro</option>
+                                <option value="Kelas Tahsin">Kelas Tahsin</option>
+                                <option value="Kelas Tahfidz">Kelas Tahfidz</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Input Khusus Iqro -->
+                    <div id="input-iqro" style="display:none; grid-template-columns: 1fr; gap:15px; margin-top:15px;" class="grid-cards">
+                        <div class="form-group">
+                            <label>Halaman Iqro</label>
+                            <input type="text" id="setoran-halaman" placeholder="Contoh: 15">
+                        </div>
+                    </div>
+
+                    <!-- Input Khusus Al-Quran (Tahsin/Tahfidz) -->
+                    <div id="input-quran" style="display:none; grid-template-columns: 1fr 1fr 1fr; gap:15px; margin-top:15px;" class="grid-cards">
+                        <div class="form-group">
+                            <label>Surah</label>
+                            <input type="text" id="setoran-surah" placeholder="Contoh: Al-Baqarah">
+                        </div>
+                        <div class="form-group">
+                            <label>Ayat</label>
+                            <input type="text" id="setoran-ayat" placeholder="Contoh: 1-5">
+                        </div>
+                        <div class="form-group">
+                            <label>Baris</label>
+                            <input type="text" id="setoran-baris" placeholder="Contoh: 3">
+                        </div>
+                    </div>
+
+                    <div class="grid-cards" style="grid-template-columns: 1fr 1fr; gap:15px; margin-top:15px;">
+                        <div class="form-group">
+                            <label>Nilai Kelancaran</label>
+                            <input type="number" id="setoran-lancar" placeholder="0-100">
+                        </div>
+                        <div class="form-group">
+                            <label>Nilai Tajwid</label>
+                            <input type="number" id="setoran-tajwid" placeholder="0-100">
+                        </div>
+                    </div>
+                    <button class="btn btn-success" onclick="simpanSetoran()">Simpan Setoran</button>
+                </div>
+
                 <div class="section-header">
-                    <h2>Progres Perkembangan Santri (PPS)</h2>
+                    <h2>Riwayat Progres Perkembangan Santri (PPS)</h2>
                     <div>
                         <label style="font-weight:600; margin-right:8px;">Filter Kelas:</label>
                         <select id="filter-kelas-progress" class="btn" style="background: white; color: var(--dark); border: 1px solid #ccc;" onchange="renderProgress()">
@@ -308,7 +369,7 @@
                     </div>
                 </div>
                 <div class="table-container">
-                    <h3>Input / Lihat Nilai Bulan Ini</h3>
+                    <h3>Data Progres & Rata-rata Nilai</h3>
                     <br>
                     <table>
                         <thead>
@@ -424,6 +485,40 @@
         </div>
     </div>
 
+    <!-- Modal Edit Guru -->
+    <div id="modal-edit-guru" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Data Guru</h3>
+                <span class="close-btn" onclick="closeModal('modal-edit-guru')">&times;</span>
+            </div>
+            <form onsubmit="updateGuru(event)">
+                <input type="hidden" id="edit-guru-id">
+                <div class="form-group">
+                    <label>Nama Guru</label>
+                    <input type="text" id="edit-guru-nama" required>
+                </div>
+                <div class="form-group">
+                    <label>Jabatan</label>
+                    <input type="text" id="edit-guru-jabatan" required>
+                </div>
+                <div class="form-group">
+                    <label>Gaji Harian (Rp)</label>
+                    <input type="number" id="edit-guru-gaji" required>
+                </div>
+                <div class="form-group">
+                    <label>Username Akun Login</label>
+                    <input type="text" id="edit-guru-user" required readonly style="background:#e2e8f0; cursor:not-allowed;" title="Username tidak dapat diubah">
+                </div>
+                <div class="form-group">
+                    <label>Password Akun (Isi jika ingin diubah, kosongkan jika tidak)</label>
+                    <input type="password" id="edit-guru-pass" placeholder="Password Baru">
+                </div>
+                <button type="submit" class="btn btn-warning" style="width: 100%;">Update Data Guru</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Tambah Santri -->
     <div id="modal-santri" class="modal">
         <div class="modal-content">
@@ -440,14 +535,7 @@
                     <label>Nama Santri</label>
                     <input type="text" id="santri-nama" required placeholder="Nama Lengkap Santri">
                 </div>
-                <div class="form-group">
-                    <label>Kategori Kelas</label>
-                    <select id="santri-kelas">
-                        <option value="Kelas Iqro">Kelas Iqro</option>
-                        <option value="Kelas Tahsin">Kelas Tahsin</option>
-                        <option value="Kelas Tahfidz">Kelas Tahfidz</option>
-                    </select>
-                </div>
+                <!-- Kategori Kelas DIHAPUS DARI SINI, DISETTING OLEH GURU SAAT SETORAN -->
                 <div class="form-group">
                     <label>Halaqah / Pengajar</label>
                     <input type="text" id="santri-halaqah" required placeholder="Contoh: Ustadz Budi">
@@ -494,9 +582,9 @@
                 { id: 2, nama: "Ustadzah Siti", jabatan: "Pengajar Iqro", username: "siti", gajiHarian: 90000 }
             ],
             progress: [
-                { id: 1, santriId: 1, santri: "Fatih Ramadhan", surah: "Al-Mulk", kelancaran: 90, tajwid: 85, kelas: "Kelas Tahfidz" },
-                { id: 2, santriId: 2, santri: "Aisyah Zahra", surah: "An-Naba", kelancaran: 80, tajwid: 80, kelas: "Kelas Tahsin" },
-                { id: 3, santriId: 3, santri: "Zaid bin Tsabit", surah: "Iqro 3 Hal 12", kelancaran: 75, tajwid: 70, kelas: "Kelas Iqro" }
+                { id: 1, santriId: 1, santri: "Fatih Ramadhan", surah: "Al-Mulk Ayat 1-5 Baris 2", kelancaran: 90, tajwid: 85, kelas: "Kelas Tahfidz" },
+                { id: 2, santriId: 2, santri: "Aisyah Zahra", surah: "An-Naba Ayat 1-10 Baris 1", kelancaran: 80, tajwid: 80, kelas: "Kelas Tahsin" },
+                { id: 3, santriId: 3, santri: "Zaid bin Tsabit", surah: "Iqro Hal 12", kelancaran: 75, tajwid: 70, kelas: "Kelas Iqro" }
             ],
             spp: [
                 { santriId: 1, santri: "Fatih Ramadhan", nominal: 150000, tgl: "01-Nov-2023", status: "Lunas" },
@@ -525,7 +613,6 @@
 
         // --- 2. CEK SESI REFRESH HALAMAN ---
         window.onload = function() {
-            // Set default tanggal hari ini pada input tanggal
             const today = new Date().toISOString().substring(0, 10);
             if(document.getElementById('tgl-absensi-santri')) {
                 document.getElementById('tgl-absensi-santri').value = today;
@@ -594,12 +681,14 @@
             
             name.textContent = user.name;
             
-            // Reset Tampilan Menu
+            // Reset Tampilan Menu & Komponen
             document.getElementById('menu-master').style.display = 'flex';
             document.getElementById('menu-absensi').style.display = 'flex';
             document.getElementById('menu-keuangan').style.display = 'flex';
             document.getElementById('admin-param-box').style.display = 'none';
             document.getElementById('guru-absen-box').style.display = 'none';
+            document.getElementById('master-action-buttons').style.display = 'block';
+            document.getElementById('guru-setoran-box').style.display = 'none';
 
             if (user.role === 'admin') {
                 badge.textContent = 'Admin / Bendahara';
@@ -607,7 +696,7 @@
                 document.getElementById('finance-chart-container').style.display = 'block';
                 document.getElementById('admin-param-box').style.display = 'block';
                 
-                // Set form parameter
+                // Set form parameter admin
                 document.getElementById('param-jam-masuk').value = db.settings.jamMasuk || "07:00";
                 document.getElementById('param-jam-pulang').value = db.settings.jamPulang || "15:00";
                 document.getElementById('param-potongan').value = db.settings.potonganTelat || 5;
@@ -615,10 +704,14 @@
             else if (user.role === 'guru') {
                 badge.textContent = 'Guru / Pengajar';
                 document.getElementById('menu-keuangan').style.display = 'none'; 
+                document.getElementById('master-action-buttons').style.display = 'none'; // Sembunyikan tambah data untuk guru
+                document.getElementById('guru-setoran-box').style.display = 'block'; // Tampilkan form setoran
+                
                 chartsGrid.style.gridTemplateColumns = '1fr';
                 document.getElementById('finance-chart-container').style.display = 'none';
                 document.getElementById('guru-absen-box').style.display = 'block';
                 updateGuruAbsenStatusDisplay();
+                populateSetoranSantriDropdown();
             } 
             else if (user.role === 'ortu') {
                 badge.textContent = 'Orang Tua / Santri';
@@ -647,9 +740,21 @@
             if(tabId === 'dashboard') loadDashboardData();
         }
 
-        // --- 5. FITUR MODAL & MODIFIKASI DATA (GURU & SANTRI) ---
+        // --- 5. FITUR MODAL & MODIFIKASI DATA ---
         function openModalGuru() { document.getElementById('modal-guru').style.display = 'flex'; }
         function openModalSantri() { document.getElementById('modal-santri').style.display = 'flex'; }
+        function openEditGuru(id) {
+            const g = db.guru.find(g => g.id === id);
+            if(g) {
+                document.getElementById('edit-guru-id').value = g.id;
+                document.getElementById('edit-guru-nama').value = g.nama;
+                document.getElementById('edit-guru-jabatan').value = g.jabatan;
+                document.getElementById('edit-guru-gaji').value = g.gajiHarian;
+                document.getElementById('edit-guru-user').value = g.username;
+                document.getElementById('edit-guru-pass').value = '';
+                document.getElementById('modal-edit-guru').style.display = 'flex';
+            }
+        }
         function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
 
         function simpanGuru(e) {
@@ -675,15 +780,46 @@
             alert("Data Guru & Payroll berhasil ditambahkan!");
         }
 
+        function updateGuru(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('edit-guru-id').value);
+            const nama = document.getElementById('edit-guru-nama').value;
+            const jabatan = document.getElementById('edit-guru-jabatan').value;
+            const gaji = parseFloat(document.getElementById('edit-guru-gaji').value);
+            const pass = document.getElementById('edit-guru-pass').value;
+
+            const guruIndex = db.guru.findIndex(g => g.id === id);
+            if(guruIndex > -1) {
+                db.guru[guruIndex].nama = nama;
+                db.guru[guruIndex].jabatan = jabatan;
+                db.guru[guruIndex].gajiHarian = gaji;
+
+                // Update data user terkait
+                const username = db.guru[guruIndex].username;
+                const userIndex = db.users.findIndex(u => u.username === username);
+                if(userIndex > -1) {
+                    db.users[userIndex].name = nama;
+                    if(pass.trim() !== '') {
+                        db.users[userIndex].password = pass; // Update password jika diisi
+                    }
+                }
+
+                saveDb();
+                closeModal('modal-edit-guru');
+                renderMaster();
+                alert("Data Guru berhasil diperbarui!");
+            }
+        }
+
         function simpanSantri(e) {
             e.preventDefault();
             const nik = document.getElementById('santri-nik').value;
             const nama = document.getElementById('santri-nama').value;
-            const kelas = document.getElementById('santri-kelas').value;
             const halaqah = document.getElementById('santri-halaqah').value;
             const wali = document.getElementById('santri-wali').value;
             const username = document.getElementById('santri-user').value;
             const password = document.getElementById('santri-pass').value;
+            const kelasKosong = ""; // Dikosongkan sesuai permintaan
 
             if (db.users.some(u => u.username === username)) {
                 alert("Username sudah digunakan oleh pengguna lain!");
@@ -691,17 +827,17 @@
             }
 
             const newId = db.santri.length ? Math.max(...db.santri.map(s => s.id)) + 1 : 1;
-            db.santri.push({ id: newId, nik, nama, status: "Aktif", halaqah, wali, kelas, username });
+            db.santri.push({ id: newId, nik, nama, status: "Aktif", halaqah, wali, kelas: kelasKosong, username });
             db.users.push({ username, password, role: "ortu", name: `${wali} (Wali ${nama})`, santriId: newId });
             
             db.progress.push({
                 id: db.progress.length ? Math.max(...db.progress.map(p => p.id)) + 1 : 1,
                 santriId: newId,
                 santri: nama,
-                surah: kelas === 'Kelas Iqro' ? 'Iqro 1' : 'Al-Fatihah',
+                surah: "-",
                 kelancaran: 0,
                 tajwid: 0,
-                kelas: kelas
+                kelas: kelasKosong
             });
 
             db.spp.push({
@@ -715,6 +851,7 @@
             saveDb();
             closeModal('modal-santri');
             renderMaster();
+            populateSetoranSantriDropdown();
             alert("Data Santri baru berhasil ditambahkan!");
         }
 
@@ -724,20 +861,26 @@
             tbodySantri.innerHTML = "";
             db.santri.forEach(s => {
                 let badgeClass = s.status === 'Aktif' ? 'badge-success' : 'badge-warning';
+                let txtKelas = s.kelas && s.kelas !== "" ? s.kelas : 'Belum Ditentukan';
                 tbodySantri.innerHTML += `
                     <tr>
                         <td>${s.nik}</td>
                         <td><strong>${s.nama}</strong></td>
-                        <td><span class="badge badge-warning">${s.kelas || 'Kelas Tahfidz'}</span></td>
+                        <td><span class="badge badge-warning">${txtKelas}</span></td>
                         <td><span class="badge ${badgeClass}">${s.status}</span></td>
                         <td>${s.halaqah}</td>
                         <td>${s.wali}</td>
                     </tr>`;
             });
 
+            // Setelan Kolom Tabel Guru (Tambah 'Aksi' jika Admin)
+            const headGuru = document.getElementById('table-guru-head');
+            headGuru.innerHTML = `<th>ID</th><th>Nama Guru</th><th>Jabatan</th><th>Gaji Harian</th><th>Username</th>${currentUser.role === 'admin' ? '<th>Aksi</th>' : ''}`;
+
             const tbodyGuru = document.getElementById('table-guru');
             tbodyGuru.innerHTML = "";
             db.guru.forEach(g => {
+                let aksi = currentUser.role === 'admin' ? `<td><button class="btn btn-warning" style="padding: 6px 12px; font-size:0.8rem;" onclick="openEditGuru(${g.id})"><i class="fa-solid fa-pen"></i> Edit</button></td>` : '';
                 tbodyGuru.innerHTML += `
                     <tr>
                         <td>${g.id}</td>
@@ -745,22 +888,116 @@
                         <td>${g.jabatan}</td>
                         <td>Rp ${(g.gajiHarian || 0).toLocaleString('id-ID')} / hari</td>
                         <td><code>${g.username || '-'}</code></td>
+                        ${aksi}
                     </tr>`;
             });
         }
 
-        // --- 7. RENDER PROGRES SANTRI (PPS) DENGAN FILTER KELAS ---
+        // --- 7. PROGRES (SETORAN GURU & DISPLAY) ---
+
+        // Fungsi Khusus Guru: Render daftar santri di dropdown
+        function populateSetoranSantriDropdown() {
+            if(!document.getElementById('setoran-santri-id')) return;
+            let options = `<option value="">-- Pilih Santri --</option>`;
+            db.santri.forEach(s => {
+                options += `<option value="${s.id}">${s.nama}</option>`;
+            });
+            document.getElementById('setoran-santri-id').innerHTML = options;
+        }
+
+        // Fungsi Khusus Guru: Autocomplete/munculkan form input sesuai kategori
+        function loadSantriDataForSetoran() {
+            const id = parseInt(document.getElementById('setoran-santri-id').value);
+            if(!id) return;
+            const santri = db.santri.find(s => s.id === id);
+            if(santri) {
+                document.getElementById('setoran-kelas').value = santri.kelas || "";
+                toggleSetoranInputs();
+            }
+        }
+
+        function toggleSetoranInputs() {
+            const cat = document.getElementById('setoran-kelas').value;
+            if(cat === 'Kelas Iqro') {
+                document.getElementById('input-iqro').style.display = 'grid';
+                document.getElementById('input-quran').style.display = 'none';
+            } else if (cat === 'Kelas Tahsin' || cat === 'Kelas Tahfidz') {
+                document.getElementById('input-iqro').style.display = 'none';
+                document.getElementById('input-quran').style.display = 'grid';
+            } else {
+                document.getElementById('input-iqro').style.display = 'none';
+                document.getElementById('input-quran').style.display = 'none';
+            }
+        }
+
+        // Fungsi Khusus Guru: Simpan hasil setoran hafalan
+        function simpanSetoran() {
+            const sId = parseInt(document.getElementById('setoran-santri-id').value);
+            if(!sId) { alert("Pilih nama santri terlebih dahulu!"); return; }
+            
+            const kelas = document.getElementById('setoran-kelas').value;
+            if(!kelas) { alert("Pilih kategori kelas terlebih dahulu!"); return; }
+
+            let surahLengkap = "";
+            if (kelas === 'Kelas Iqro') {
+                const hal = document.getElementById('setoran-halaman').value;
+                if(!hal) { alert("Harap isi halaman Iqro!"); return; }
+                surahLengkap = `Iqro Hal ${hal}`;
+            } else {
+                const srh = document.getElementById('setoran-surah').value;
+                const ayt = document.getElementById('setoran-ayat').value;
+                const brs = document.getElementById('setoran-baris').value;
+                if(!srh || !ayt || !brs) { alert("Harap isi Surah, Ayat, dan Baris!"); return; }
+                surahLengkap = `${srh} Ayat ${ayt} Baris ${brs}`;
+            }
+
+            const lancar = document.getElementById('setoran-lancar').value || 0;
+            const tajwid = document.getElementById('setoran-tajwid').value || 0;
+
+            // Update DB Santri (Menentukan kelas dari guru)
+            const santriIdx = db.santri.findIndex(s => s.id === sId);
+            if(santriIdx > -1) db.santri[santriIdx].kelas = kelas;
+
+            // Update Progress/Setoran
+            const progIdx = db.progress.findIndex(p => p.santriId === sId);
+            if(progIdx > -1) {
+                db.progress[progIdx].kelas = kelas;
+                db.progress[progIdx].surah = surahLengkap;
+                db.progress[progIdx].kelancaran = lancar;
+                db.progress[progIdx].tajwid = tajwid;
+            } else {
+                db.progress.push({
+                    id: Date.now(),
+                    santriId: sId,
+                    santri: db.santri[santriIdx].nama,
+                    surah: surahLengkap,
+                    kelancaran: lancar,
+                    tajwid: tajwid,
+                    kelas: kelas
+                });
+            }
+
+            saveDb();
+            renderProgress();
+            
+            // Clear form
+            document.getElementById('setoran-halaman').value = "";
+            document.getElementById('setoran-surah').value = "";
+            document.getElementById('setoran-ayat').value = "";
+            document.getElementById('setoran-baris').value = "";
+            document.getElementById('setoran-lancar').value = "";
+            document.getElementById('setoran-tajwid').value = "";
+            alert("Setoran hafalan santri berhasil dicatat!");
+        }
+
+        // Tampilan Tabel Progres (Tabel hanya bersifat Read-Only untuk Semua Role)
         function renderProgress() {
             const filterVal = document.getElementById('filter-kelas-progress') ? document.getElementById('filter-kelas-progress').value : "Semua";
             const thead = document.getElementById('table-progress-head');
             const tbody = document.getElementById('table-progress');
             tbody.innerHTML = "";
             
-            if (currentUser.role === 'guru') {
-                thead.innerHTML = `<th>Nama Santri</th><th>Kategori Kelas</th><th>Ziyadah / Surah (Input)</th><th>Kelancaran</th><th>Tajwid</th><th>Aksi</th>`;
-            } else {
-                thead.innerHTML = `<th>Nama Santri</th><th>Kategori Kelas</th><th>Ziyadah / Surah</th><th>Kelancaran</th><th>Tajwid</th><th>Rata-rata</th><th>Status</th>`;
-            }
+            thead.innerHTML = `<th>Nama Santri</th><th>Kategori Kelas</th><th>Capaian Setoran (Surah/Halaman)</th><th>Kelancaran</th><th>Tajwid</th><th>Rata-rata</th><th>Status</th>`;
 
             let list = db.progress;
             if (filterVal !== "Semua") {
@@ -774,44 +1011,17 @@
                 let avg = ((Number(p.kelancaran) + Number(p.tajwid)) / 2).toFixed(1);
                 let badgeClass = avg >= 80 ? 'badge-success' : 'badge-warning';
                 
-                if (currentUser.role === 'guru') {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong>${p.santri}</strong></td>
-                            <td>${p.kelas || '-'}</td>
-                            <td><input type="text" id="surah_${p.id}" value="${p.surah}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></td>
-                            <td><input type="number" id="lancar_${p.id}" value="${p.kelancaran}" style="width:70px; padding:8px; border:1px solid #ccc; border-radius:4px;"></td>
-                            <td><input type="number" id="tajwid_${p.id}" value="${p.tajwid}" style="width:70px; padding:8px; border:1px solid #ccc; border-radius:4px;"></td>
-                            <td><button class="btn btn-success" style="width:auto; padding:8px 15px;" onclick="simpanProgress(${p.id})">Simpan</button></td>
-                        </tr>`;
-                } else {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong>${p.santri}</strong></td>
-                            <td>${p.kelas || '-'}</td>
-                            <td>${p.surah}</td>
-                            <td>${p.kelancaran}</td>
-                            <td>${p.tajwid}</td>
-                            <td><strong>${avg}</strong></td>
-                            <td><span class="badge ${badgeClass}">${avg >= 80 ? 'Mumtaz (Sangat Baik)' : 'Jayyid (Baik)'}</span></td>
-                        </tr>`;
-                }
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${p.santri}</strong></td>
+                        <td>${p.kelas || 'Belum Ditentukan'}</td>
+                        <td>${p.surah}</td>
+                        <td>${p.kelancaran}</td>
+                        <td>${p.tajwid}</td>
+                        <td><strong>${avg}</strong></td>
+                        <td><span class="badge ${badgeClass}">${avg >= 80 ? 'Mumtaz (Sangat Baik)' : 'Jayyid (Baik)'}</span></td>
+                    </tr>`;
             });
-        }
-
-        function simpanProgress(id) {
-            const surahVal = document.getElementById(`surah_${id}`).value;
-            const lancarVal = document.getElementById(`lancar_${id}`).value;
-            const tajwidVal = document.getElementById(`tajwid_${id}`).value;
-            
-            const index = db.progress.findIndex(p => p.id === id);
-            if(index !== -1) {
-                db.progress[index].surah = surahVal;
-                db.progress[index].kelancaran = lancarVal;
-                db.progress[index].tajwid = tajwidVal;
-                saveDb();
-                alert('Data hafalan santri berhasil diperbarui!');
-            }
         }
 
         // --- 8. ABSENSI SANTRI & MANDIRI GURU & ADMIN PARAMETER ---
@@ -907,11 +1117,12 @@
             db.santri.forEach(s => {
                 const rec = db.absensiSantri.find(a => a.santriId === s.id && a.date === tgl);
                 const st = rec ? rec.status : "Hadir";
+                const txtKelas = s.kelas && s.kelas !== "" ? s.kelas : '-';
 
                 tbodySantri.innerHTML += `
                     <tr>
                         <td><strong>${s.nama}</strong></td>
-                        <td>${s.kelas || '-'}</td>
+                        <td>${txtKelas}</td>
                         <td>
                             <input type="radio" name="abs_s_${s.id}" value="Hadir" ${st === 'Hadir' ? 'checked' : ''}> Hadir 
                             <input type="radio" name="abs_s_${s.id}" value="Izin" ${st === 'Izin' ? 'checked' : ''}> Izin
@@ -987,7 +1198,7 @@
             });
         }
 
-        // --- 10. RENDER DASHBOARD SPESIFIK AKUN (AKUN PER ANAK) ---
+        // --- 10. RENDER DASHBOARD SPESIFIK AKUN ---
         function loadDashboardData() {
             const cards = document.getElementById('dashboard-cards');
             cards.innerHTML = "";
@@ -1015,18 +1226,18 @@
             }
 
             if (currentUser.role === 'ortu') {
-                // Tampilkan khusus data anak dari akun yang login
                 const mySantri = db.santri.find(s => s.id === currentUser.santriId) || db.santri[0];
                 const mySpp = db.spp.find(s => s.santriId === currentUser.santriId);
                 const myProg = db.progress.find(p => p.santriId === currentUser.santriId);
                 let avgHafalan = myProg ? ((Number(myProg.kelancaran) + Number(myProg.tajwid)) / 2).toFixed(1) : 0;
+                let txtKelas = mySantri.kelas && mySantri.kelas !== "" ? mySantri.kelas : 'Belum Ditentukan';
 
                 document.getElementById('dashboard-heading').textContent = `Dashboard Santri: ${mySantri.nama}`;
 
                 cards.innerHTML += `
                     <div class="card">
                         <div class="card-title">Santri / Kelas</div>
-                        <div class="card-value" style="font-size:1.4rem;">${mySantri.nama} <br><span style="font-size:0.9rem; color:var(--gray);">${mySantri.kelas || '-'}</span></div>
+                        <div class="card-value" style="font-size:1.4rem;">${mySantri.nama} <br><span style="font-size:0.9rem; color:var(--gray);">${txtKelas}</span></div>
                     </div>
                     <div class="card">
                         <div class="card-title">Status SPP Santri</div>
@@ -1035,7 +1246,7 @@
                         </div>
                     </div>
                     <div class="card">
-                        <div class="card-title">Rata-rata Hafalan (${myProg ? myProg.surah : '-'})</div>
+                        <div class="card-title">Rata-rata Nilai </div>
                         <div class="card-value">${avgHafalan} <i class="fa-solid fa-star" style="color:var(--warning); float:right;"></i></div>
                     </div>
                 `;
