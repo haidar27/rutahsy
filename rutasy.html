@@ -210,19 +210,23 @@
                 
                 <!-- Admin Parameters Box -->
                 <div id="admin-param-box" style="display:none; background:white; padding:20px; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:25px;">
-                    <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-sliders"></i> Ketentuan Absensi & Denda Guru</h3>
+                    <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-sliders"></i> Ketentuan Absensi & Parameter</h3>
                     <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-end;">
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:150px;">
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
                             <label>Jam Masuk</label>
                             <input type="time" id="param-jam-masuk">
                         </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:150px;">
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
                             <label>Jam Pulang</label>
                             <input type="time" id="param-jam-pulang">
                         </div>
                         <div class="form-group" style="margin-bottom:0; flex:1; min-width:150px;">
-                            <label>Potongan Telat (% Gaji Harian)</label>
+                            <label>Potongan Telat (%)</label>
                             <input type="number" id="param-potongan" placeholder="misal: 5">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:160px;">
+                            <label>Hari Kerja / Bulan</label>
+                            <input type="number" id="param-hari-kerja" placeholder="misal: 24">
                         </div>
                         <button class="btn" style="height:42px;" onclick="simpanParameterAdmin()">Simpan Parameter</button>
                     </div>
@@ -270,7 +274,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>NIK</th><th>Nama Santri</th><th>Kategori Kelas</th><th>Status</th><th>Halaqah</th><th>Wali</th>
+                                <th>Nama Santri</th><th>Kategori Kelas</th><th>Status</th><th>Wali</th><th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-santri">
@@ -394,7 +398,7 @@
                     </div>
                 </div>
                 <div class="table-container" style="margin-bottom:30px;">
-                    <h3>Presensi Santri</h3>
+                    <h3>Presensi Santri (Diisi oleh Guru Pengajar)</h3>
                     <br>
                     <table>
                         <thead>
@@ -427,17 +431,16 @@
             <!-- 5. KEUANGAN & SPP -->
             <section id="sec-keuangan" class="content-section">
                 <div class="section-header">
-                    <h2>Laporan Keuangan & SPP</h2>
-                    <button class="btn btn-success" onclick="alert('Fitur transaksi segera hadir.')">+ Transaksi Baru</button>
+                    <h2>Laporan Keuangan & SPP (History Pembayaran)</h2>
                 </div>
                 <div class="charts-grid" style="grid-template-columns: 1fr;">
                     <div class="table-container">
-                        <h3>Status Pembayaran SPP (Bulan Ini)</h3>
+                        <h3>Daftar Riwayat & Status Pembayaran SPP</h3>
                         <br>
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Nama Santri</th><th>Nominal</th><th>Tanggal Bayar</th><th>Status</th>
+                                    <th>Nama Santri</th><th>Nominal</th><th>Tanggal Bayar</th><th>Status</th><th>Aksi / Keterangan</th>
                                 </tr>
                             </thead>
                             <tbody id="table-spp">
@@ -508,10 +511,10 @@
                 </div>
                 <div class="form-group">
                     <label>Username Akun Login</label>
-                    <input type="text" id="edit-guru-user" required readonly style="background:#e2e8f0; cursor:not-allowed;" title="Username tidak dapat diubah">
+                    <input type="text" id="edit-guru-user" required readonly style="background:#e2e8f0; cursor:not-allowed;">
                 </div>
                 <div class="form-group">
-                    <label>Password Akun (Isi jika ingin diubah, kosongkan jika tidak)</label>
+                    <label>Password Akun (Kosongkan jika tidak diubah)</label>
                     <input type="password" id="edit-guru-pass" placeholder="Password Baru">
                 </div>
                 <button type="submit" class="btn btn-warning" style="width: 100%;">Update Data Guru</button>
@@ -528,17 +531,8 @@
             </div>
             <form onsubmit="simpanSantri(event)">
                 <div class="form-group">
-                    <label>NIK Santri</label>
-                    <input type="text" id="santri-nik" required placeholder="Contoh: 12348">
-                </div>
-                <div class="form-group">
                     <label>Nama Santri</label>
                     <input type="text" id="santri-nama" required placeholder="Nama Lengkap Santri">
-                </div>
-                <!-- Kategori Kelas DIHAPUS DARI SINI, DISETTING OLEH GURU SAAT SETORAN -->
-                <div class="form-group">
-                    <label>Halaqah / Pengajar</label>
-                    <input type="text" id="santri-halaqah" required placeholder="Contoh: Ustadz Budi">
                 </div>
                 <div class="form-group">
                     <label>Nama Orang Tua / Wali</label>
@@ -557,6 +551,44 @@
         </div>
     </div>
 
+    <!-- Modal Edit Santri -->
+    <div id="modal-edit-santri" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Data Santri</h3>
+                <span class="close-btn" onclick="closeModal('modal-edit-santri')">&times;</span>
+            </div>
+            <form onsubmit="updateSantri(event)">
+                <input type="hidden" id="edit-santri-id">
+                <div class="form-group">
+                    <label>Nama Santri</label>
+                    <input type="text" id="edit-santri-nama" required>
+                </div>
+                <div class="form-group">
+                    <label>Nama Orang Tua / Wali</label>
+                    <input type="text" id="edit-santri-wali" required>
+                </div>
+                <div class="form-group">
+                    <label>Status Santri</label>
+                    <select id="edit-santri-status">
+                        <option value="Aktif">Aktif</option>
+                        <option value="Baru">Baru</option>
+                        <option value="Non-Aktif">Non-Aktif</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Username Login</label>
+                    <input type="text" id="edit-santri-user" required readonly style="background:#e2e8f0; cursor:not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label>Password (Kosongkan jika tidak diubah)</label>
+                    <input type="password" id="edit-santri-pass" placeholder="Password Baru">
+                </div>
+                <button type="submit" class="btn btn-warning" style="width: 100%;">Update Data Santri</button>
+            </form>
+        </div>
+    </div>
+
     <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
         // --- 1. MOCK DATABASE INITIALIZATION ---
@@ -564,7 +596,8 @@
             settings: {
                 jamMasuk: "07:00",
                 jamPulang: "15:00",
-                potonganTelat: 5 // persen dari gaji harian
+                potonganTelat: 5, // persen dari gaji harian
+                hariKerjaBulan: 24
             },
             users: [
                 { username: "admin", password: "123", role: "admin", name: "Administrator" },
@@ -573,9 +606,9 @@
                 { username: "aisyah", password: "123", role: "ortu", name: "Bpk. Umar (Wali Aisyah)", santriId: 2 }
             ],
             santri: [
-                { id: 1, nik: "12345", nama: "Fatih Ramadhan", status: "Aktif", halaqah: "Ustadz Budi", wali: "Bpk. Ahmad", kelas: "Kelas Tahfidz", username: "ortu" },
-                { id: 2, nik: "12346", nama: "Aisyah Zahra", status: "Aktif", halaqah: "Ustadzah Siti", wali: "Bpk. Umar", kelas: "Kelas Tahsin", username: "aisyah" },
-                { id: 3, nik: "12347", nama: "Zaid bin Tsabit", status: "Baru", halaqah: "Ustadz Budi", wali: "Ibu Fatimah", kelas: "Kelas Iqro", username: "zaid" }
+                { id: 1, nama: "Fatih Ramadhan", status: "Aktif", wali: "Bpk. Ahmad", kelas: "Kelas Tahfidz", username: "ortu" },
+                { id: 2, nama: "Aisyah Zahra", status: "Aktif", wali: "Bpk. Umar", kelas: "Kelas Tahsin", username: "aisyah" },
+                { id: 3, nama: "Zaid bin Tsabit", status: "Baru", wali: "Ibu Fatimah", kelas: "Kelas Iqro", username: "zaid" }
             ],
             guru: [
                 { id: 1, nama: "Ustadz Budi", jabatan: "Pengajar Tahfidz", username: "guru", gajiHarian: 100000 },
@@ -600,7 +633,6 @@
             }
         };
 
-        // Load DB & Session dari localStorage (Persist reload)
         let db = JSON.parse(localStorage.getItem('rutasy_db')) || defaultDb;
         let currentUser = JSON.parse(localStorage.getItem('rutasy_session')) || null;
 
@@ -611,7 +643,6 @@
         let chartInstanceProgress = null;
         let chartInstanceFinance = null;
 
-        // --- 2. CEK SESI REFRESH HALAMAN ---
         window.onload = function() {
             const today = new Date().toISOString().substring(0, 10);
             if(document.getElementById('tgl-absensi-santri')) {
@@ -628,7 +659,6 @@
             }
         };
 
-        // --- 3. FITUR LOGIN & LOGOUT & PASSWORD VISIBILITY ---
         function togglePasswordVisibility() {
             const passInput = document.getElementById('login-password');
             const icon = document.getElementById('toggle-password');
@@ -681,7 +711,6 @@
             
             name.textContent = user.name;
             
-            // Reset Tampilan Menu & Komponen
             document.getElementById('menu-master').style.display = 'flex';
             document.getElementById('menu-absensi').style.display = 'flex';
             document.getElementById('menu-keuangan').style.display = 'flex';
@@ -696,16 +725,15 @@
                 document.getElementById('finance-chart-container').style.display = 'block';
                 document.getElementById('admin-param-box').style.display = 'block';
                 
-                // Set form parameter admin
                 document.getElementById('param-jam-masuk').value = db.settings.jamMasuk || "07:00";
                 document.getElementById('param-jam-pulang').value = db.settings.jamPulang || "15:00";
                 document.getElementById('param-potongan').value = db.settings.potonganTelat || 5;
+                document.getElementById('param-hari-kerja').value = db.settings.hariKerjaBulan || 24;
             } 
             else if (user.role === 'guru') {
                 badge.textContent = 'Guru / Pengajar';
-                document.getElementById('menu-keuangan').style.display = 'none'; 
-                document.getElementById('master-action-buttons').style.display = 'none'; // Sembunyikan tambah data untuk guru
-                document.getElementById('guru-setoran-box').style.display = 'block'; // Tampilkan form setoran
+                document.getElementById('master-action-buttons').style.display = 'none'; 
+                document.getElementById('guru-setoran-box').style.display = 'block'; 
                 
                 chartsGrid.style.gridTemplateColumns = '1fr';
                 document.getElementById('finance-chart-container').style.display = 'none';
@@ -717,13 +745,11 @@
                 badge.textContent = 'Orang Tua / Santri';
                 document.getElementById('menu-master').style.display = 'none';
                 document.getElementById('menu-absensi').style.display = 'none';
-                document.getElementById('menu-keuangan').style.display = 'none';
                 chartsGrid.style.gridTemplateColumns = '1fr';
                 document.getElementById('finance-chart-container').style.display = 'none';
             }
         }
 
-        // --- 4. NAVIGASI TAB ---
         function switchTab(tabId) {
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
             if(document.getElementById(`menu-${tabId}`)) {
@@ -740,9 +766,9 @@
             if(tabId === 'dashboard') loadDashboardData();
         }
 
-        // --- 5. FITUR MODAL & MODIFIKASI DATA ---
         function openModalGuru() { document.getElementById('modal-guru').style.display = 'flex'; }
         function openModalSantri() { document.getElementById('modal-santri').style.display = 'flex'; }
+        
         function openEditGuru(id) {
             const g = db.guru.find(g => g.id === id);
             if(g) {
@@ -755,6 +781,20 @@
                 document.getElementById('modal-edit-guru').style.display = 'flex';
             }
         }
+
+        function openEditSantri(id) {
+            const s = db.santri.find(s => s.id === id);
+            if(s) {
+                document.getElementById('edit-santri-id').value = s.id;
+                document.getElementById('edit-santri-nama').value = s.nama;
+                document.getElementById('edit-santri-wali').value = s.wali;
+                document.getElementById('edit-santri-status').value = s.status;
+                document.getElementById('edit-santri-user').value = s.username;
+                document.getElementById('edit-santri-pass').value = '';
+                document.getElementById('modal-edit-santri').style.display = 'flex';
+            }
+        }
+
         function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
 
         function simpanGuru(e) {
@@ -794,13 +834,12 @@
                 db.guru[guruIndex].jabatan = jabatan;
                 db.guru[guruIndex].gajiHarian = gaji;
 
-                // Update data user terkait
                 const username = db.guru[guruIndex].username;
                 const userIndex = db.users.findIndex(u => u.username === username);
                 if(userIndex > -1) {
                     db.users[userIndex].name = nama;
                     if(pass.trim() !== '') {
-                        db.users[userIndex].password = pass; // Update password jika diisi
+                        db.users[userIndex].password = pass;
                     }
                 }
 
@@ -813,13 +852,11 @@
 
         function simpanSantri(e) {
             e.preventDefault();
-            const nik = document.getElementById('santri-nik').value;
             const nama = document.getElementById('santri-nama').value;
-            const halaqah = document.getElementById('santri-halaqah').value;
             const wali = document.getElementById('santri-wali').value;
             const username = document.getElementById('santri-user').value;
             const password = document.getElementById('santri-pass').value;
-            const kelasKosong = ""; // Dikosongkan sesuai permintaan
+            const kelasKosong = ""; 
 
             if (db.users.some(u => u.username === username)) {
                 alert("Username sudah digunakan oleh pengguna lain!");
@@ -827,7 +864,7 @@
             }
 
             const newId = db.santri.length ? Math.max(...db.santri.map(s => s.id)) + 1 : 1;
-            db.santri.push({ id: newId, nik, nama, status: "Aktif", halaqah, wali, kelas: kelasKosong, username });
+            db.santri.push({ id: newId, nama, status: "Aktif", wali, kelas: kelasKosong, username });
             db.users.push({ username, password, role: "ortu", name: `${wali} (Wali ${nama})`, santriId: newId });
             
             db.progress.push({
@@ -855,25 +892,60 @@
             alert("Data Santri baru berhasil ditambahkan!");
         }
 
-        // --- 6. RENDER MASTER DATA ---
+        function updateSantri(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('edit-santri-id').value);
+            const nama = document.getElementById('edit-santri-nama').value;
+            const wali = document.getElementById('edit-santri-wali').value;
+            const status = document.getElementById('edit-santri-status').value;
+            const pass = document.getElementById('edit-santri-pass').value;
+
+            const santriIdx = db.santri.findIndex(s => s.id === id);
+            if(santriIdx > -1) {
+                db.santri[santriIdx].nama = nama;
+                db.santri[santriIdx].wali = wali;
+                db.santri[santriIdx].status = status;
+
+                const username = db.santri[santriIdx].username;
+                const userIndex = db.users.findIndex(u => u.username === username);
+                if(userIndex > -1) {
+                    db.users[userIndex].name = `${wali} (Wali ${nama})`;
+                    if(pass.trim() !== '') {
+                        db.users[userIndex].password = pass;
+                    }
+                }
+
+                const sppIdx = db.spp.findIndex(s => s.santriId === id);
+                if(sppIdx > -1) db.spp[sppIdx].santri = nama;
+
+                const progIdx = db.progress.findIndex(p => p.santriId === id);
+                if(progIdx > -1) db.progress[progIdx].santri = nama;
+
+                saveDb();
+                closeModal('modal-edit-santri');
+                renderMaster();
+                alert("Data Santri berhasil diperbarui!");
+            }
+        }
+
         function renderMaster() {
             const tbodySantri = document.getElementById('table-santri');
             tbodySantri.innerHTML = "";
             db.santri.forEach(s => {
                 let badgeClass = s.status === 'Aktif' ? 'badge-success' : 'badge-warning';
                 let txtKelas = s.kelas && s.kelas !== "" ? s.kelas : 'Belum Ditentukan';
+                let aksi = currentUser.role === 'admin' ? `<td><button class="btn btn-warning" style="padding: 6px 12px; font-size:0.8rem;" onclick="openEditSantri(${s.id})"><i class="fa-solid fa-pen"></i> Edit</button></td>` : '<td>-</td>';
+                
                 tbodySantri.innerHTML += `
                     <tr>
-                        <td>${s.nik}</td>
                         <td><strong>${s.nama}</strong></td>
                         <td><span class="badge badge-warning">${txtKelas}</span></td>
                         <td><span class="badge ${badgeClass}">${s.status}</span></td>
-                        <td>${s.halaqah}</td>
                         <td>${s.wali}</td>
+                        ${aksi}
                     </tr>`;
             });
 
-            // Setelan Kolom Tabel Guru (Tambah 'Aksi' jika Admin)
             const headGuru = document.getElementById('table-guru-head');
             headGuru.innerHTML = `<th>ID</th><th>Nama Guru</th><th>Jabatan</th><th>Gaji Harian</th><th>Username</th>${currentUser.role === 'admin' ? '<th>Aksi</th>' : ''}`;
 
@@ -893,9 +965,6 @@
             });
         }
 
-        // --- 7. PROGRES (SETORAN GURU & DISPLAY) ---
-
-        // Fungsi Khusus Guru: Render daftar santri di dropdown
         function populateSetoranSantriDropdown() {
             if(!document.getElementById('setoran-santri-id')) return;
             let options = `<option value="">-- Pilih Santri --</option>`;
@@ -905,7 +974,6 @@
             document.getElementById('setoran-santri-id').innerHTML = options;
         }
 
-        // Fungsi Khusus Guru: Autocomplete/munculkan form input sesuai kategori
         function loadSantriDataForSetoran() {
             const id = parseInt(document.getElementById('setoran-santri-id').value);
             if(!id) return;
@@ -930,7 +998,6 @@
             }
         }
 
-        // Fungsi Khusus Guru: Simpan hasil setoran hafalan
         function simpanSetoran() {
             const sId = parseInt(document.getElementById('setoran-santri-id').value);
             if(!sId) { alert("Pilih nama santri terlebih dahulu!"); return; }
@@ -954,11 +1021,9 @@
             const lancar = document.getElementById('setoran-lancar').value || 0;
             const tajwid = document.getElementById('setoran-tajwid').value || 0;
 
-            // Update DB Santri (Menentukan kelas dari guru)
             const santriIdx = db.santri.findIndex(s => s.id === sId);
             if(santriIdx > -1) db.santri[santriIdx].kelas = kelas;
 
-            // Update Progress/Setoran
             const progIdx = db.progress.findIndex(p => p.santriId === sId);
             if(progIdx > -1) {
                 db.progress[progIdx].kelas = kelas;
@@ -980,7 +1045,6 @@
             saveDb();
             renderProgress();
             
-            // Clear form
             document.getElementById('setoran-halaman').value = "";
             document.getElementById('setoran-surah').value = "";
             document.getElementById('setoran-ayat').value = "";
@@ -990,7 +1054,6 @@
             alert("Setoran hafalan santri berhasil dicatat!");
         }
 
-        // Tampilan Tabel Progres (Tabel hanya bersifat Read-Only untuk Semua Role)
         function renderProgress() {
             const filterVal = document.getElementById('filter-kelas-progress') ? document.getElementById('filter-kelas-progress').value : "Semua";
             const thead = document.getElementById('table-progress-head');
@@ -1024,18 +1087,19 @@
             });
         }
 
-        // --- 8. ABSENSI SANTRI & MANDIRI GURU & ADMIN PARAMETER ---
         function simpanParameterAdmin() {
             const jamMasuk = document.getElementById('param-jam-masuk').value;
             const jamPulang = document.getElementById('param-jam-pulang').value;
             const potongan = parseFloat(document.getElementById('param-potongan').value) || 0;
+            const hariKerja = parseInt(document.getElementById('param-hari-kerja').value) || 24;
 
             db.settings.jamMasuk = jamMasuk;
             db.settings.jamPulang = jamPulang;
             db.settings.potonganTelat = potongan;
+            db.settings.hariKerjaBulan = hariKerja;
 
             saveDb();
-            alert("Parameter ketentuan jam kerja & denda guru berhasil disimpan!");
+            alert("Parameter ketentuan jam kerja, hitungan hari kerja, & denda guru berhasil disimpan!");
         }
 
         function updateGuruAbsenStatusDisplay() {
@@ -1089,7 +1153,7 @@
             }
             saveDb();
             updateGuruAbsenStatusDisplay();
-            alert(`Absen Masuk Berhasil (${timeStr})! Status: ${status}${status === 'Telat' ? ' (Potongan Denda: Rp ' + potongan.toLocaleString('id-ID') + ')' : ''}`);
+            alert(`Absen Masuk Berhasil (${timeStr})! Status: ${status}`);
         }
 
         function absenPulangGuru() {
@@ -1132,7 +1196,6 @@
                     </tr>`;
             });
 
-            // Log Guru
             const tbodyGuruLog = document.getElementById('table-absensi-guru-log');
             tbodyGuruLog.innerHTML = "";
             if (db.absensiGuru.length === 0) {
@@ -1173,10 +1236,10 @@
                 }
             });
             saveDb();
-            alert("Presensi santri berhasil disimpan!");
+            alert("Presensi santri berhasil disimpan oleh guru pengajar!");
         }
 
-        // --- 9. RENDER KEUANGAN & SPP ---
+        // --- 9. RENDER KEUANGAN & PEMBAYARAN SPP OLEH ORTU ---
         function renderKeuangan() {
             const tbody = document.getElementById('table-spp');
             tbody.innerHTML = "";
@@ -1188,14 +1251,37 @@
 
             list.forEach(s => {
                 let badgeClass = s.status === 'Lunas' ? 'badge-success' : 'badge-danger';
+                let actionBtn = "";
+
+                if (currentUser.role === 'ortu' && s.status !== 'Lunas') {
+                    actionBtn = `<button class="btn btn-success" style="padding: 6px 12px; font-size:0.8rem;" onclick="bayarSpp(${s.santriId})"><i class="fa-solid fa-wallet"></i> Bayar SPP Sekarang</button>`;
+                } else if (currentUser.role === 'admin') {
+                    actionBtn = s.status === 'Lunas' ? `<span style="color:var(--secondary); font-size:0.85rem;"><i class="fa-solid fa-check"></i> Terverifikasi Sistem</span>` : `<span style="color:var(--danger); font-size:0.85rem;">Menunggu Pembayaran Ortu</span>`;
+                } else {
+                    actionBtn = `-`;
+                }
+
                 tbody.innerHTML += `
                     <tr>
                         <td><strong>${s.santri}</strong></td>
                         <td>Rp ${s.nominal.toLocaleString('id-ID')}</td>
                         <td>${s.tgl}</td>
                         <td><span class="badge ${badgeClass}">${s.status}</span></td>
+                        <td>${actionBtn}</td>
                     </tr>`;
             });
+        }
+
+        function bayarSpp(santriId) {
+            const sppObj = db.spp.find(s => s.santriId === santriId);
+            if(sppObj) {
+                const todayStr = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                sppObj.status = "Lunas";
+                sppObj.tgl = todayStr;
+                saveDb();
+                renderKeuangan();
+                alert("Pembayaran SPP berhasil dilakukan! Data telah masuk ke sistem admin.");
+            }
         }
 
         // --- 10. RENDER DASHBOARD SPESIFIK AKUN ---
