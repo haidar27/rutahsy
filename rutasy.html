@@ -208,7 +208,7 @@
             <section id="sec-dashboard" class="content-section active">
                 <div class="section-header">
                     <h2 id="dashboard-heading">Ringkasan Eksekutif</h2>
-                    <button class="btn btn-success" onclick="window.print()"><i class="fa-solid fa-download"></i> Unduh Laporan (PDF)</button>
+                    <button class="btn btn-success" id="btn-unduh-pdf" onclick="window.print()"><i class="fa-solid fa-download"></i> Unduh Laporan (PDF)</button>
                 </div>
                 
                 <!-- Admin Parameters Box -->
@@ -400,6 +400,23 @@
                         <button class="btn btn-success" id="btn-simpan-abs-santri" onclick="simpanAbsensiSantri()">Simpan Absensi</button>
                     </div>
                 </div>
+
+                <!-- Tambahan Tabel Log Pengajar -->
+                <div class="table-container" style="margin-bottom:30px;" id="container-log-pengajar">
+                    <h3>Log Pengajar yang Mengabsenkan Santri</h3>
+                    <br>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th><th>Nama Pengajar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-log-pengajar-absensi">
+                            <!-- Injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
                 <div class="table-container" style="margin-bottom:30px;">
                     <h3>Presensi Santri <span id="hint-absensi-read" style="display:none; font-size:0.8rem; color:var(--danger); font-weight:normal; margin-left:10px;">(Mode Validasi: Admin Read-Only)</span></h3>
                     <br>
@@ -752,10 +769,13 @@
                 { id: 2, tgl: "02-Nov-2023", jenis: "Pengeluaran", ket: "Pembayaran Listrik", nominal: 100000 }
             ],
             absensiSantri: [],
-            absensiGuru: []
+            absensiGuru: [],
+            logPengajarAbsensi: [] // Tambahan data tabel pengajar
         };
 
         let db = JSON.parse(localStorage.getItem('rutasy_db')) || defaultDb;
+        if (!db.logPengajarAbsensi) db.logPengajarAbsensi = []; // Pencegahan agar db yang lama tidak error
+
         let currentUser = JSON.parse(localStorage.getItem('rutasy_session')) || null;
 
         function saveDb() {
@@ -850,6 +870,7 @@
 
             if (user.role === 'admin') {
                 badge.textContent = 'Admin / Bendahara';
+                document.getElementById('btn-unduh-pdf').style.display = 'inline-block';
                 chartsGrid.style.gridTemplateColumns = '1fr 1fr';
                 document.getElementById('finance-chart-container').style.display = 'block';
                 document.getElementById('admin-param-box').style.display = 'block';
@@ -870,6 +891,7 @@
             } 
             else if (user.role === 'guru') {
                 badge.textContent = 'Guru / Pengajar';
+                document.getElementById('btn-unduh-pdf').style.display = 'inline-block';
                 document.getElementById('master-action-buttons').style.display = 'none'; 
                 document.getElementById('guru-setoran-box').style.display = 'block'; 
                 
@@ -881,6 +903,7 @@
             } 
             else if (user.role === 'ortu') {
                 badge.textContent = 'Orang Tua / Santri';
+                document.getElementById('btn-unduh-pdf').style.display = 'none'; // Disembunyikan untuk ortu
                 document.getElementById('menu-master').style.display = 'none';
                 document.getElementById('menu-absensi').style.display = 'none';
                 chartsGrid.style.gridTemplateColumns = '1fr';
@@ -1288,6 +1311,25 @@
 
         // --- 5. ABSENSI (READ-ONLY UTK ADMIN) ---
         function renderAbsensi() {
+            // Render Tabel Log Pengajar
+            const tbodyLogPengajar = document.getElementById('table-log-pengajar-absensi');
+            if(tbodyLogPengajar) {
+                tbodyLogPengajar.innerHTML = "";
+                if (!db.logPengajarAbsensi || db.logPengajarAbsensi.length === 0) {
+                    tbodyLogPengajar.innerHTML = `<tr><td colspan="2" style="text-align:center; color:var(--gray);">Belum ada riwayat pengajar yang mengabsenkan santri</td></tr>`;
+                } else {
+                    db.logPengajarAbsensi.forEach(log => {
+                        tbodyLogPengajar.innerHTML += `
+                            <tr>
+                                <td>${log.date}</td>
+                                <td><strong>${log.guruNama}</strong></td>
+                            </tr>
+                        `;
+                    });
+                }
+            }
+
+            // Render Tabel Santri
             const tbodySantri = document.getElementById('table-absensi-santri');
             tbodySantri.innerHTML = "";
             const tgl = document.getElementById('tgl-absensi-santri').value;
@@ -1312,6 +1354,7 @@
                     </tr>`;
             });
 
+            // Render Tabel Guru
             const tbodyGuruLog = document.getElementById('table-absensi-guru-log');
             tbodyGuruLog.innerHTML = "";
             if (db.absensiGuru.length === 0) {
@@ -1346,7 +1389,18 @@
                     db.absensiSantri.push({ id: Date.now() + Math.random(), date: tgl, santriId: s.id, santriNama: s.nama, status: statusVal });
                 }
             });
+
+            // Menyimpan nama pengajar ke tabel riwayat pengajar
+            if (!db.logPengajarAbsensi) db.logPengajarAbsensi = [];
+            const logExist = db.logPengajarAbsensi.find(l => l.date === tgl);
+            if(logExist) {
+                logExist.guruNama = currentUser.name;
+            } else {
+                db.logPengajarAbsensi.push({ date: tgl, guruNama: currentUser.name });
+            }
+
             saveDb();
+            renderAbsensi(); // Update tampilan tabel seketika
             alert("Presensi santri berhasil disimpan oleh guru pengajar!");
         }
 
@@ -1427,7 +1481,6 @@
             saveDb();
             closeModal('modal-kas');
             renderKeuangan();
-            if(currentUser.role === 'admin') loadDashboardData(); // Update grafik dashboard admin
             alert("Transaksi kas berhasil ditambahkan!");
         }
 
@@ -1528,8 +1581,9 @@
                 });
 
                 saveDb();
-                renderKeuangan();
-                loadDashboardData(); // Refresh chart admin
+                renderKeuangan(); 
+                // Catatan: Pemanggilan renderCharts/dashboard ditiadakan dari sini agar chart tidak crash 
+                // karena mencoba ter-render di saat div-nya tersembunyi.
                 alert(`Pembayaran SPP ${sppObj.santri} telah di-Approve dan dimasukkan ke catatan kas pendapatan!`);
             }
         }
@@ -1606,14 +1660,14 @@
                 // Gunakan fungsi grafik dinamis untuk Ortu
                 chartInstanceProgress = buatGrafikSantri('progressChart', currentUser.santriId, `Grafik Progres Hafalan (${db.santri.find(s => s.id === currentUser.santriId).nama})`);
             } else {
-                // Admin/Guru melihat rata-rata global secara umum
+                // Sesuai permintaan: Hanya menampilkan chart Rata-Rata Keseluruhan untuk di Dashboard
                 const ctxProg = document.getElementById('progressChart').getContext('2d');
                 chartInstanceProgress = new Chart(ctxProg, {
                     type: 'line',
                     data: {
                         labels: ['Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
                         datasets: [{
-                            label: 'Rata-rata Progres Hafalan Global (Semua Santri)',
+                            label: 'Grafik Rata-rata Keseluruhan Santri',
                             data: [65, 70, 75, 82, 85, 90], // Data global / dummy aggregation
                             borderColor: '#1e3a8a', backgroundColor: 'rgba(59, 130, 246, 0.2)', borderWidth: 2, fill: true, tension: 0.3
                         }]
