@@ -511,7 +511,10 @@
 
                 <div class="charts-grid" style="grid-template-columns: 1fr;">
                     <div class="table-container">
-                        <h3>Daftar Riwayat & Status Pembayaran SPP</h3>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <h3>Daftar Riwayat & Status Pembayaran SPP</h3>
+                            <button class="btn btn-danger" style="padding: 6px 12px; font-size:0.85rem;" onclick="bersihkanCacheSpp()"><i class="fa-solid fa-broom"></i> Bersihkan Cache</button>
+                        </div>
                         <br>
                         <table>
                             <thead>
@@ -721,7 +724,7 @@
                     <label>Nominal (Rp)</label>
                     <input type="number" id="kas-nominal" required placeholder="Contoh: 150000">
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Simpan Transaksi</button>
+                <button type="submit" class="btn" style="width: 100%;">Simpan Transaksi</button>
             </form>
         </div>
     </div>
@@ -844,7 +847,6 @@
             const userIn = document.getElementById('login-username').value;
             const passIn = document.getElementById('login-password').value;
             
-            // Sync DB dari localStorage terbaru saat login
             db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
 
             const validUser = db.users.find(u => u.username === userIn && u.password === passIn);
@@ -880,7 +882,6 @@
             
             name.textContent = user.name;
             
-            // Set element visibilities
             document.getElementById('menu-master').style.display = 'flex';
             document.getElementById('menu-absensi').style.display = 'flex';
             document.getElementById('menu-keuangan').style.display = 'flex';
@@ -897,7 +898,6 @@
             if (user.role === 'admin') {
                 badge.textContent = 'Admin / Bendahara';
                 document.getElementById('btn-unduh-pdf').style.display = 'inline-block';
-                // Layout grafik Atas-Bawah (1fr) untuk Admin
                 chartsGrid.style.gridTemplateColumns = '1fr';
                 document.getElementById('finance-chart-container').style.display = 'block';
                 document.getElementById('admin-param-box').style.display = 'block';
@@ -939,7 +939,6 @@
         }
 
         function switchTab(tabId) {
-            // Pastikan database terbaru selalu disinkronkan saat berpindah tab
             db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
 
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
@@ -959,7 +958,12 @@
 
         function openModalGuru() { document.getElementById('modal-guru').style.display = 'flex'; }
         function openModalSantri() { document.getElementById('modal-santri').style.display = 'flex'; }
-        function openModalKas() { document.getElementById('modal-kas').style.display = 'flex'; }
+        
+        function openModalKas() { 
+            document.getElementById('kas-ket').value = "";
+            document.getElementById('kas-nominal').value = "";
+            document.getElementById('modal-kas').style.display = 'flex'; 
+        }
         
         function openEditGuru(id) {
             const g = db.guru.find(g => g.id === id);
@@ -1502,22 +1506,35 @@
             alert("Pengaturan Keuangan (Rekening & Tagihan SPP) berhasil disimpan!");
         }
 
+        // PERBAIKAN 1: Form transaksi Kas Pendapatan & Pengeluaran
         function simpanTransaksiKas(e) {
             e.preventDefault();
+            db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
+            if (!db.arusKas) db.arusKas = [];
+
             const jenis = document.getElementById('kas-jenis').value;
             const ket = document.getElementById('kas-ket').value;
-            const nominal = parseInt(document.getElementById('kas-nominal').value);
+            const nominal = parseInt(document.getElementById('kas-nominal').value) || 0;
             const todayStr = getTodayISO();
+
+            if (!ket || nominal <= 0) {
+                alert("Harap isi keterangan dan nominal transaksi dengan benar!");
+                return;
+            }
 
             db.arusKas.push({ id: Date.now(), tgl: todayStr, jenis: jenis, ket: ket, nominal: nominal });
             saveDb();
             closeModal('modal-kas');
+            document.getElementById('kas-ket').value = "";
+            document.getElementById('kas-nominal').value = "";
             renderKeuangan();
+            if (document.getElementById('sec-dashboard').classList.contains('active')) {
+                loadDashboardData();
+            }
             alert("Transaksi kas berhasil ditambahkan!");
         }
 
         function renderKeuangan() {
-            // Sinkronkan data terbaru dari Storage
             db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
 
             // Tabel SPP
@@ -1562,17 +1579,21 @@
             if(currentUser.role === 'admin') {
                 const tbodyKas = document.getElementById('table-arus-kas');
                 tbodyKas.innerHTML = "";
-                db.arusKas.forEach(k => {
-                    let color = k.jenis === 'Pendapatan' ? 'color:var(--secondary)' : 'color:var(--danger)';
-                    tbodyKas.innerHTML += `
-                        <tr>
-                            <td>${k.tgl}</td>
-                            <td><span class="badge ${k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger'}">${k.jenis}</span></td>
-                            <td>${k.ket}</td>
-                            <td style="font-weight:bold; ${color}">Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
-                        </tr>
-                    `;
-                });
+                if (!db.arusKas || db.arusKas.length === 0) {
+                    tbodyKas.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--gray);">Belum ada transaksi kas</td></tr>`;
+                } else {
+                    db.arusKas.forEach(k => {
+                        let color = k.jenis === 'Pendapatan' ? 'color:var(--secondary)' : 'color:var(--danger)';
+                        tbodyKas.innerHTML += `
+                            <tr>
+                                <td>${k.tgl}</td>
+                                <td><span class="badge ${k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger'}">${k.jenis}</span></td>
+                                <td>${k.ket}</td>
+                                <td style="font-weight:bold; ${color}">Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
+                            </tr>
+                        `;
+                    });
+                }
             }
         }
 
@@ -1603,10 +1624,10 @@
             }
         }
 
-        // PERBAIKAN BUG: Approve SPP Admin langsung memperbarui state, kas, & view tanpa harus pindah tab
+        // PERBAIKAN 2: Approve SPP Admin yang presisi & responsif
         function approveSppAdmin(santriId) {
-            const id = Number(santriId);
             db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
+            const id = Number(santriId);
             const sppObj = db.spp.find(s => Number(s.santriId) === id);
             
             if(sppObj) {
@@ -1614,24 +1635,45 @@
                 sppObj.status = "Lunas";
                 sppObj.tgl = todayISO;
                 
-                // Otomatis tercatat ke arus kas pendapatan
+                if (!db.arusKas) db.arusKas = [];
                 db.arusKas.push({ 
                     id: Date.now(), 
                     tgl: todayISO, 
                     jenis: "Pendapatan", 
-                    ket: `Pembayaran SPP: ${sppObj.santri} (${sppObj.metode || 'Tunai'})`, 
+                    ket: `Pembayaran SPP: ${sppObj.santri} (${sppObj.metode && sppObj.metode !== '-' ? sppObj.metode : 'Tunai'})`, 
                     nominal: Number(sppObj.nominal) 
                 });
 
                 saveDb();
-                
-                // Re-render langsung untuk kedua tabel Keuangan dan Dashboard
                 renderKeuangan(); 
-                if (document.getElementById('sec-dashboard').classList.contains('active')) {
+                if (document.getElementById('sec-dashboard') && document.getElementById('sec-dashboard').classList.contains('active')) {
                     loadDashboardData();
                 }
 
                 alert(`Pembayaran SPP ${sppObj.santri} telah di-Approve dan dimasukkan ke catatan kas pendapatan!`);
+            } else {
+                alert("Data SPP tidak ditemukan!");
+            }
+        }
+
+        // PERBAIKAN 3: Fitur Bersihkan Cache SPP
+        function bersihkanCacheSpp() {
+            if (confirm("Apakah Anda yakin ingin membersihkan cache / riwayat pembayaran SPP? Semua status pembayaran SPP akan dibersihkan kembali ke status awal.")) {
+                db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
+                db.spp = db.santri.map(s => ({
+                    santriId: s.id,
+                    santri: s.nama,
+                    nominal: db.settings.sppNominal || 150000,
+                    tgl: "-",
+                    status: "Belum Bayar",
+                    metode: "-"
+                }));
+                saveDb();
+                renderKeuangan();
+                if (document.getElementById('sec-dashboard') && document.getElementById('sec-dashboard').classList.contains('active')) {
+                    loadDashboardData();
+                }
+                alert("Cache riwayat pembayaran SPP berhasil dibersihkan!");
             }
         }
 
@@ -1683,7 +1725,7 @@
                     </div>
                     <div class="card">
                         <div class="card-title">Status SPP (Bulan Ini)</div>
-                        <div class="card-value" style="color: ${mySpp && mySpp.status === 'Lunas' ? 'var(--secondary)' : (mySpp.status==='Menunggu Konfirmasi'? 'var(--warning)':'var(--danger)')};">
+                        <div class="card-value" style="color: ${mySpp && mySpp.status === 'Lunas' ? 'var(--secondary)' : (mySpp && mySpp.status==='Menunggu Konfirmasi'? 'var(--warning)':'var(--danger)')};">
                             ${mySpp ? mySpp.status : 'Belum Bayar'}
                         </div>
                     </div>
@@ -1724,6 +1766,7 @@
             });
         }
 
+        // PERBAIKAN 4: Grafik Garis Lurus jika belum ada pemasukan atau pengeluaran
         function renderFinanceChart() {
             if (currentUser.role !== 'admin') return;
 
@@ -1774,40 +1817,86 @@
                 'setahun': '1 Tahun'
             };
 
-            chartInstanceFinance = new Chart(ctxFin, {
-                type: 'bar',
-                data: {
-                    labels: [`Periode: ${labelMap[filterVal] || 'Filter'}`],
-                    datasets: [
-                        { label: 'Uang Masuk (Rp)', data: [totalMasuk], backgroundColor: '#10b981', borderRadius: 4 },
-                        { label: 'Uang Keluar (Rp)', data: [totalKeluar], backgroundColor: '#ef4444', borderRadius: 4 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top' },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': Rp ' + Number(context.parsed.y).toLocaleString('id-ID');
+            // Jika belum ada pemasukan ataupun pengeluaran, buat grafik garis lurus
+            if (totalMasuk === 0 && totalKeluar === 0) {
+                chartInstanceFinance = new Chart(ctxFin, {
+                    type: 'line',
+                    data: {
+                        labels: ['Awal Periode', 'Tengah Periode', 'Akhir Periode'],
+                        datasets: [{
+                            label: 'Belum Ada Pemasukan & Pengeluaran (Rp 0)',
+                            data: [0, 0, 0],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0,
+                            pointRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function() {
+                                        return 'Belum ada transaksi (Rp 0)';
+                                    }
                                 }
                             }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return 'Rp ' + Number(value).toLocaleString('id-ID');
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                suggestedMax: 100000,
+                                ticks: {
+                                    callback: function(value) {
+                                        return 'Rp ' + Number(value).toLocaleString('id-ID');
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
+            } else {
+                // Tampilkan Bar Chart normal jika ada transaksi
+                chartInstanceFinance = new Chart(ctxFin, {
+                    type: 'bar',
+                    data: {
+                        labels: [`Periode: ${labelMap[filterVal] || 'Filter'}`],
+                        datasets: [
+                            { label: 'Uang Masuk (Rp)', data: [totalMasuk], backgroundColor: '#10b981', borderRadius: 4 },
+                            { label: 'Uang Keluar (Rp)', data: [totalKeluar], backgroundColor: '#ef4444', borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': Rp ' + Number(context.parsed.y).toLocaleString('id-ID');
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return 'Rp ' + Number(value).toLocaleString('id-ID');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
         }
 
         function renderCharts() {
@@ -1821,7 +1910,6 @@
                 progContainer.querySelector('div:last-child').innerHTML = '<canvas id="progressChart"></canvas>';
             }
 
-            // Progress Chart rendering logic
             if (currentUser.role === 'ortu') {
                 chartInstanceProgress = buatGrafikSantri('progressChart', currentUser.santriId, `Grafik Progres Hafalan (${db.santri.find(s => s.id === currentUser.santriId).nama})`);
             } else {
