@@ -25,7 +25,26 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f1f5f9; color: var(--dark); overflow-x: hidden; }
+        body {
+  /* Ganti 'url("path/ke/gambar.jpg")' dengan link atau path gambar yang Anda inginkan */
+  background-image: url('bg.png'); 
+  background-size: cover;          /* Memastikan gambar menutupi seluruh area tanpa merusak rasio */
+  background-position: center;     /* Memposisikan gambar di tengah-tengah */
+  background-repeat: no-repeat;    /* Mencegah gambar berulang (tiling) */
+  background-attachment: fixed;    /* Opsional: Membuat background tetap saat halaman di-scroll (paralaks ringan) */
+  
+  color: var(--dark); 
+  overflow-x: hidden; 
+}
+
+/* Penyesuaian responsif tambahan untuk layar kecil (Mobile) */
+@media screen and (max-width: 768px) {
+  body {
+    /* Mengubah attachment menjadi scroll pada mobile untuk performa yang lebih baik */
+    background-attachment: scroll; 
+    /* Anda juga bisa mengganti gambar khusus versi mobile di sini jika diperlukan */
+  }
+}
 
         /* Login Screen */
         #login-screen {
