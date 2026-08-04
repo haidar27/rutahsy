@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Informasi RUTASY (Rumah Tahfidz Asy-Syamil)</title>
+    <!-- Favicon Logo Rutasy -->
+    <link rel="icon" type="image/png" href="logo.png">
     <!-- Font Awesome untuk Ikon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js untuk Grafik -->
@@ -60,8 +62,9 @@
             width: 260px; background: white; height: 100vh; box-shadow: var(--shadow); display: flex; flex-direction: column; transition: 0.3s;
         }
         .sidebar-header {
-            padding: 20px; text-align: center; border-bottom: 1px solid #e2e8f0;
+            padding: 20px; text-align: center; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; gap: 10px;
         }
+        .sidebar-header img { width: 32px; height: 32px; object-fit: contain; }
         .sidebar-header h2 { color: var(--primary); font-size: 1.5rem; }
         .sidebar-menu { flex: 1; padding: 20px 0; overflow-y: auto; }
         .menu-item {
@@ -163,6 +166,7 @@
     <!-- ================= LAYAR LOGIN ================= -->
     <div id="login-screen">
         <div class="login-box">
+            <img src="logo.png" alt="Logo RUTASY" style="width: 64px; height: 64px; margin-bottom: 10px; object-fit: contain;">
             <h1>RUTASY</h1>
             <p>Sistem Informasi Rumah Tahfidz Asy-Syamil</p>
             
@@ -201,7 +205,8 @@
         <!-- Sidebar Navigation -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fa-solid fa-book-quran"></i> RUTASY</h2>
+                <img src="logo.png" alt="Logo RUTASY">
+                <h2>RUTASY</h2>
             </div>
             <div class="sidebar-menu">
                 <div class="menu-item active" onclick="switchTab('dashboard')" id="menu-dashboard">
@@ -519,7 +524,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Tanggal</th><th>Nama Guru</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Status</th><th>Potongan Denda</th>
+                                <th>Tanggal</th><th>Nama Guru</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Status</th><th>Potongan Denda</th><th id="th-aksi-guru-log">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-absensi-guru-log">
@@ -1215,6 +1220,18 @@
             }
         }
 
+        function hapusAbsensiGuru(id) {
+            if(confirm("Apakah Anda yakin ingin menghapus log absensi guru ini?")) {
+                db.absensiGuru = db.absensiGuru.filter(g => g.id !== id);
+                saveDb();
+                renderAbsensi();
+                if(currentUser.role === 'admin') {
+                    loadDashboardData();
+                }
+                alert("Log absensi guru berhasil dihapus.");
+            }
+        }
+
         function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
 
         // --- 2. LOGIC MASTER DATA ---
@@ -1780,6 +1797,12 @@
             }
 
             const tbodyGuruLog = document.getElementById('table-absensi-guru-log');
+            const thAksi = document.getElementById('th-aksi-guru-log');
+            if (currentUser.role === 'admin') {
+                thAksi.style.display = '';
+            } else {
+                thAksi.style.display = 'none';
+            }
             tbodyGuruLog.innerHTML = "";
             let listAbsensiGuru = db.absensiGuru || [];
             
@@ -1797,6 +1820,7 @@
             listAbsensiGuru.forEach(g => {
                 let potongTeks = g.potongan > 0 ? `<span style="color:var(--danger)">${g.potongan}%</span>` : '-';
                 let bClass = g.status === 'Tepat Waktu' ? 'badge-success' : 'badge-danger';
+                let aksiTd = currentUser.role === 'admin' ? `<td><button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="hapusAbsensiGuru(${g.id})"><i class="fa-solid fa-trash"></i> Hapus</button></td>` : '';
                 tbodyGuruLog.innerHTML += `
                     <tr>
                         <td><strong>${g.date}</strong></td>
@@ -1805,6 +1829,7 @@
                         <td>${g.jamPulang || '-'}</td>
                         <td><span class="badge ${bClass}">${g.status}</span></td>
                         <td>${potongTeks}</td>
+                        ${aksiTd}
                     </tr>`;
             });
         }
@@ -1973,196 +1998,207 @@
             let totalMasuk = 0;
             let totalKeluar = 0;
             
-            const pendapatanMap = {};
-            const pengeluaranMap = {};
-
             filteredData.forEach(k => {
-                let nom = Number(k.nominal);
-                let dateKey = k.tgl; 
-                
-                if(!pendapatanMap[dateKey]) pendapatanMap[dateKey] = 0;
-                if(!pengeluaranMap[dateKey]) pengeluaranMap[dateKey] = 0;
-
-                if (k.jenis === 'Pendapatan') {
-                    totalMasuk += nom;
-                    pendapatanMap[dateKey] += nom;
-                } else {
-                    totalKeluar += nom;
-                    pengeluaranMap[dateKey] += nom;
-                }
+                if (k.jenis === 'Pendapatan') totalMasuk += Number(k.nominal);
+                if (k.jenis === 'Pengeluaran') totalKeluar += Number(k.nominal);
             });
 
             document.getElementById('finance-summary-text').innerHTML = `
-                <div style="display:flex; justify-content:space-around; margin-bottom:15px; flex-wrap:wrap;">
+                <div style="display:flex; gap:20px; margin-bottom:15px; font-size:0.9rem;">
                     <span style="color:var(--secondary); font-weight:bold;">Total Pemasukan: Rp ${totalMasuk.toLocaleString('id-ID')}</span>
                     <span style="color:var(--danger); font-weight:bold;">Total Pengeluaran: Rp ${totalKeluar.toLocaleString('id-ID')}</span>
+                    <span style="color:var(--primary); font-weight:bold;">Saldo Bersih: Rp ${(totalMasuk - totalKeluar).toLocaleString('id-ID')}</span>
                 </div>
             `;
 
-            let datesSet = new Set([...Object.keys(pendapatanMap), ...Object.keys(pengeluaranMap)]);
-            let sortedDates = Array.from(datesSet).sort();
-
-            let dataMasukArr = sortedDates.map(d => pendapatanMap[d] || 0);
-            let dataKeluarArr = sortedDates.map(d => pengeluaranMap[d] || 0);
-
             if (chartInstanceFinance) chartInstanceFinance.destroy();
+
             chartInstanceFinance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: sortedDates.length > 0 ? sortedDates : ['Tidak ada data'],
-                    datasets: [
-                        { label: 'Uang Masuk (Rp)', data: sortedDates.length > 0 ? dataMasukArr : [0], backgroundColor: '#10b981' },
-                        { label: 'Uang Keluar (Rp)', data: sortedDates.length > 0 ? dataKeluarArr : [0], backgroundColor: '#ef4444' }
-                    ]
+                    labels: ['Pemasukan', 'Pengeluaran'],
+                    datasets: [{
+                        label: 'Total Nominal (Rp)',
+                        data: [totalMasuk, totalKeluar],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderWidth: 1
+                    }]
                 },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
                     scales: {
-                        y: { beginAtZero: true, ticks: { callback: function(val) { return "Rp " + val/1000 + "k"; } } }
+                        y: { beginAtZero: true }
                     }
                 }
             });
         }
 
         function renderKeuangan() {
-            const nominalSpp = db.settings.sppNominal || 150000;
-            const filterSppMulai = document.getElementById('tgl-spp-mulai').value;
-            const filterSppSelesai = document.getElementById('tgl-spp-selesai').value;
+            db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
+            
+            const tbodyKas = document.getElementById('table-arus-kas');
+            tbodyKas.innerHTML = "";
+            (db.arusKas || []).forEach(k => {
+                let badge = k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger';
+                tbodyKas.innerHTML += `
+                    <tr>
+                        <td>${k.tgl}</td>
+                        <td><span class="badge ${badge}">${k.jenis}</span></td>
+                        <td>${k.ket}</td>
+                        <td><strong>Rp ${Number(k.nominal).toLocaleString('id-ID')}</strong></td>
+                    </tr>
+                `;
+            });
 
-            let sppList = db.spp;
-            if (filterSppMulai && filterSppSelesai) {
-                sppList = sppList.filter(s => s.tgl >= filterSppMulai && s.tgl <= filterSppSelesai);
+            const tglMulai = document.getElementById('tgl-spp-mulai') ? document.getElementById('tgl-spp-mulai').value : "";
+            const tglSelesai = document.getElementById('tgl-spp-selesai') ? document.getElementById('tgl-spp-selesai').value : "";
+
+            let listSpp = db.spp || [];
+            if (tglMulai && tglSelesai) {
+                listSpp = listSpp.filter(s => s.tgl >= tglMulai && s.tgl <= tglSelesai);
             }
+
             if (currentUser.role === 'ortu') {
-                sppList = sppList.filter(s => s.santriId === currentUser.santriId);
+                listSpp = listSpp.filter(s => s.santriId === currentUser.santriId);
+            }
+
+            const tbodySppBelum = document.getElementById('table-spp-belum');
+            tbodySppBelum.innerHTML = "";
+            
+            let listSantri = db.santri.filter(s => s.status === 'Aktif');
+            if (currentUser.role === 'ortu') {
+                listSantri = listSantri.filter(s => s.id === currentUser.santriId);
+            }
+
+            listSantri.forEach(s => {
+                let sudahBayar = db.spp ? db.spp.some(p => p.santriId === s.id && p.status === 'Lunas') : false;
+                if (!sudahBayar) {
+                    let nominalTagihan = db.settings.sppNominal || 150000;
+                    let aksiOrtu = currentUser.role === 'ortu' ? `<button class="btn btn-warning" style="padding:4px 10px; font-size:0.8rem; margin-left:10px;" onclick="openBayarSppOrtu(${s.id}, '${s.nama}', ${nominalTagihan})">Bayar Sekarang</button>` : '';
+                    
+                    tbodySppBelum.innerHTML += `
+                        <tr>
+                            <td><strong>${s.nama}</strong></td>
+                            <td>${s.wali || '-'}</td>
+                            <td>Rp ${Number(nominalTagihan).toLocaleString('id-ID')}</td>
+                            <td><span class="badge badge-danger">Belum Lunas</span> ${aksiOrtu}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            if (tbodySppBelum.innerHTML === "") {
+                tbodySppBelum.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--secondary); font-weight:bold;">Semua santri telah melunasi tagihan!</td></tr>`;
             }
 
             const tbodySpp = document.getElementById('table-spp');
             tbodySpp.innerHTML = "";
-            let santriSudah = sppList.map(s => s.santriId);
-
-            sppList.forEach(s => {
-                let badgeClass = s.status === 'Lunas' ? 'badge-success' : 'badge-warning';
-                let aksi = "";
-                if (currentUser.role === 'admin' && s.status !== 'Lunas') {
-                    aksi = `<button class="btn btn-success" style="padding: 5px 10px; font-size: 0.8rem;" onclick="konfirmasiSppAdmin(${s.santriId}, '${s.tgl}')"><i class="fa-solid fa-check"></i> Konfirmasi Lunas</button>`;
-                } else {
-                    aksi = `<em>${s.metode || '-'}</em>`;
-                }
+            listSpp.forEach(s => {
+                let badge = s.status === 'Lunas' ? 'badge-success' : 'badge-warning';
+                let btnKonfirmasi = (currentUser.role === 'admin' && s.status === 'Menunggu Konfirmasi') ? `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem;" onclick="konfirmasiSppAdmin(${s.santriId}, '${s.tgl}')">Konfirmasi Lunas</button>` : (s.metode || '-');
 
                 tbodySpp.innerHTML += `
                     <tr>
                         <td><strong>${s.santri}</strong></td>
-                        <td>Rp ${s.nominal.toLocaleString('id-ID')}</td>
+                        <td>Rp ${Number(s.nominal).toLocaleString('id-ID')}</td>
                         <td>${s.tgl}</td>
-                        <td><span class="badge ${badgeClass}">${s.status}</span></td>
-                        <td>${aksi}</td>
-                    </tr>`;
-            });
-            if(sppList.length === 0) tbodySpp.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--gray);">Belum ada riwayat pembayaran / pengajuan</td></tr>`;
-
-            const tbodyBelum = document.getElementById('table-spp-belum');
-            tbodyBelum.innerHTML = "";
-            
-            let santriBelumList = db.santri.filter(s => s.status === 'Aktif' && !santriSudah.includes(s.id));
-            
-            if (currentUser.role === 'ortu') {
-                santriBelumList = santriBelumList.filter(s => s.id === currentUser.santriId);
-            }
-
-            santriBelumList.forEach(s => {
-                let btnAksi = "-";
-                if(currentUser.role === 'ortu') {
-                    btnAksi = `<button class="btn btn-warning" style="padding: 5px 10px; font-size: 0.8rem;" onclick="openBayarSppOrtu(${s.id}, '${s.nama}', ${nominalSpp})"><i class="fa-solid fa-wallet"></i> Bayar SPP</button>`;
-                } else if(currentUser.role === 'admin') {
-                    btnAksi = `<span class="badge badge-danger">Belum Ditagih / Belum Lunas</span>`;
-                }
-
-                tbodyBelum.innerHTML += `
-                    <tr>
-                        <td><strong>${s.nama}</strong></td>
-                        <td>${s.wali}</td>
-                        <td style="color:var(--danger); font-weight:bold;">Rp ${nominalSpp.toLocaleString('id-ID')}</td>
-                        <td>${btnAksi}</td>
-                    </tr>`;
+                        <td><span class="badge ${badge}">${s.status}</span></td>
+                        <td>${btnKonfirmasi}</td>
+                    </tr>
+                `;
             });
 
-            if (santriBelumList.length === 0) {
-                if (currentUser.role === 'ortu') {
-                    tbodyBelum.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--secondary); font-weight:bold;">Tagihan SPP Ananda bulan ini telah lunas / sedang diproses!</td></tr>`;
-                } else {
-                    tbodyBelum.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--secondary); font-weight:bold;">Semua santri telah mengajukan / melunasi SPP!</td></tr>`;
-                }
-            }
-
-            if (currentUser.role === 'admin') {
-                const tbodyKas = document.getElementById('table-arus-kas');
-                tbodyKas.innerHTML = "";
-                db.arusKas.forEach(k => {
-                    let badgeC = k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger';
-                    let tColor = k.jenis === 'Pendapatan' ? 'var(--secondary)' : 'var(--danger)';
-                    tbodyKas.innerHTML += `
-                        <tr>
-                            <td>${k.tgl}</td>
-                            <td><span class="badge ${badgeC}">${k.jenis}</span></td>
-                            <td>${k.ket}</td>
-                            <td style="color:${tColor}; font-weight:bold;">Rp ${k.nominal.toLocaleString('id-ID')}</td>
-                        </tr>`;
-                });
+            if (tbodySpp.innerHTML === "") {
+                tbodySpp.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--gray);">Belum ada riwayat transaksi SPP</td></tr>`;
             }
         }
 
         // --- 7. DASHBOARD DATA ---
         function loadDashboardData() {
             db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
-            const cards = document.getElementById('dashboard-cards');
-            cards.innerHTML = "";
-            
-            initProgressChart();
-            
+            const container = document.getElementById('dashboard-cards');
+            container.innerHTML = "";
+
             if (currentUser.role === 'admin') {
-                renderFinanceChart(); 
-
-                const santriAktif = db.santri.filter(s => s.status === "Aktif").length;
-                const totalGuru = db.guru.length;
-                const belumLunas = db.santri.filter(s => s.status === 'Aktif').length - db.spp.filter(sp => sp.status === "Lunas").length;
+                document.getElementById('dashboard-heading').innerText = "Ringkasan Eksekutif Admin";
                 
-                let saldoKas = 0;
-                db.arusKas.forEach(k => { if(k.jenis==='Pendapatan') saldoKas += k.nominal; else saldoKas -= k.nominal; });
+                let totalSantri = db.santri.filter(s => s.status === 'Aktif').length;
+                let totalGuru = db.guru.length;
+                
+                let totalPemasukan = 0;
+                let totalPengeluaran = 0;
+                (db.arusKas || []).forEach(k => {
+                    if (k.jenis === 'Pendapatan') totalPemasukan += Number(k.nominal);
+                    if (k.jenis === 'Pengeluaran') totalPengeluaran += Number(k.nominal);
+                });
+                let kasBersih = totalPemasukan - totalPengeluaran;
 
-                // Kartu Dashboard Admin dengan warna pastel & font estetik
-                cards.innerHTML = `
-                    <div class="card card-pastel-1"><div class="card-title">Total Santri Aktif</div><div class="card-value">${santriAktif}</div></div>
-                    <div class="card card-pastel-2"><div class="card-title">Total Guru Pengajar</div><div class="card-value">${totalGuru}</div></div>
-                    <div class="card card-pastel-3"><div class="card-title">Santri Belum Lunas SPP</div><div class="card-value">${belumLunas > 0 ? belumLunas : 0}</div></div>
-                    <div class="card card-pastel-4"><div class="card-title">Saldo Arus Kas</div><div class="card-value" style="font-size: 1.6rem;">Rp ${saldoKas.toLocaleString('id-ID')}</div></div>
+                container.innerHTML = `
+                    <div class="card card-pastel-1">
+                        <div class="card-title">Total Santri Aktif</div>
+                        <div class="card-value">${totalSantri}</div>
+                    </div>
+                    <div class="card card-pastel-2">
+                        <div class="card-title">Total Guru / Pengajar</div>
+                        <div class="card-value">${totalGuru}</div>
+                    </div>
+                    <div class="card card-pastel-3">
+                        <div class="card-title">Saldo Kas Bersih</div>
+                        <div class="card-value">Rp ${kasBersih.toLocaleString('id-ID')}</div>
+                    </div>
+                    <div class="card card-pastel-4">
+                        <div class="card-title">Total Transaksi</div>
+                        <div class="card-value">${(db.arusKas || []).length}</div>
+                    </div>
                 `;
+
+                renderFinanceChart();
+                initProgressChart();
             } 
             else if (currentUser.role === 'guru') {
-                const santriIqro = db.santri.filter(s => s.status === "Aktif" && s.kelas === 'Kelas Iqro').length;
-                const santriTahsin = db.santri.filter(s => s.status === "Aktif" && s.kelas === 'Kelas Tahsin').length;
-                const santriTahfidz = db.santri.filter(s => s.status === "Aktif" && s.kelas === 'Kelas Tahfidz').length;
+                document.getElementById('dashboard-heading').innerText = `Selamat Datang, ${currentUser.name}`;
                 
-                cards.innerHTML = `
-                    <div class="card"><div class="card-title">Santri Kelas Iqro</div><div class="card-value">${santriIqro}</div></div>
-                    <div class="card"><div class="card-title">Santri Kelas Tahsin</div><div class="card-value">${santriTahsin}</div></div>
-                    <div class="card"><div class="card-title">Santri Kelas Tahfidz</div><div class="card-value">${santriTahfidz}</div></div>
+                let totalSantri = db.santri.filter(s => s.status === 'Aktif').length;
+                let setoranHariIni = db.progress.filter(p => p.tgl === getTodayISO()).length;
+
+                container.innerHTML = `
+                    <div class="card card-pastel-1">
+                        <div class="card-title">Total Santri Binaan</div>
+                        <div class="card-value">${totalSantri}</div>
+                    </div>
+                    <div class="card card-pastel-2">
+                        <div class="card-title">Setoran Hari Ini</div>
+                        <div class="card-value">${setoranHariIni}</div>
+                    </div>
                 `;
+
+                initProgressChart();
             } 
             else if (currentUser.role === 'ortu') {
-                const santri = db.santri.find(s => s.id === currentUser.santriId);
-                const tagihan = db.settings.sppNominal || 150000;
-                const sppBulanIni = db.spp.find(s => s.santriId === currentUser.santriId);
+                const santriObj = db.santri.find(s => s.id === currentUser.santriId);
+                const namaSantri = santriObj ? santriObj.nama : "Santri";
                 
-                let statusSpp = sppBulanIni ? sppBulanIni.status : "Belum Ditagih / Belum Lunas";
-                let warna = sppBulanIni && sppBulanIni.status === 'Lunas' ? 'var(--secondary)' : 'var(--danger)';
+                document.getElementById('dashboard-heading').innerText = `Dashboard Perkembangan: ${namaSantri}`;
 
-                cards.innerHTML = `
-                    <div class="card"><div class="card-title">Status Santri</div><div class="card-value" style="color:var(--primary)">${santri.status}</div></div>
-                    <div class="card"><div class="card-title">Kategori Kelas</div><div class="card-value">${santri.kelas || 'Belum Ditentukan'}</div></div>
-                    <div class="card"><div class="card-title">Nominal SPP Bulanan</div><div class="card-value">Rp ${tagihan.toLocaleString('id-ID')}</div></div>
-                    <div class="card"><div class="card-title">Status SPP (Bulan Ini)</div><div class="card-value" style="color:${warna}; font-size:1.5rem;">${statusSpp}</div></div>
+                let lastProg = db.progress.filter(p => p.santriId === currentUser.santriId).pop();
+                let statusSpp = db.spp.some(s => s.santriId === currentUser.santriId && s.status === 'Lunas') ? 'LUNAS' : 'BELUM BAYAR';
+
+                container.innerHTML = `
+                    <div class="card card-pastel-1">
+                        <div class="card-title">Capaian Terakhir</div>
+                        <div class="card-value" style="font-size:1.2rem;">${lastProg ? lastProg.surah : '-'}</div>
+                    </div>
+                    <div class="card card-pastel-2">
+                        <div class="card-title">Status Pembayaran SPP</div>
+                        <div class="card-value" style="font-size:1.5rem;">${statusSpp}</div>
+                    </div>
                 `;
+
+                initProgressChart();
             }
         }
     </script>
