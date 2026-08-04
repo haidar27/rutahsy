@@ -108,6 +108,17 @@
         .badge-danger { background: #fee2e2; color: #dc2626; }
         .badge-info { background: #e0f2fe; color: #0284c7; }
 
+        /* Pagination Styles */
+        .pagination-container {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #e2e8f0;
+        }
+        .pagination-buttons { display: flex; gap: 5px; }
+        .page-btn {
+            padding: 6px 12px; border: 1px solid #cbd5e1; background: white; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: 0.2s;
+        }
+        .page-btn:hover { background: #f1f5f9; }
+        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
         /* Modal Styles */
         .modal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
@@ -265,7 +276,6 @@
                     <div class="chart-container" id="finance-chart-container">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
                             <h3 style="font-size:1.1rem; color:var(--primary);"><i class="fa-solid fa-chart-column"></i> Grafik Arus Kas Keuangan (Masuk vs Keluar)</h3>
-                            <!-- PERBAIKAN: Pemilihan rentang waktu dengan tanggal -->
                             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <label style="font-size:0.85rem; font-weight:600;">Dari:</label>
                                 <input type="date" id="tgl-mulai-keuangan" class="btn" style="background: white; color: var(--dark); border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 0.85rem;" onchange="renderFinanceChart()">
@@ -311,7 +321,6 @@
                     <br>
                     <table>
                         <thead>
-                            <!-- PERBAIKAN: Hapus Jabatan dan Tambahkan Password -->
                             <tr id="table-guru-head">
                                 <th>ID</th><th>Nama Guru</th><th>Gaji Harian</th><th>Username</th><th>Password</th><th>Aksi</th>
                             </tr>
@@ -391,7 +400,6 @@
                 <div class="section-header">
                     <h2>Riwayat Progres Perkembangan Santri (PPS)</h2>
                     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                        <!-- PERBAIKAN: Tracking hafalan by tanggal -->
                         <label style="font-weight:600;">Filter Tanggal:</label>
                         <input type="date" id="filter-tgl-progress" class="btn" style="background: white; color: var(--dark); border: 1px solid #ccc; padding:6px 10px; font-size:0.85rem;" onchange="renderProgress()">
                         
@@ -446,8 +454,16 @@
                 </div>
 
                 <div class="table-container" style="margin-bottom:30px;">
-                    <h3>Presensi Santri <span id="hint-absensi-read" style="display:none; font-size:0.8rem; color:var(--danger); font-weight:normal; margin-left:10px;">(Mode Validasi: Admin Read-Only)</span></h3>
-                    <br>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                        <h3>Presensi Santri <span id="hint-absensi-read" style="display:none; font-size:0.8rem; color:var(--danger); font-weight:normal; margin-left:10px;">(Mode Validasi: Admin Read-Only)</span></h3>
+                        
+                        <!-- Fitur Search Absensi Santri -->
+                        <div style="position:relative; min-width:250px;">
+                            <input type="text" id="search-santri-absensi" placeholder="Cari Nama Santri..." onkeyup="onSearchAbsensiSantriChange()" style="width:100%; padding:8px 30px 8px 12px; border:1px solid #cbd5e1; border-radius:var(--radius); font-size:0.85rem;">
+                            <i class="fa-solid fa-magnifying-glass" style="position:absolute; right:10px; top:10px; color:var(--gray);"></i>
+                        </div>
+                    </div>
+                    
                     <table>
                         <thead>
                             <tr>
@@ -458,6 +474,11 @@
                             <!-- Injected via JS -->
                         </tbody>
                     </table>
+
+                    <!-- Fitur Pagination Absensi Santri -->
+                    <div class="pagination-container" id="pagination-absensi-santri">
+                        <!-- Injected via JS -->
+                    </div>
                 </div>
 
                 <div class="table-container" id="container-absensi-guru-log">
@@ -521,7 +542,6 @@
                     </table>
                 </div>
 
-                <!-- PERBAIKAN: Tanggal pada Keuangan & SPP Admin + Pemisahan Bagian Belum & Sudah Bayar -->
                 <div class="charts-grid" style="grid-template-columns: 1fr;">
                     
                     <!-- Box Filter Tanggal & Aksi Clear Admin -->
@@ -533,7 +553,8 @@
                                 <span style="font-size:0.85rem;">s/d</span>
                                 <input type="date" id="tgl-spp-selesai" class="btn" style="background: white; color: var(--dark); border: 1px solid #ccc; padding:6px 10px; font-size:0.85rem;" onchange="renderKeuangan()">
                             </div>
-                            <button class="btn btn-danger" style="padding: 8px 16px; font-size:0.85rem;" onclick="bersihkanCacheSpp()"><i class="fa-solid fa-trash-can"></i> Clear / Hapus Semua Data SPP</button>
+                            <!-- Hanya tampil untuk admin -->
+                            <button class="btn btn-danger" id="btn-clear-spp-admin" style="display:none; padding: 8px 16px; font-size:0.85rem;" onclick="bersihkanCacheSpp()"><i class="fa-solid fa-trash-can"></i> Clear / Hapus Semua Data SPP</button>
                         </div>
                     </div>
 
@@ -838,6 +859,10 @@
 
         let currentUser = JSON.parse(localStorage.getItem('rutasy_session')) || null;
 
+        // Pagination State untuk Presensi Santri
+        let currentAbsensiPage = 1;
+        const absensiPageSize = 5;
+
         function saveDb() {
             localStorage.setItem('rutasy_db', JSON.stringify(db));
         }
@@ -853,7 +878,6 @@
             if(document.getElementById('tgl-mulai-keuangan')) document.getElementById('tgl-mulai-keuangan').value = today;
             if(document.getElementById('tgl-selesai-keuangan')) document.getElementById('tgl-selesai-keuangan').value = today;
 
-            // PERBAIKAN: Load Fitur Ingat Saya
             const savedRem = JSON.parse(localStorage.getItem('rutasy_remember'));
             if (savedRem) {
                 document.getElementById('login-username').value = savedRem.username;
@@ -897,7 +921,6 @@
                 currentUser = validUser;
                 localStorage.setItem('rutasy_session', JSON.stringify(currentUser));
 
-                // PERBAIKAN: Simpan atau hapus Ingat Saya
                 if (remIn) {
                     localStorage.setItem('rutasy_remember', JSON.stringify({ username: userIn, password: passIn }));
                 } else {
@@ -940,6 +963,7 @@
             document.getElementById('admin-table-hint').style.display = 'none';
             document.getElementById('hint-absensi-read').style.display = 'none';
             document.getElementById('btn-simpan-abs-santri').style.display = 'block';
+            document.getElementById('btn-clear-spp-admin').style.display = 'none';
 
             if (user.role === 'admin') {
                 badge.textContent = 'Admin / Bendahara';
@@ -952,6 +976,7 @@
                 document.getElementById('admin-table-hint').style.display = 'inline';
                 document.getElementById('hint-absensi-read').style.display = 'inline';
                 document.getElementById('btn-simpan-abs-santri').style.display = 'none'; 
+                document.getElementById('btn-clear-spp-admin').style.display = 'inline-block';
                 
                 document.getElementById('param-jam-masuk').value = db.settings.jamMasuk || "07:00";
                 document.getElementById('param-jam-pulang').value = db.settings.jamPulang || "15:00";
@@ -966,7 +991,6 @@
                 badge.textContent = 'Guru / Pengajar';
                 document.getElementById('btn-unduh-pdf').style.display = 'inline-block';
                 
-                // PERBAIKAN: Hapus/Sembunyikan bagian master data untuk guru
                 document.getElementById('menu-master').style.display = 'none';
                 document.getElementById('master-action-buttons').style.display = 'none'; 
                 document.getElementById('guru-setoran-box').style.display = 'block'; 
@@ -1000,7 +1024,11 @@
 
             if(tabId === 'master') renderMaster();
             if(tabId === 'progress') renderProgress();
-            if(tabId === 'absensi') renderAbsensi();
+            if(tabId === 'absensi') {
+                currentAbsensiPage = 1;
+                if(document.getElementById('search-santri-absensi')) document.getElementById('search-santri-absensi').value = "";
+                renderAbsensi();
+            }
             if(tabId === 'keuangan') renderKeuangan();
             if(tabId === 'dashboard') loadDashboardData(); 
         }
@@ -1134,7 +1162,6 @@
             }
         }
 
-        // PERBAIKAN: Master data tampilkan Password dan Hapus Jabatan
         function renderMaster() {
             const tbodySantri = document.getElementById('table-santri');
             tbodySantri.innerHTML = "";
@@ -1175,7 +1202,7 @@
             });
         }
 
-        // --- 3. PROGRES & SETORAN SANTRI (TRACK BY TANGGAL) ---
+        // --- 3. PROGRES & SETORAN SANTRI ---
         function populateSetoranSantriDropdown() {
             if(!document.getElementById('setoran-santri-id')) return;
             let options = `<option value="">-- Pilih Santri --</option>`;
@@ -1216,7 +1243,6 @@
             }
         }
 
-        // PERBAIKAN: Simpan Setoran Track By Tanggal
         function simpanSetoran() {
             const sId = parseInt(document.getElementById('setoran-santri-id').value);
             if(!sId) { alert("Pilih nama santri terlebih dahulu!"); return; }
@@ -1262,7 +1288,6 @@
             alert("Setoran hafalan santri berhasil dicatat!");
         }
 
-        // PERBAIKAN: Render Progres Hafalan Track By Tanggal untuk Ortu & Admin
         function renderProgress() {
             const filterVal = document.getElementById('filter-kelas-progress') ? document.getElementById('filter-kelas-progress').value : "Semua";
             const filterTgl = document.getElementById('filter-tgl-progress') ? document.getElementById('filter-tgl-progress').value : "";
@@ -1384,7 +1409,17 @@
             chartDetailInstance = buatGrafikSantri('detailProgressChartCanvas', santriId, '');
         }
 
-        // --- 5. ABSENSI ---
+        // --- 5. ABSENSI (SEARCH & PAGINATION) ---
+        function onSearchAbsensiSantriChange() {
+            currentAbsensiPage = 1;
+            renderAbsensi();
+        }
+
+        function setAbsensiPage(page) {
+            currentAbsensiPage = page;
+            renderAbsensi();
+        }
+
         function renderAbsensi() {
             const tbodyLogPengajar = document.getElementById('table-log-pengajar-absensi');
             if(tbodyLogPengajar) {
@@ -1403,36 +1438,84 @@
                 }
             }
 
+            // Presensi Santri dengan Search & Paginasi
             const tbodySantri = document.getElementById('table-absensi-santri');
             tbodySantri.innerHTML = "";
             const tgl = document.getElementById('tgl-absensi-santri').value;
             const isAdmin = currentUser.role === 'admin';
             const disableAttr = isAdmin ? 'disabled' : '';
 
-            db.santri.forEach(s => {
-                const rec = db.absensiSantri.find(a => a.santriId === s.id && a.date === tgl);
-                const st = rec ? rec.status : "Hadir";
-                const txtKelas = s.kelas && s.kelas !== "" ? s.kelas : '-';
+            const searchQuery = (document.getElementById('search-santri-absensi') ? document.getElementById('search-santri-absensi').value : "").toLowerCase().trim();
+            
+            // Filter santri berdasarkan query pencarian
+            let filteredSantri = db.santri.filter(s => s.nama.toLowerCase().includes(searchQuery));
 
-                tbodySantri.innerHTML += `
-                    <tr>
-                        <td><strong>${s.nama}</strong></td>
-                        <td>${txtKelas}</td>
-                        <td>
-                            <input type="radio" name="abs_s_${s.id}" value="Hadir" ${st === 'Hadir' ? 'checked' : ''} ${disableAttr}> Hadir 
-                            <input type="radio" name="abs_s_${s.id}" value="Izin" ${st === 'Izin' ? 'checked' : ''} ${disableAttr}> Izin
-                            <input type="radio" name="abs_s_${s.id}" value="Sakit" ${st === 'Sakit' ? 'checked' : ''} ${disableAttr}> Sakit
-                            <input type="radio" name="abs_s_${s.id}" value="Alpa" ${st === 'Alpa' ? 'checked' : ''} ${disableAttr}> Alpa
-                        </td>
-                    </tr>`;
-            });
+            // Perhitungan Halaman (Paginasi 5 data/halaman)
+            const totalItems = filteredSantri.length;
+            const totalPages = Math.ceil(totalItems / absensiPageSize) || 1;
 
+            if (currentAbsensiPage > totalPages) currentAbsensiPage = totalPages;
+            if (currentAbsensiPage < 1) currentAbsensiPage = 1;
+
+            const startIndex = (currentAbsensiPage - 1) * absensiPageSize;
+            const paginatedSantri = filteredSantri.slice(startIndex, startIndex + absensiPageSize);
+
+            if (paginatedSantri.length === 0) {
+                tbodySantri.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--gray);">Data santri tidak ditemukan</td></tr>`;
+            } else {
+                paginatedSantri.forEach(s => {
+                    const rec = db.absensiSantri.find(a => a.santriId === s.id && a.date === tgl);
+                    const st = rec ? rec.status : "Hadir";
+                    const txtKelas = s.kelas && s.kelas !== "" ? s.kelas : '-';
+
+                    tbodySantri.innerHTML += `
+                        <tr>
+                            <td><strong>${s.nama}</strong></td>
+                            <td>${txtKelas}</td>
+                            <td>
+                                <input type="radio" name="abs_s_${s.id}" value="Hadir" ${st === 'Hadir' ? 'checked' : ''} ${disableAttr}> Hadir 
+                                <input type="radio" name="abs_s_${s.id}" value="Izin" ${st === 'Izin' ? 'checked' : ''} ${disableAttr}> Izin
+                                <input type="radio" name="abs_s_${s.id}" value="Sakit" ${st === 'Sakit' ? 'checked' : ''} ${disableAttr}> Sakit
+                                <input type="radio" name="abs_s_${s.id}" value="Alpa" ${st === 'Alpa' ? 'checked' : ''} ${disableAttr}> Alpa
+                            </td>
+                        </tr>`;
+                });
+            }
+
+            // Render Navigasi Paginasi
+            const paginationContainer = document.getElementById('pagination-absensi-santri');
+            if (paginationContainer) {
+                if (totalItems > absensiPageSize) {
+                    let pageButtonsHtml = '';
+                    for (let i = 1; i <= totalPages; i++) {
+                        pageButtonsHtml += `<button class="page-btn ${i === currentAbsensiPage ? 'active' : ''}" onclick="setAbsensiPage(${i})">${i}</button>`;
+                    }
+                    paginationContainer.innerHTML = `
+                        <span style="font-size:0.85rem; color:var(--gray);">Menampilkan ${startIndex + 1} - ${Math.min(startIndex + absensiPageSize, totalItems)} dari ${totalItems} santri</span>
+                        <div class="pagination-buttons">${pageButtonsHtml}</div>
+                    `;
+                } else {
+                    paginationContainer.innerHTML = `<span style="font-size:0.85rem; color:var(--gray);">Total ${totalItems} santri</span>`;
+                }
+            }
+
+            // Log Kehadiran Guru
             const tbodyGuruLog = document.getElementById('table-absensi-guru-log');
             tbodyGuruLog.innerHTML = "";
-            if (db.absensiGuru.length === 0) {
+            
+            let listAbsensiGuru = db.absensiGuru || [];
+            
+            // FITUR PERBAIKAN: Jika role adalah Guru, dia HANYA BISA MELIHAT DATA KEHADIRAN DIRINYA SENDIRI
+            if (currentUser.role === 'guru') {
+                const currentGuruObj = db.guru.find(g => g.id === currentUser.guruId);
+                const currentGuruId = currentGuruObj ? currentGuruObj.id : null;
+                listAbsensiGuru = listAbsensiGuru.filter(g => g.guruId === currentGuruId);
+            }
+
+            if (listAbsensiGuru.length === 0) {
                 tbodyGuruLog.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--gray);">Belum ada riwayat absensi guru</td></tr>`;
             } else {
-                db.absensiGuru.forEach(g => {
+                listAbsensiGuru.forEach(g => {
                     tbodyGuruLog.innerHTML += `
                         <tr>
                             <td>${g.date}</td>
@@ -1532,7 +1615,7 @@
             alert(`Absen Pulang Berhasil (${timeStr})!`);
         }
 
-        // --- 7. KEUANGAN & PEMBAYARAN SPP (DENGAN TANGGAL & HAPUS BENAR-BENAR) ---
+        // --- 7. KEUANGAN & PEMBAYARAN SPP ---
         function simpanSettingKeuangan() {
             db.settings.sppNominal = parseInt(document.getElementById('setting-spp-nominal').value) || 150000;
             db.settings.rekeningBank = document.getElementById('setting-bank').value;
@@ -1568,7 +1651,6 @@
             alert("Transaksi kas berhasil ditambahkan!");
         }
 
-        // PERBAIKAN: Render Keuangan Terpisah untuk yang Belum Bayar & Sudah/Mengajukan Pembayaran + Filter Tanggal
         function renderKeuangan() {
             db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
 
@@ -1579,9 +1661,13 @@
             const tbodyBelum = document.getElementById('table-spp-belum');
             tbodyBelum.innerHTML = "";
             
-            // Santri yang belum ada data pembayaran sama sekali atau berstatus Belum Bayar
             const santriSudah = (db.spp || []).map(s => s.santriId);
-            const santriBelumList = db.santri.filter(s => s.status === 'Aktif' && !santriSudah.includes(s.id));
+            
+            // Jika role Ortu, filter hanya santrinya saja
+            let santriBelumList = db.santri.filter(s => s.status === 'Aktif' && !santriSudah.includes(s.id));
+            if (currentUser.role === 'ortu') {
+                santriBelumList = santriBelumList.filter(s => s.id === currentUser.santriId);
+            }
 
             if (santriBelumList.length === 0) {
                 tbodyBelum.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--secondary); font-weight:bold;">Semua santri telah mengajukan / melunasi SPP!</td></tr>`;
@@ -1606,7 +1692,6 @@
             tbodySpp.innerHTML = "";
             let listSpp = db.spp || [];
 
-            // Apply filter tanggal jika diisi
             if (tglMulai) listSpp = listSpp.filter(s => s.tgl >= tglMulai);
             if (tglSelesai) listSpp = listSpp.filter(s => s.tgl <= tglSelesai);
             if (currentUser.role === 'ortu') listSpp = listSpp.filter(s => s.santriId === currentUser.santriId);
@@ -1630,6 +1715,9 @@
                         } else if (s.status === 'Lunas') {
                             actionBtn = `<span style="color:var(--secondary); font-size:0.85rem;"><i class="fa-solid fa-check"></i> Lunas (${s.metode})</span>`;
                         }
+                    } else if (currentUser.role === 'guru') {
+                        // Guru Read-Only Mode
+                        actionBtn = `<span style="font-size:0.85rem; color:var(--gray);"><i class="fa-solid fa-eye"></i> Hanya Lihat</span>`;
                     }
 
                     tbodySpp.innerHTML += `
@@ -1738,11 +1826,11 @@
             }
         }
 
-        // PERBAIKAN: Clear SPP benar-benar menghapus data hingga kosong
         function bersihkanCacheSpp() {
+            if (currentUser.role !== 'admin') return;
             if (confirm("Apakah Anda yakin ingin menghapus seluruh data pembayaran SPP? Semua data akan benar-benar terhapus (kosong) sampai ada pengajuan pembayaran baru.")) {
                 db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
-                db.spp = []; // BENAR-BENAR TERHAPUS GAADA DATANYA
+                db.spp = [];
                 saveDb();
                 renderKeuangan();
                 if (document.getElementById('sec-dashboard') && document.getElementById('sec-dashboard').classList.contains('active')) {
@@ -1818,7 +1906,6 @@
             renderCharts();
         }
 
-        // PERBAIKAN: Filter Arus Kas Berdasarkan Pilihan Tanggal
         function getFilteredArusKas() {
             const tglMulai = document.getElementById('tgl-mulai-keuangan') ? document.getElementById('tgl-mulai-keuangan').value : '';
             const tglSelesai = document.getElementById('tgl-selesai-keuangan') ? document.getElementById('tgl-selesai-keuangan').value : '';
