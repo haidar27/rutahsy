@@ -432,7 +432,7 @@
             <!-- 4. ABSENSI -->
             <section id="sec-absensi" class="content-section">
                 <div class="section-header">
-                    <h2>Kehadiran (Presensi) Harian Santri</h2>
+                    <h2>Kehadiran (Absensi) Harian Santri</h2>
                     <div style="display:flex; gap:10px; align-items:center;">
                         <input type="date" id="tgl-absensi-santri" class="btn" style="background: white; color: var(--dark); border: 1px solid #ccc;">
                         <button class="btn btn-success" id="btn-simpan-abs-santri" onclick="simpanAbsensiSantri()">Simpan Absensi</button>
@@ -456,7 +456,7 @@
 
                 <div class="table-container" style="margin-bottom:30px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
-                        <h3>Presensi Santri <span id="hint-absensi-read" style="display:none; font-size:0.8rem; color:var(--danger); font-weight:normal; margin-left:10px;">(Mode Validasi: Admin Read-Only)</span></h3>
+                        <h3>Absensi Santri <span id="hint-absensi-read" style="display:none; font-size:0.8rem; color:var(--danger); font-weight:normal; margin-left:10px;">(Mode Validasi: Admin Read-Only)</span></h3>
                         
                         <!-- Fitur Search Absensi Santri -->
                         <div style="position:relative; min-width:250px;">
@@ -468,7 +468,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Nama Santri</th><th>Kategori Kelas</th><th>Status Kehadiran</th>
+                                <th>Nama Santri</th><th>Kategori Kelas</th><th>Status Kehadiran</th><th>Diabsen Oleh</th>
                             </tr>
                         </thead>
                         <tbody id="table-absensi-santri">
@@ -890,7 +890,7 @@
 
         let currentUser = JSON.parse(localStorage.getItem('rutasy_session')) || null;
 
-        // Pagination State untuk Presensi Santri
+        // Pagination State untuk Absensi Santri
         let currentAbsensiPage = 1;
         const absensiPageSize = 5;
 
@@ -903,11 +903,11 @@
         let chartDetailInstance = null;
 
         window.onload = function() {
+            // Set semua input date menjadi Default secara Real-time
             const today = getTodayISO();
-            if(document.getElementById('tgl-absensi-santri')) document.getElementById('tgl-absensi-santri').value = today;
-            if(document.getElementById('setoran-tanggal')) document.getElementById('setoran-tanggal').value = today;
-            if(document.getElementById('tgl-mulai-keuangan')) document.getElementById('tgl-mulai-keuangan').value = today;
-            if(document.getElementById('tgl-selesai-keuangan')) document.getElementById('tgl-selesai-keuangan').value = today;
+            document.querySelectorAll('input[type="date"]').forEach(el => {
+                el.value = today;
+            });
 
             const savedRem = JSON.parse(localStorage.getItem('rutasy_remember'));
             if (savedRem) {
@@ -1101,6 +1101,32 @@
             }
         }
 
+        function hapusSantri(id) {
+            if(confirm("Apakah Anda yakin ingin menghapus data Santri ini?")) {
+                const s = db.santri.find(x => x.id === id);
+                if(s) {
+                    db.users = db.users.filter(u => u.username !== s.username);
+                    db.santri = db.santri.filter(x => x.id !== id);
+                    saveDb();
+                    renderMaster();
+                    alert("Data Santri berhasil dihapus.");
+                }
+            }
+        }
+
+        function hapusGuru(id) {
+            if(confirm("Apakah Anda yakin ingin menghapus data Guru ini?")) {
+                const g = db.guru.find(x => x.id === id);
+                if(g) {
+                    db.users = db.users.filter(u => u.username !== g.username);
+                    db.guru = db.guru.filter(x => x.id !== id);
+                    saveDb();
+                    renderMaster();
+                    alert("Data Guru berhasil dihapus.");
+                }
+            }
+        }
+
         function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
 
         // --- 2. LOGIC MASTER DATA ---
@@ -1205,7 +1231,10 @@
                 let txtKelas = s.kelas && s.kelas !== "" ? s.kelas : 'Belum Ditentukan';
                 let uObj = db.users.find(u => u.username === s.username);
                 let pwd = uObj ? uObj.password : '-';
-                let aksi = currentUser.role === 'admin' ? `<td><button class="btn btn-warning" style="padding: 6px 12px; font-size:0.8rem;" onclick="openEditSantri(${s.id})"><i class="fa-solid fa-pen"></i> Edit</button></td>` : '<td>-</td>';
+                let aksi = currentUser.role === 'admin' ? `<td>
+                    <button class="btn btn-warning" style="padding: 6px 12px; font-size:0.8rem;" onclick="openEditSantri(${s.id})"><i class="fa-solid fa-pen"></i> Edit</button>
+                    <button class="btn btn-danger" style="padding: 6px 12px; font-size:0.8rem; margin-left:5px;" onclick="hapusSantri(${s.id})"><i class="fa-solid fa-trash"></i> Hapus</button>
+                </td>` : '<td>-</td>';
                 
                 tbodySantri.innerHTML += `
                     <tr>
@@ -1224,7 +1253,10 @@
             db.guru.forEach(g => {
                 let uObj = db.users.find(u => u.username === g.username);
                 let pwd = uObj ? uObj.password : '-';
-                let aksi = currentUser.role === 'admin' ? `<td><button class="btn btn-warning" style="padding: 6px 12px; font-size:0.8rem;" onclick="openEditGuru(${g.id})"><i class="fa-solid fa-pen"></i> Edit</button></td>` : '';
+                let aksi = currentUser.role === 'admin' ? `<td>
+                    <button class="btn btn-warning" style="padding: 6px 12px; font-size:0.8rem;" onclick="openEditGuru(${g.id})"><i class="fa-solid fa-pen"></i> Edit</button>
+                    <button class="btn btn-danger" style="padding: 6px 12px; font-size:0.8rem; margin-left:5px;" onclick="hapusGuru(${g.id})"><i class="fa-solid fa-trash"></i> Hapus</button>
+                </td>` : '';
                 tbodyGuru.innerHTML += `
                     <tr>
                         <td>${g.id}</td>
@@ -1371,7 +1403,14 @@
             const pList = db.progress.filter(p => p.santriId === santriId);
             const p = pList.length > 0 ? pList[pList.length - 1] : null;
             
-            let labels = ['Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Bulan Ini'];
+            // Penggantian Sumbu X Menjadi Tanggal Dalam Sebulan Secara Dinamis
+            let labels = [];
+            for(let i=5; i>=0; i--) {
+                let d = new Date();
+                d.setDate(d.getDate() - i);
+                labels.push(`Tgl ${d.getDate()}`);
+            }
+            
             let datasets = [];
 
             if (santri && santri.kelas === 'Kelas Iqro') {
@@ -1532,9 +1571,10 @@
                 const idx = db.absensiSantri.findIndex(a => a.tgl === tgl && a.santriId === sId);
                 if(idx > -1) {
                     db.absensiSantri[idx].status = statusKehadiran;
+                    db.absensiSantri[idx].guruNama = currentUser.name;
                 } else {
                     db.absensiSantri.push({
-                        tgl: tgl, santriId: sId, santriNama: sName, santriKelas: sKelas, status: statusKehadiran
+                        tgl: tgl, santriId: sId, santriNama: sName, santriKelas: sKelas, status: statusKehadiran, guruNama: currentUser.name
                     });
                 }
             });
@@ -1549,7 +1589,7 @@
             }
             
             saveDb();
-            alert("Presensi Santri berhasil disimpan!");
+            alert("Absensi Santri berhasil disimpan!");
             renderAbsensi();
         }
 
@@ -1565,7 +1605,7 @@
                 tbodyLogPengajar.innerHTML += `<tr><td><strong>${l.tgl}</strong></td><td><span class="badge badge-info">${l.pengajarNama}</span></td></tr>`;
             });
             
-            // Presensi Santri (dengan filter dan pagination)
+            // Absensi Santri (dengan filter dan pagination)
             const tgl = document.getElementById('tgl-absensi-santri').value || getTodayISO();
             const tbodyAbsSantri = document.getElementById('table-absensi-santri');
             const paginationContainer = document.getElementById('pagination-absensi-santri');
@@ -1592,6 +1632,7 @@
             paginatedSantri.forEach(s => {
                 let absenRecord = db.absensiSantri ? db.absensiSantri.find(a => a.tgl === tgl && a.santriId === s.id) : null;
                 let statusHadir = absenRecord ? absenRecord.status : 'Hadir';
+                let guruNama = absenRecord && absenRecord.guruNama ? absenRecord.guruNama : '-';
                 let txtKelas = s.kelas && s.kelas !== "" ? s.kelas : 'Belum Ditentukan';
                 
                 let opsi = '';
@@ -1621,11 +1662,12 @@
                         <td><strong>${s.nama}</strong></td>
                         <td><span class="badge badge-info">${txtKelas}</span></td>
                         <td>${opsi}</td>
+                        <td><span class="badge badge-info">${guruNama}</span></td>
                     </tr>`;
             });
             
             if (paginatedSantri.length === 0) {
-                 tbodyAbsSantri.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--gray);">Data tidak ditemukan</td></tr>`;
+                 tbodyAbsSantri.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--gray);">Data tidak ditemukan</td></tr>`;
             }
 
             // Render tombol pagination
@@ -1955,7 +1997,6 @@
                     </tr>`;
             });
 
-            // PRIVASI ORTU: Pesan kosong diubah agar tidak mencakup kalimat jamak
             if (santriBelumList.length === 0) {
                 if (currentUser.role === 'ortu') {
                     tbodyBelum.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--secondary); font-weight:bold;">Tagihan SPP Ananda bulan ini telah lunas / sedang diproses!</td></tr>`;
@@ -1979,7 +2020,6 @@
                             <td style="color:${tColor}; font-weight:bold;">Rp ${k.nominal.toLocaleString('id-ID')}</td>
                         </tr>`;
                 });
-                renderFinanceChart();
             }
         }
 
@@ -1992,6 +2032,8 @@
             initProgressChart();
             
             if (currentUser.role === 'admin') {
+                renderFinanceChart(); // Fixed Render Issue (membuat canvas diload saat section sudah aktif)
+
                 const santriAktif = db.santri.filter(s => s.status === "Aktif").length;
                 const totalGuru = db.guru.length;
                 const belumLunas = db.santri.filter(s => s.status === 'Aktif').length - db.spp.filter(sp => sp.status === "Lunas").length;
