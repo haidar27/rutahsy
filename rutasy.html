@@ -718,7 +718,7 @@
                 <span class="close-btn" onclick="closeModal('modal-detail-progress')">&times;</span>
             </div>
             <div class="chart-container" style="height: 250px; margin-bottom: 20px; box-shadow:none; padding:0; border:1px solid #e2e8f0;">
-                <canvas id="detailProgressChartCanvas"></canvas>
+                <!-- Canvas Chart dinamis terisi via JS -->
             </div>
             <div id="detail-prog-info" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.95rem;">
                 <!-- Diisi via JS -->
@@ -770,11 +770,11 @@
             ],
             absensiSantri: [],
             absensiGuru: [],
-            logPengajarAbsensi: [] // Tambahan data tabel pengajar
+            logPengajarAbsensi: [] 
         };
 
         let db = JSON.parse(localStorage.getItem('rutasy_db')) || defaultDb;
-        if (!db.logPengajarAbsensi) db.logPengajarAbsensi = []; // Pencegahan agar db yang lama tidak error
+        if (!db.logPengajarAbsensi) db.logPengajarAbsensi = []; 
 
         let currentUser = JSON.parse(localStorage.getItem('rutasy_session')) || null;
 
@@ -797,7 +797,7 @@
                 document.getElementById('app-screen').style.display = 'flex';
                 
                 setupRolePermissions(currentUser);
-                loadDashboardData();
+                // Langsung panggil switchTab, yang akan men-trigger loadDashboardData setelah div terlihat
                 switchTab('dashboard');
             }
         };
@@ -830,7 +830,7 @@
                 document.getElementById('app-screen').style.display = 'flex';
                 
                 setupRolePermissions(validUser);
-                loadDashboardData();
+                // Panggil switchTab agar merender grafik HANYA saat kontainer sudah dipastikan "display: block"
                 switchTab('dashboard');
                 
                 document.getElementById('login-username').value = "";
@@ -918,13 +918,13 @@
             }
             
             document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
-            document.getElementById(`sec-${tabId}`).classList.add('active');
+            document.getElementById(`sec-${tabId}`).classList.add('active'); // Membuat block menjadi ter-render
 
             if(tabId === 'master') renderMaster();
             if(tabId === 'progress') renderProgress();
             if(tabId === 'absensi') renderAbsensi();
             if(tabId === 'keuangan') renderKeuangan();
-            if(tabId === 'dashboard') loadDashboardData();
+            if(tabId === 'dashboard') loadDashboardData(); // Load chart terjadi SETELAH active (display:block)
         }
 
         function openModalGuru() { document.getElementById('modal-guru').style.display = 'flex'; }
@@ -1302,11 +1302,22 @@
             }
             document.getElementById('detail-prog-info').innerHTML = infoHTML;
 
-            // Render Grafik Spesifik
-            if (chartDetailInstance) chartDetailInstance.destroy();
-            chartDetailInstance = buatGrafikSantri('detailProgressChartCanvas', santriId, '');
-            
+            // Buka Modal TERLEBIH DAHULU agar kontainer terlihat, sehingga canvas tidak glitch di Chart.js
             document.getElementById('modal-detail-progress').style.display = 'flex';
+
+            // Reset dan buat ulang canvas di dalam modal supaya chart selalu fresh
+            const detailContainer = document.querySelector('#modal-detail-progress .chart-container');
+            if(detailContainer) {
+                detailContainer.innerHTML = '<canvas id="detailProgressChartCanvas"></canvas>';
+            }
+
+            if (chartDetailInstance) {
+                chartDetailInstance.destroy();
+                chartDetailInstance = null;
+            }
+            
+            // Render Grafik Spesifik Murid tersebut
+            chartDetailInstance = buatGrafikSantri('detailProgressChartCanvas', santriId, '');
         }
 
         // --- 5. ABSENSI (READ-ONLY UTK ADMIN) ---
@@ -1582,8 +1593,6 @@
 
                 saveDb();
                 renderKeuangan(); 
-                // Catatan: Pemanggilan renderCharts/dashboard ditiadakan dari sini agar chart tidak crash 
-                // karena mencoba ter-render di saat div-nya tersembunyi.
                 alert(`Pembayaran SPP ${sppObj.santri} telah di-Approve dan dimasukkan ke catatan kas pendapatan!`);
             }
         }
@@ -1652,23 +1661,39 @@
         }
 
         function renderCharts() {
-            if (chartInstanceProgress) chartInstanceProgress.destroy();
-            if (chartInstanceFinance) chartInstanceFinance.destroy();
+            // Hapus instance lama dan perbarui tag canvas sepenuhnya demi menghindari bug "Canvas is already in use"
+            if (chartInstanceProgress) {
+                chartInstanceProgress.destroy();
+                chartInstanceProgress = null;
+            }
+            if (chartInstanceFinance) {
+                chartInstanceFinance.destroy();
+                chartInstanceFinance = null;
+            }
+
+            const progContainer = document.getElementById('progress-chart-container');
+            if(progContainer) {
+                progContainer.innerHTML = '<canvas id="progressChart"></canvas>';
+            }
+            const finContainer = document.getElementById('finance-chart-container');
+            if(finContainer) {
+                finContainer.innerHTML = '<canvas id="financeChart"></canvas>';
+            }
 
             // Progress Chart rendering logic
             if (currentUser.role === 'ortu') {
-                // Gunakan fungsi grafik dinamis untuk Ortu
+                // Gunakan fungsi grafik dinamis untuk Ortu (Grafik Murid ybs)
                 chartInstanceProgress = buatGrafikSantri('progressChart', currentUser.santriId, `Grafik Progres Hafalan (${db.santri.find(s => s.id === currentUser.santriId).nama})`);
             } else {
-                // Sesuai permintaan: Hanya menampilkan chart Rata-Rata Keseluruhan untuk di Dashboard
+                // Sesuai permintaan: Hanya menampilkan chart Peningkatan/Kekurangan Secara Keseluruhan untuk Admin
                 const ctxProg = document.getElementById('progressChart').getContext('2d');
                 chartInstanceProgress = new Chart(ctxProg, {
                     type: 'line',
                     data: {
                         labels: ['Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
                         datasets: [{
-                            label: 'Grafik Rata-rata Keseluruhan Santri',
-                            data: [65, 70, 75, 82, 85, 90], // Data global / dummy aggregation
+                            label: 'Peningkatan/Kekurangan Keseluruhan Murid',
+                            data: [65, 70, 75, 82, 85, 90], // Data global / rata-rata perkembangan murid
                             borderColor: '#1e3a8a', backgroundColor: 'rgba(59, 130, 246, 0.2)', borderWidth: 2, fill: true, tension: 0.3
                         }]
                     },
@@ -1677,7 +1702,7 @@
             }
 
             if (currentUser.role === 'admin') {
-                // Render Grafik Keuangan dinamis dari arusKas
+                // Render Grafik Keuangan dinamis dari arusKas HANYA untuk Admin (Pemasukan vs Pengeluaran)
                 const blnLaluIn = 5000000; const blnLaluOut = 4000000;
                 let curIn = db.arusKas.filter(k => k.jenis === 'Pendapatan').reduce((sum, k) => sum + k.nominal, 0);
                 let curOut = db.arusKas.filter(k => k.jenis === 'Pengeluaran').reduce((sum, k) => sum + k.nominal, 0);
