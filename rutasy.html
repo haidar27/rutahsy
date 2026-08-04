@@ -91,9 +91,9 @@
         .card-title { font-size: 0.9rem; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
         .card-value { font-size: 2rem; font-weight: bold; color: var(--dark); }
         
-        /* Charts Container */
-        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; transition: 0.3s; }
-        .chart-container { background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); height: 350px; width: 100%; }
+        /* Charts Container - Diatur menjadi Atas-Bawah (1fr) secara default */
+        .charts-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 30px; transition: 0.3s; }
+        .chart-container { background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); height: auto; min-height: 350px; width: 100%; }
         
         /* Tables */
         .table-container { background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; }
@@ -250,13 +250,29 @@
                     <!-- Dinamis berdasarkan role -->
                 </div>
 
-                <!-- Charts -->
+                <!-- Charts (Atas Bawah Layout) -->
                 <div class="charts-grid" id="dashboard-charts">
                     <div class="chart-container" id="progress-chart-container">
-                        <canvas id="progressChart"></canvas>
+                        <div style="margin-bottom: 15px;"><h3 style="font-size:1.1rem; color:var(--primary);"><i class="fa-solid fa-chart-line"></i> Grafik Progres Belajar / Hafalan Santri</h3></div>
+                        <div style="height:280px; position:relative;"><canvas id="progressChart"></canvas></div>
                     </div>
                     <div class="chart-container" id="finance-chart-container">
-                        <canvas id="financeChart"></canvas>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                            <h3 style="font-size:1.1rem; color:var(--primary);"><i class="fa-solid fa-chart-column"></i> Grafik Arus Kas Keuangan (Masuk vs Keluar)</h3>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <label for="filter-rentang-keuangan" style="font-size:0.85rem; font-weight:600;">Rentang Waktu:</label>
+                                <select id="filter-rentang-keuangan" class="btn" style="background: white; color: var(--dark); border: 1px solid #cbd5e1; padding: 6px 12px; font-size: 0.85rem;" onchange="renderFinanceChart()">
+                                    <option value="hari_ini">Hari Ini</option>
+                                    <option value="7_hari">7 Hari Terakhir</option>
+                                    <option value="sebulan" selected>1 Bulan (30 Hari)</option>
+                                    <option value="setahun">1 Tahun</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="finance-summary-text"></div>
+                        <div style="height:280px; position:relative;" id="finance-canvas-wrapper">
+                            <canvas id="financeChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -728,6 +744,15 @@
 
     <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
+        // Helper Tanggal ISO YYYY-MM-DD
+        function getTodayISO() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         // --- 1. MOCK DATABASE INITIALIZATION ---
         const defaultDb = {
             settings: {
@@ -760,13 +785,13 @@
                 { id: 3, santriId: 3, santri: "Zaid bin Tsabit", surah: "Jilid 3 Hal 12", kelancaran: 75, tajwid: 0, kelas: "Kelas Iqro" }
             ],
             spp: [
-                { santriId: 1, santri: "Fatih Ramadhan", nominal: 150000, tgl: "01-Nov-2023", status: "Lunas", metode: "Transfer Bank" },
+                { santriId: 1, santri: "Fatih Ramadhan", nominal: 150000, tgl: getTodayISO(), status: "Lunas", metode: "Transfer Bank" },
                 { santriId: 2, santri: "Aisyah Zahra", nominal: 150000, tgl: "-", status: "Belum Bayar", metode: "-" },
-                { santriId: 3, santri: "Zaid bin Tsabit", nominal: 150000, tgl: "03-Nov-2023", status: "Menunggu Konfirmasi", metode: "Tunai" }
+                { santriId: 3, santri: "Zaid bin Tsabit", nominal: 150000, tgl: getTodayISO(), status: "Menunggu Konfirmasi", metode: "Tunai" }
             ],
             arusKas: [
-                { id: 1, tgl: "01-Nov-2023", jenis: "Pendapatan", ket: "SPP Fatih Ramadhan", nominal: 150000 },
-                { id: 2, tgl: "02-Nov-2023", jenis: "Pengeluaran", ket: "Pembayaran Listrik", nominal: 100000 }
+                { id: 1, tgl: getTodayISO(), jenis: "Pendapatan", ket: "SPP Fatih Ramadhan", nominal: 150000 },
+                { id: 2, tgl: getTodayISO(), jenis: "Pengeluaran", ket: "Pembayaran Listrik", nominal: 100000 }
             ],
             absensiSantri: [],
             absensiGuru: [],
@@ -787,7 +812,7 @@
         let chartDetailInstance = null;
 
         window.onload = function() {
-            const today = new Date().toISOString().substring(0, 10);
+            const today = getTodayISO();
             if(document.getElementById('tgl-absensi-santri')) {
                 document.getElementById('tgl-absensi-santri').value = today;
             }
@@ -797,7 +822,6 @@
                 document.getElementById('app-screen').style.display = 'flex';
                 
                 setupRolePermissions(currentUser);
-                // Langsung panggil switchTab, yang akan men-trigger loadDashboardData setelah div terlihat
                 switchTab('dashboard');
             }
         };
@@ -820,6 +844,9 @@
             const userIn = document.getElementById('login-username').value;
             const passIn = document.getElementById('login-password').value;
             
+            // Sync DB dari localStorage terbaru saat login
+            db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
+
             const validUser = db.users.find(u => u.username === userIn && u.password === passIn);
 
             if (validUser) {
@@ -830,7 +857,6 @@
                 document.getElementById('app-screen').style.display = 'flex';
                 
                 setupRolePermissions(validUser);
-                // Panggil switchTab agar merender grafik HANYA saat kontainer sudah dipastikan "display: block"
                 switchTab('dashboard');
                 
                 document.getElementById('login-username').value = "";
@@ -871,14 +897,15 @@
             if (user.role === 'admin') {
                 badge.textContent = 'Admin / Bendahara';
                 document.getElementById('btn-unduh-pdf').style.display = 'inline-block';
-                chartsGrid.style.gridTemplateColumns = '1fr 1fr';
+                // Layout grafik Atas-Bawah (1fr) untuk Admin
+                chartsGrid.style.gridTemplateColumns = '1fr';
                 document.getElementById('finance-chart-container').style.display = 'block';
                 document.getElementById('admin-param-box').style.display = 'block';
                 document.getElementById('admin-finance-settings').style.display = 'block';
                 document.getElementById('admin-finance-log').style.display = 'block';
                 document.getElementById('admin-table-hint').style.display = 'inline';
                 document.getElementById('hint-absensi-read').style.display = 'inline';
-                document.getElementById('btn-simpan-abs-santri').style.display = 'none'; // Read-only utk admin
+                document.getElementById('btn-simpan-abs-santri').style.display = 'none'; 
                 
                 document.getElementById('param-jam-masuk').value = db.settings.jamMasuk || "07:00";
                 document.getElementById('param-jam-pulang').value = db.settings.jamPulang || "15:00";
@@ -903,7 +930,7 @@
             } 
             else if (user.role === 'ortu') {
                 badge.textContent = 'Orang Tua / Santri';
-                document.getElementById('btn-unduh-pdf').style.display = 'none'; // Disembunyikan untuk ortu
+                document.getElementById('btn-unduh-pdf').style.display = 'none'; 
                 document.getElementById('menu-master').style.display = 'none';
                 document.getElementById('menu-absensi').style.display = 'none';
                 chartsGrid.style.gridTemplateColumns = '1fr';
@@ -912,19 +939,22 @@
         }
 
         function switchTab(tabId) {
+            // Pastikan database terbaru selalu disinkronkan saat berpindah tab
+            db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
+
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
             if(document.getElementById(`menu-${tabId}`)) {
                 document.getElementById(`menu-${tabId}`).classList.add('active');
             }
             
             document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
-            document.getElementById(`sec-${tabId}`).classList.add('active'); // Membuat block menjadi ter-render
+            document.getElementById(`sec-${tabId}`).classList.add('active'); 
 
             if(tabId === 'master') renderMaster();
             if(tabId === 'progress') renderProgress();
             if(tabId === 'absensi') renderAbsensi();
             if(tabId === 'keuangan') renderKeuangan();
-            if(tabId === 'dashboard') loadDashboardData(); // Load chart terjadi SETELAH active (display:block)
+            if(tabId === 'dashboard') loadDashboardData(); 
         }
 
         function openModalGuru() { document.getElementById('modal-guru').style.display = 'flex'; }
@@ -1222,7 +1252,6 @@
                 let avg = p.kelas === 'Kelas Iqro' ? Number(p.kelancaran) : ((Number(p.kelancaran) + Number(p.tajwid)) / 2).toFixed(1);
                 let badgeClass = avg >= 80 ? 'badge-success' : 'badge-warning';
                 
-                // Jika admin, baris tabel bisa di klik untuk memunculkan detail
                 let trClass = currentUser.role === 'admin' ? `class="clickable-row" onclick="bukaDetailProgress(${p.santriId})"` : '';
 
                 tbody.innerHTML += `
@@ -1238,7 +1267,7 @@
             });
         }
 
-        // --- 4. GRAFIK DINAMIS (Fungsi Generic untuk Ortu & Admin Detail) ---
+        // --- 4. GRAFIK DINAMIS SANTRI ---
         function buatGrafikSantri(canvasId, santriId, labelGrafik) {
             const ctx = document.getElementById(canvasId).getContext('2d');
             const santri = db.santri.find(s => s.id === santriId);
@@ -1247,9 +1276,8 @@
             let labels = ['Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Bulan Ini'];
             let datasets = [];
 
-            if (santri.kelas === 'Kelas Iqro') {
+            if (santri && santri.kelas === 'Kelas Iqro') {
                 let val = p ? Number(p.kelancaran) : 0;
-                // Simulasi data historis berdasarkan nilai terakhir
                 let historyData = [Math.max(0, val-20), Math.max(0, val-15), Math.max(0, val-10), Math.max(0, val-5), Math.max(0, val-2), val];
                 datasets.push({
                     label: `Nilai Iqro`,
@@ -1302,10 +1330,8 @@
             }
             document.getElementById('detail-prog-info').innerHTML = infoHTML;
 
-            // Buka Modal TERLEBIH DAHULU agar kontainer terlihat, sehingga canvas tidak glitch di Chart.js
             document.getElementById('modal-detail-progress').style.display = 'flex';
 
-            // Reset dan buat ulang canvas di dalam modal supaya chart selalu fresh
             const detailContainer = document.querySelector('#modal-detail-progress .chart-container');
             if(detailContainer) {
                 detailContainer.innerHTML = '<canvas id="detailProgressChartCanvas"></canvas>';
@@ -1316,13 +1342,11 @@
                 chartDetailInstance = null;
             }
             
-            // Render Grafik Spesifik Murid tersebut
             chartDetailInstance = buatGrafikSantri('detailProgressChartCanvas', santriId, '');
         }
 
         // --- 5. ABSENSI (READ-ONLY UTK ADMIN) ---
         function renderAbsensi() {
-            // Render Tabel Log Pengajar
             const tbodyLogPengajar = document.getElementById('table-log-pengajar-absensi');
             if(tbodyLogPengajar) {
                 tbodyLogPengajar.innerHTML = "";
@@ -1340,7 +1364,6 @@
                 }
             }
 
-            // Render Tabel Santri
             const tbodySantri = document.getElementById('table-absensi-santri');
             tbodySantri.innerHTML = "";
             const tgl = document.getElementById('tgl-absensi-santri').value;
@@ -1365,7 +1388,6 @@
                     </tr>`;
             });
 
-            // Render Tabel Guru
             const tbodyGuruLog = document.getElementById('table-absensi-guru-log');
             tbodyGuruLog.innerHTML = "";
             if (db.absensiGuru.length === 0) {
@@ -1386,7 +1408,7 @@
         }
 
         function simpanAbsensiSantri() {
-            if(currentUser.role === 'admin') return; // Keamanan ganda
+            if(currentUser.role === 'admin') return; 
             const tgl = document.getElementById('tgl-absensi-santri').value;
             db.santri.forEach(s => {
                 const radios = document.getElementsByName(`abs_s_${s.id}`);
@@ -1401,7 +1423,6 @@
                 }
             });
 
-            // Menyimpan nama pengajar ke tabel riwayat pengajar
             if (!db.logPengajarAbsensi) db.logPengajarAbsensi = [];
             const logExist = db.logPengajarAbsensi.find(l => l.date === tgl);
             if(logExist) {
@@ -1411,7 +1432,7 @@
             }
 
             saveDb();
-            renderAbsensi(); // Update tampilan tabel seketika
+            renderAbsensi(); 
             alert("Presensi santri berhasil disimpan oleh guru pengajar!");
         }
 
@@ -1426,7 +1447,7 @@
         }
 
         function updateGuruAbsenStatusDisplay() {
-            const todayStr = new Date().toISOString().substring(0, 10);
+            const todayStr = getTodayISO();
             const statusEl = document.getElementById('guru-absen-status');
             const guruObj = db.guru.find(g => g.id === currentUser.guruId);
 
@@ -1442,7 +1463,7 @@
         function absenMasukGuru() {
             const now = new Date();
             const timeStr = now.toTimeString().substring(0, 5);
-            const dateStr = now.toISOString().substring(0, 10);
+            const dateStr = getTodayISO();
             const guruObj = db.guru.find(g => g.id === currentUser.guruId) || db.guru[0];
             const jamMasukStd = db.settings.jamMasuk || "07:00";
             
@@ -1464,7 +1485,7 @@
         function absenPulangGuru() {
             const now = new Date();
             const timeStr = now.toTimeString().substring(0, 5);
-            const dateStr = now.toISOString().substring(0, 10);
+            const dateStr = getTodayISO();
             const guruObj = db.guru.find(g => g.id === currentUser.guruId);
             let exist = db.absensiGuru.find(a => a.guruId === guruObj.id && a.date === dateStr);
             if (!exist) { alert("Anda belum melakukan Absen Masuk hari ini!"); return; }
@@ -1486,7 +1507,7 @@
             const jenis = document.getElementById('kas-jenis').value;
             const ket = document.getElementById('kas-ket').value;
             const nominal = parseInt(document.getElementById('kas-nominal').value);
-            const todayStr = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+            const todayStr = getTodayISO();
 
             db.arusKas.push({ id: Date.now(), tgl: todayStr, jenis: jenis, ket: ket, nominal: nominal });
             saveDb();
@@ -1496,6 +1517,9 @@
         }
 
         function renderKeuangan() {
+            // Sinkronkan data terbaru dari Storage
+            db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
+
             // Tabel SPP
             const tbodySpp = document.getElementById('table-spp');
             tbodySpp.innerHTML = "";
@@ -1527,7 +1551,7 @@
                 tbodySpp.innerHTML += `
                     <tr>
                         <td><strong>${s.santri}</strong></td>
-                        <td>Rp ${s.nominal.toLocaleString('id-ID')}</td>
+                        <td>Rp ${Number(s.nominal).toLocaleString('id-ID')}</td>
                         <td>${s.tgl}</td>
                         <td><span class="badge ${badgeClass}">${s.status}</span></td>
                         <td>${actionBtn}</td>
@@ -1545,7 +1569,7 @@
                             <td>${k.tgl}</td>
                             <td><span class="badge ${k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger'}">${k.jenis}</span></td>
                             <td>${k.ket}</td>
-                            <td style="font-weight:bold; ${color}">Rp ${k.nominal.toLocaleString('id-ID')}</td>
+                            <td style="font-weight:bold; ${color}">Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
                         </tr>
                     `;
                 });
@@ -1568,7 +1592,7 @@
             
             const sppObj = db.spp.find(s => s.santriId === sId);
             if(sppObj) {
-                const todayStr = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                const todayStr = getTodayISO();
                 sppObj.status = "Menunggu Konfirmasi";
                 sppObj.metode = metode;
                 sppObj.tgl = todayStr;
@@ -1579,26 +1603,41 @@
             }
         }
 
+        // PERBAIKAN BUG: Approve SPP Admin langsung memperbarui state, kas, & view tanpa harus pindah tab
         function approveSppAdmin(santriId) {
-            const sppObj = db.spp.find(s => s.santriId === santriId);
+            const id = Number(santriId);
+            db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
+            const sppObj = db.spp.find(s => Number(s.santriId) === id);
+            
             if(sppObj) {
+                const todayISO = getTodayISO();
                 sppObj.status = "Lunas";
-                const todayStr = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                sppObj.tgl = todayISO;
                 
-                // Otomatis masukkan ke arus kas
+                // Otomatis tercatat ke arus kas pendapatan
                 db.arusKas.push({ 
-                    id: Date.now(), tgl: todayStr, jenis: "Pendapatan", 
-                    ket: `Pembayaran SPP: ${sppObj.santri} (${sppObj.metode})`, nominal: sppObj.nominal 
+                    id: Date.now(), 
+                    tgl: todayISO, 
+                    jenis: "Pendapatan", 
+                    ket: `Pembayaran SPP: ${sppObj.santri} (${sppObj.metode || 'Tunai'})`, 
+                    nominal: Number(sppObj.nominal) 
                 });
 
                 saveDb();
+                
+                // Re-render langsung untuk kedua tabel Keuangan dan Dashboard
                 renderKeuangan(); 
+                if (document.getElementById('sec-dashboard').classList.contains('active')) {
+                    loadDashboardData();
+                }
+
                 alert(`Pembayaran SPP ${sppObj.santri} telah di-Approve dan dimasukkan ke catatan kas pendapatan!`);
             }
         }
 
-        // --- 8. DASHBOARD OVERVIEW & GRAFIK ---
+        // --- 8. DASHBOARD OVERVIEW & FILTER GRAFIK KEUANGAN ---
         function loadDashboardData() {
+            db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
             const cards = document.getElementById('dashboard-cards');
             cards.innerHTML = "";
 
@@ -1616,13 +1655,13 @@
             }
 
             if (currentUser.role === 'admin') {
-                let totalPendapatan = db.arusKas.filter(k => k.jenis === 'Pendapatan').reduce((sum, k) => sum + k.nominal, 0);
-                let totalPengeluaran = db.arusKas.filter(k => k.jenis === 'Pengeluaran').reduce((sum, k) => sum + k.nominal, 0);
+                let totalPendapatan = db.arusKas.filter(k => k.jenis === 'Pendapatan').reduce((sum, k) => sum + Number(k.nominal), 0);
+                let totalPengeluaran = db.arusKas.filter(k => k.jenis === 'Pengeluaran').reduce((sum, k) => sum + Number(k.nominal), 0);
                 let saldo = totalPendapatan - totalPengeluaran;
 
                 cards.innerHTML += `
                     <div class="card">
-                        <div class="card-title">Saldo Keuangan (Total)</div>
+                        <div class="card-title">Saldo Keuangan (Keseluruhan)</div>
                         <div class="card-value" style="color: var(--secondary);">Rp ${saldo.toLocaleString('id-ID')} <i class="fa-solid fa-wallet" style="float:right;"></i></div>
                     </div>
                 `;
@@ -1660,32 +1699,132 @@
             renderCharts();
         }
 
-        function renderCharts() {
-            // Hapus instance lama dan perbarui tag canvas sepenuhnya demi menghindari bug "Canvas is already in use"
-            if (chartInstanceProgress) {
-                chartInstanceProgress.destroy();
-                chartInstanceProgress = null;
+        function getFilteredArusKas(range) {
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+
+            return db.arusKas.filter(item => {
+                if (!item.tgl || item.tgl === '-') return false;
+                const itemDate = new Date(item.tgl);
+                if (isNaN(itemDate.getTime())) return true; 
+
+                if (range === 'hari_ini') {
+                    return item.tgl === getTodayISO() || itemDate.toDateString() === new Date().toDateString();
+                } else if (range === '7_hari') {
+                    const diffDays = (today - itemDate) / (1000 * 60 * 60 * 24);
+                    return diffDays >= 0 && diffDays <= 7;
+                } else if (range === 'sebulan') {
+                    const diffDays = (today - itemDate) / (1000 * 60 * 60 * 24);
+                    return diffDays >= 0 && diffDays <= 30;
+                } else if (range === 'setahun') {
+                    const diffDays = (today - itemDate) / (1000 * 60 * 60 * 24);
+                    return diffDays >= 0 && diffDays <= 365;
+                }
+                return true;
+            });
+        }
+
+        function renderFinanceChart() {
+            if (currentUser.role !== 'admin') return;
+
+            db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
+            const filterVal = document.getElementById('filter-rentang-keuangan') ? document.getElementById('filter-rentang-keuangan').value : 'sebulan';
+            const filteredData = getFilteredArusKas(filterVal);
+
+            let totalMasuk = 0;
+            let totalKeluar = 0;
+
+            filteredData.forEach(k => {
+                const nom = Number(k.nominal) || 0;
+                if (k.jenis === 'Pendapatan') {
+                    totalMasuk += nom;
+                } else if (k.jenis === 'Pengeluaran') {
+                    totalKeluar += nom;
+                }
+            });
+
+            // Tampilkan keterangan nominal masuk & keluar
+            const summaryEl = document.getElementById('finance-summary-text');
+            if (summaryEl) {
+                summaryEl.innerHTML = `
+                    <div style="display:flex; gap:15px; flex-wrap:wrap; background:#f8fafc; padding:12px 15px; border-radius:6px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                        <span style="color:var(--secondary); font-size:0.95rem;"><i class="fa-solid fa-arrow-down-long"></i> Total Uang Masuk: <strong>Rp ${totalMasuk.toLocaleString('id-ID')}</strong></span>
+                        <span style="color:var(--danger); font-size:0.95rem;"><i class="fa-solid fa-arrow-up-long"></i> Total Uang Keluar: <strong>Rp ${totalKeluar.toLocaleString('id-ID')}</strong></span>
+                        <span style="color:var(--primary); font-size:0.95rem;"><i class="fa-solid fa-scale-balanced"></i> Selisih Rentang Ini: <strong>Rp ${(totalMasuk - totalKeluar).toLocaleString('id-ID')}</strong></span>
+                    </div>
+                `;
             }
+
+            const canvasWrapper = document.getElementById('finance-canvas-wrapper');
+            if (canvasWrapper) {
+                canvasWrapper.innerHTML = '<canvas id="financeChart"></canvas>';
+            }
+
             if (chartInstanceFinance) {
                 chartInstanceFinance.destroy();
                 chartInstanceFinance = null;
             }
 
+            const ctxFin = document.getElementById('financeChart').getContext('2d');
+            
+            let labelMap = {
+                'hari_ini': 'Hari Ini',
+                '7_hari': '7 Hari Terakhir',
+                'sebulan': '1 Bulan (30 Hari)',
+                'setahun': '1 Tahun'
+            };
+
+            chartInstanceFinance = new Chart(ctxFin, {
+                type: 'bar',
+                data: {
+                    labels: [`Periode: ${labelMap[filterVal] || 'Filter'}`],
+                    datasets: [
+                        { label: 'Uang Masuk (Rp)', data: [totalMasuk], backgroundColor: '#10b981', borderRadius: 4 },
+                        { label: 'Uang Keluar (Rp)', data: [totalKeluar], backgroundColor: '#ef4444', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': Rp ' + Number(context.parsed.y).toLocaleString('id-ID');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'Rp ' + Number(value).toLocaleString('id-ID');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderCharts() {
+            if (chartInstanceProgress) {
+                chartInstanceProgress.destroy();
+                chartInstanceProgress = null;
+            }
+
             const progContainer = document.getElementById('progress-chart-container');
             if(progContainer) {
-                progContainer.innerHTML = '<canvas id="progressChart"></canvas>';
-            }
-            const finContainer = document.getElementById('finance-chart-container');
-            if(finContainer) {
-                finContainer.innerHTML = '<canvas id="financeChart"></canvas>';
+                progContainer.querySelector('div:last-child').innerHTML = '<canvas id="progressChart"></canvas>';
             }
 
             // Progress Chart rendering logic
             if (currentUser.role === 'ortu') {
-                // Gunakan fungsi grafik dinamis untuk Ortu (Grafik Murid ybs)
                 chartInstanceProgress = buatGrafikSantri('progressChart', currentUser.santriId, `Grafik Progres Hafalan (${db.santri.find(s => s.id === currentUser.santriId).nama})`);
             } else {
-                // Sesuai permintaan: Hanya menampilkan chart Peningkatan/Kekurangan Secara Keseluruhan untuk Admin
                 const ctxProg = document.getElementById('progressChart').getContext('2d');
                 chartInstanceProgress = new Chart(ctxProg, {
                     type: 'line',
@@ -1693,7 +1832,7 @@
                         labels: ['Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
                         datasets: [{
                             label: 'Peningkatan/Kekurangan Keseluruhan Murid',
-                            data: [65, 70, 75, 82, 85, 90], // Data global / rata-rata perkembangan murid
+                            data: [65, 70, 75, 82, 85, 90], 
                             borderColor: '#1e3a8a', backgroundColor: 'rgba(59, 130, 246, 0.2)', borderWidth: 2, fill: true, tension: 0.3
                         }]
                     },
@@ -1702,23 +1841,7 @@
             }
 
             if (currentUser.role === 'admin') {
-                // Render Grafik Keuangan dinamis dari arusKas HANYA untuk Admin (Pemasukan vs Pengeluaran)
-                const blnLaluIn = 5000000; const blnLaluOut = 4000000;
-                let curIn = db.arusKas.filter(k => k.jenis === 'Pendapatan').reduce((sum, k) => sum + k.nominal, 0);
-                let curOut = db.arusKas.filter(k => k.jenis === 'Pengeluaran').reduce((sum, k) => sum + k.nominal, 0);
-
-                const ctxFin = document.getElementById('financeChart').getContext('2d');
-                chartInstanceFinance = new Chart(ctxFin, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Bulan Lalu', 'Bulan Ini'],
-                        datasets: [
-                            { label: 'Pemasukan (Rp)', data: [blnLaluIn, curIn], backgroundColor: '#10b981' },
-                            { label: 'Pengeluaran (Rp)', data: [blnLaluOut, curOut], backgroundColor: '#ef4444' }
-                        ]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
-                });
+                renderFinanceChart();
             }
         }
     </script>
