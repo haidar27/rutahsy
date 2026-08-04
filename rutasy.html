@@ -85,11 +85,28 @@
         
         .section-header { margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         
-        /* Cards & Grid */
+        /* Cards & Grid (Perbaikan Warna Pastel & Font untuk Dashboard Admin) */
         .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .card { background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); }
         .card-title { font-size: 0.9rem; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
         .card-value { font-size: 2rem; font-weight: bold; color: var(--dark); }
+
+        /* Style khusus kartu pastel admin */
+        .card-pastel-1 { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-left: 5px solid #3b82f6; }
+        .card-pastel-1 .card-title { color: #1e40af; font-weight: 600; }
+        .card-pastel-1 .card-value { color: #1e3a8a; font-family: 'Poppins', 'Segoe UI', sans-serif; letter-spacing: -0.5px; }
+
+        .card-pastel-2 { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-left: 5px solid #10b981; }
+        .card-pastel-2 .card-title { color: #166534; font-weight: 600; }
+        .card-pastel-2 .card-value { color: #14532d; font-family: 'Poppins', 'Segoe UI', sans-serif; letter-spacing: -0.5px; }
+
+        .card-pastel-3 { background: linear-gradient(135deg, #fef2f2, #fee2e2); border-left: 5px solid #ef4444; }
+        .card-pastel-3 .card-title { color: #991b1b; font-weight: 600; }
+        .card-pastel-3 .card-value { color: #7f1d1d; font-family: 'Poppins', 'Segoe UI', sans-serif; letter-spacing: -0.5px; }
+
+        .card-pastel-4 { background: linear-gradient(135deg, #fdf4ff, #fae8ff); border-left: 5px solid #d946ef; }
+        .card-pastel-4 .card-title { color: #86198f; font-weight: 600; }
+        .card-pastel-4 .card-value { color: #701a75; font-family: 'Poppins', 'Segoe UI', sans-serif; letter-spacing: -0.5px; }
         
         /* Charts Container */
         .charts-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 30px; transition: 0.3s; }
@@ -308,7 +325,16 @@
                     <table>
                         <thead>
                             <tr id="table-santri-head">
-                                <th>Nama Santri</th><th>Kategori Kelas</th><th>Status</th><th>Wali</th><th>Username</th><th>Password</th><th>Aksi</th>
+                                <th>NIS (Nomor Induk Santri)</th>
+                                <th>Nama Lengkap</th>
+                                <th>Jenis Kelamin</th>
+                                <th>TTL</th>
+                                <th>Alamat</th>
+                                <th>No. WA Ortu</th>
+                                <th>Status (Aktif, Nonaktif, Alumni)</th>
+                                <th>Username</th>
+                                <th>Password</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-santri">
@@ -671,12 +697,40 @@
             </div>
             <form onsubmit="simpanSantri(event)">
                 <div class="form-group">
-                    <label>Nama Santri</label>
+                    <label>NIS (Nomor Induk Santri)</label>
+                    <input type="text" id="santri-nis" required placeholder="Contoh: 2026001">
+                </div>
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
                     <input type="text" id="santri-nama" required placeholder="Nama Lengkap Santri">
                 </div>
                 <div class="form-group">
-                    <label>Nama Orang Tua / Wali</label>
-                    <input type="text" id="santri-wali" required placeholder="Nama Orang Tua">
+                    <label>Jenis Kelamin</label>
+                    <select id="santri-jk" required>
+                        <option value="">-- Pilih Jenis Kelamin --</option>
+                        <option value="Laki-laki">Laki-laki</option>
+                        <option value="Perempuan">Perempuan</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>TTL (Tempat, Tanggal Lahir)</label>
+                    <input type="text" id="santri-ttl" required placeholder="Contoh: Jakarta, 12 Januari 2015">
+                </div>
+                <div class="form-group">
+                    <label>Alamat</label>
+                    <input type="text" id="santri-alamat" required placeholder="Alamat lengkap santri">
+                </div>
+                <div class="form-group">
+                    <label>No. WA Ortu</label>
+                    <input type="text" id="santri-wa" required placeholder="Contoh: 08123456789">
+                </div>
+                <div class="form-group">
+                    <label>Status (Aktif, Nonaktif, Alumni)</label>
+                    <select id="santri-status" required>
+                        <option value="Aktif">Aktif</option>
+                        <option value="Nonaktif">Nonaktif</option>
+                        <option value="Alumni">Alumni</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Username Login Akun Santri</label>
@@ -701,19 +755,38 @@
             <form onsubmit="updateSantri(event)">
                 <input type="hidden" id="edit-santri-id">
                 <div class="form-group">
-                    <label>Nama Santri</label>
+                    <label>NIS (Nomor Induk Santri)</label>
+                    <input type="text" id="edit-santri-nis" required>
+                </div>
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
                     <input type="text" id="edit-santri-nama" required>
                 </div>
                 <div class="form-group">
-                    <label>Nama Orang Tua / Wali</label>
-                    <input type="text" id="edit-santri-wali" required>
+                    <label>Jenis Kelamin</label>
+                    <select id="edit-santri-jk" required>
+                        <option value="Laki-laki">Laki-laki</option>
+                        <option value="Perempuan">Perempuan</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label>Status Santri</label>
-                    <select id="edit-santri-status">
+                    <label>TTL (Tempat, Tanggal Lahir)</label>
+                    <input type="text" id="edit-santri-ttl" required>
+                </div>
+                <div class="form-group">
+                    <label>Alamat</label>
+                    <input type="text" id="edit-santri-alamat" required>
+                </div>
+                <div class="form-group">
+                    <label>No. WA Ortu</label>
+                    <input type="text" id="edit-santri-wa" required>
+                </div>
+                <div class="form-group">
+                    <label>Status (Aktif, Nonaktif, Alumni)</label>
+                    <select id="edit-santri-status" required>
                         <option value="Aktif">Aktif</option>
-                        <option value="Baru">Baru</option>
-                        <option value="Non-Aktif">Non-Aktif</option>
+                        <option value="Nonaktif">Nonaktif</option>
+                        <option value="Alumni">Alumni</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -859,9 +932,9 @@
                 { username: "aisyah", password: "123", role: "ortu", name: "Bpk. Umar (Wali Aisyah)", santriId: 2 }
             ],
             santri: [
-                { id: 1, nama: "Fatih Ramadhan", status: "Aktif", wali: "Bpk. Ahmad", kelas: "Kelas Tahfidz", username: "ortu" },
-                { id: 2, nama: "Aisyah Zahra", status: "Aktif", wali: "Bpk. Umar", kelas: "Kelas Tahsin", username: "aisyah" },
-                { id: 3, nama: "Zaid bin Tsabit", status: "Baru", wali: "Ibu Fatimah", kelas: "Kelas Iqro", username: "zaid" }
+                { id: 1, nis: "2026001", nama: "Fatih Ramadhan", jk: "Laki-laki", ttl: "Medan, 10 Mei 2015", alamat: "Jl. Melati No. 12", wa: "081211112222", status: "Aktif", wali: "Bpk. Ahmad", kelas: "Kelas Tahfidz", username: "ortu" },
+                { id: 2, nis: "2026002", nama: "Aisyah Zahra", jk: "Perempuan", ttl: "Medan, 14 Agustus 2015", alamat: "Jl. Mawar No. 5", wa: "081233334444", status: "Aktif", wali: "Bpk. Umar", kelas: "Kelas Tahsin", username: "aisyah" },
+                { id: 3, nis: "2026003", nama: "Zaid bin Tsabit", jk: "Laki-laki", ttl: "Medan, 20 Januari 2016", alamat: "Jl. Kenanga No. 8", wa: "081255556666", status: "Aktif", wali: "Ibu Fatimah", kelas: "Kelas Iqro", username: "zaid" }
             ],
             guru: [
                 { id: 1, nama: "Ustadz Budi", username: "guru", gajiHarian: 100000 },
@@ -886,6 +959,17 @@
         };
 
         let db = JSON.parse(localStorage.getItem('rutasy_db')) || defaultDb;
+        // Migrasi data santri lama jika belum memiliki kolom baru
+        db.santri = db.santri.map(s => ({
+            ...s,
+            nis: s.nis || "2026" + String(s.id).padStart(3, '0'),
+            jk: s.jk || "Laki-laki",
+            ttl: s.ttl || "-",
+            alamat: s.alamat || "-",
+            wa: s.wa || "-",
+            status: s.status === 'Baru' ? 'Aktif' : (s.status || 'Aktif')
+        }));
+
         if (!db.logPengajarAbsensi) db.logPengajarAbsensi = []; 
 
         let currentUser = JSON.parse(localStorage.getItem('rutasy_session')) || null;
@@ -1092,9 +1176,13 @@
             const s = db.santri.find(s => s.id === id);
             if(s) {
                 document.getElementById('edit-santri-id').value = s.id;
+                document.getElementById('edit-santri-nis').value = s.nis || "";
                 document.getElementById('edit-santri-nama').value = s.nama;
-                document.getElementById('edit-santri-wali').value = s.wali;
-                document.getElementById('edit-santri-status').value = s.status;
+                document.getElementById('edit-santri-jk').value = s.jk || "Laki-laki";
+                document.getElementById('edit-santri-ttl').value = s.ttl || "";
+                document.getElementById('edit-santri-alamat').value = s.alamat || "";
+                document.getElementById('edit-santri-wa').value = s.wa || "";
+                document.getElementById('edit-santri-status').value = s.status || "Aktif";
                 document.getElementById('edit-santri-user').value = s.username;
                 document.getElementById('edit-santri-pass').value = '';
                 document.getElementById('modal-edit-santri').style.display = 'flex';
@@ -1177,16 +1265,21 @@
 
         function simpanSantri(e) {
             e.preventDefault();
+            const nis = document.getElementById('santri-nis').value;
             const nama = document.getElementById('santri-nama').value;
-            const wali = document.getElementById('santri-wali').value;
+            const jk = document.getElementById('santri-jk').value;
+            const ttl = document.getElementById('santri-ttl').value;
+            const alamat = document.getElementById('santri-alamat').value;
+            const wa = document.getElementById('santri-wa').value;
+            const status = document.getElementById('santri-status').value;
             const username = document.getElementById('santri-user').value;
             const password = document.getElementById('santri-pass').value;
 
             if (db.users.some(u => u.username === username)) { alert("Username sudah digunakan!"); return; }
 
             const newId = db.santri.length ? Math.max(...db.santri.map(s => s.id)) + 1 : 1;
-            db.santri.push({ id: newId, nama, status: "Aktif", wali, kelas: "", username });
-            db.users.push({ username, password, role: "ortu", name: `${wali} (Wali ${nama})`, santriId: newId });
+            db.santri.push({ id: newId, nis, nama, jk, ttl, alamat, wa, status, wali: `Wali ${nama}`, kelas: "", username });
+            db.users.push({ username, password, role: "ortu", name: `Wali ${nama} (Wali ${nama})`, santriId: newId });
 
             saveDb();
             closeModal('modal-santri');
@@ -1198,21 +1291,29 @@
         function updateSantri(e) {
             e.preventDefault();
             const id = parseInt(document.getElementById('edit-santri-id').value);
+            const nis = document.getElementById('edit-santri-nis').value;
             const nama = document.getElementById('edit-santri-nama').value;
-            const wali = document.getElementById('edit-santri-wali').value;
+            const jk = document.getElementById('edit-santri-jk').value;
+            const ttl = document.getElementById('edit-santri-ttl').value;
+            const alamat = document.getElementById('edit-santri-alamat').value;
+            const wa = document.getElementById('edit-santri-wa').value;
             const status = document.getElementById('edit-santri-status').value;
             const pass = document.getElementById('edit-santri-pass').value;
 
             const santriIdx = db.santri.findIndex(s => s.id === id);
             if(santriIdx > -1) {
+                db.santri[santriIdx].nis = nis;
                 db.santri[santriIdx].nama = nama;
-                db.santri[santriIdx].wali = wali;
+                db.santri[santriIdx].jk = jk;
+                db.santri[santriIdx].ttl = ttl;
+                db.santri[santriIdx].alamat = alamat;
+                db.santri[santriIdx].wa = wa;
                 db.santri[santriIdx].status = status;
 
                 const username = db.santri[santriIdx].username;
                 const userIndex = db.users.findIndex(u => u.username === username);
                 if(userIndex > -1) {
-                    db.users[userIndex].name = `${wali} (Wali ${nama})`;
+                    db.users[userIndex].name = `Wali ${nama} (Wali ${nama})`;
                     if(pass.trim() !== '') db.users[userIndex].password = pass;
                 }
 
@@ -1227,8 +1328,7 @@
             const tbodySantri = document.getElementById('table-santri');
             tbodySantri.innerHTML = "";
             db.santri.forEach(s => {
-                let badgeClass = s.status === 'Aktif' ? 'badge-success' : 'badge-warning';
-                let txtKelas = s.kelas && s.kelas !== "" ? s.kelas : 'Belum Ditentukan';
+                let badgeClass = s.status === 'Aktif' ? 'badge-success' : (s.status === 'Alumni' ? 'badge-info' : 'badge-warning');
                 let uObj = db.users.find(u => u.username === s.username);
                 let pwd = uObj ? uObj.password : '-';
                 let aksi = currentUser.role === 'admin' ? `<td>
@@ -1238,10 +1338,13 @@
                 
                 tbodySantri.innerHTML += `
                     <tr>
+                        <td><code>${s.nis || '-'}</code></td>
                         <td><strong>${s.nama}</strong></td>
-                        <td><span class="badge badge-info">${txtKelas}</span></td>
+                        <td>${s.jk || '-'}</td>
+                        <td>${s.ttl || '-'}</td>
+                        <td>${s.alamat || '-'}</td>
+                        <td>${s.wa || '-'}</td>
                         <td><span class="badge ${badgeClass}">${s.status}</span></td>
-                        <td>${s.wali}</td>
                         <td><code>${s.username || '-'}</code></td>
                         <td><code>${pwd}</code></td>
                         ${aksi}
@@ -1403,7 +1506,6 @@
             const pList = db.progress.filter(p => p.santriId === santriId);
             const p = pList.length > 0 ? pList[pList.length - 1] : null;
             
-            // Penggantian Sumbu X Menjadi Tanggal Dalam Sebulan Secara Dinamis
             let labels = [];
             for(let i=5; i>=0; i--) {
                 let d = new Date();
@@ -1594,18 +1696,15 @@
         }
 
         function renderAbsensi(filteredSantri = null) {
-            // Log Pengajar
             const tbodyLogPengajar = document.getElementById('table-log-pengajar-absensi');
             tbodyLogPengajar.innerHTML = "";
             let logPengajar = db.logPengajarAbsensi || [];
             
-            // Sort dari yang terbaru
             const sortedLogPengajar = [...logPengajar].sort((a,b) => b.tgl.localeCompare(a.tgl));
             sortedLogPengajar.forEach(l => {
                 tbodyLogPengajar.innerHTML += `<tr><td><strong>${l.tgl}</strong></td><td><span class="badge badge-info">${l.pengajarNama}</span></td></tr>`;
             });
             
-            // Absensi Santri (dengan filter dan pagination)
             const tgl = document.getElementById('tgl-absensi-santri').value || getTodayISO();
             const tbodyAbsSantri = document.getElementById('table-absensi-santri');
             const paginationContainer = document.getElementById('pagination-absensi-santri');
@@ -1621,7 +1720,6 @@
                 document.getElementById('container-log-pengajar').style.display = 'block';
             }
             
-            // Logika Pagination Santri
             const totalPages = Math.ceil(sourceSantri.length / absensiPageSize);
             if (currentAbsensiPage > totalPages && totalPages > 0) currentAbsensiPage = totalPages;
             if (currentAbsensiPage < 1) currentAbsensiPage = 1;
@@ -1637,11 +1735,9 @@
                 
                 let opsi = '';
                 if(currentUser.role === 'admin' || currentUser.role === 'ortu') {
-                    // Read only untuk admin dan ortu
                     let bClass = statusHadir === 'Hadir' ? 'badge-success' : (statusHadir === 'Sakit' || statusHadir === 'Izin' ? 'badge-warning' : 'badge-danger');
                     opsi = `<span class="badge ${bClass}">${statusHadir}</span>`;
                 } else {
-                    // Guru bisa edit
                     let selHadir = statusHadir === 'Hadir' ? 'selected' : '';
                     let selSakit = statusHadir === 'Sakit' ? 'selected' : '';
                     let selIzin = statusHadir === 'Izin' ? 'selected' : '';
@@ -1670,7 +1766,6 @@
                  tbodyAbsSantri.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--gray);">Data tidak ditemukan</td></tr>`;
             }
 
-            // Render tombol pagination
             if (totalPages > 1) {
                 let pageButtonsHTML = `<div style="font-size:0.85rem; color:var(--gray);">Halaman ${currentAbsensiPage} dari ${totalPages} (Total: ${sourceSantri.length} Data)</div>`;
                 pageButtonsHTML += `<div class="pagination-buttons">`;
@@ -1684,12 +1779,10 @@
                 paginationContainer.innerHTML = pageButtonsHTML;
             }
 
-            // Log Kehadiran Guru
             const tbodyGuruLog = document.getElementById('table-absensi-guru-log');
             tbodyGuruLog.innerHTML = "";
             let listAbsensiGuru = db.absensiGuru || [];
             
-            // Filter by date
             const filterTglGuru = document.getElementById('filter-tgl-absen-guru') ? document.getElementById('filter-tgl-absen-guru').value : "";
             if (filterTglGuru) {
                 listAbsensiGuru = listAbsensiGuru.filter(g => g.date === filterTglGuru);
@@ -1719,7 +1812,7 @@
         function onSearchAbsensiSantriChange() {
             const keyword = document.getElementById('search-santri-absensi').value.toLowerCase();
             const sourceSantri = db.santri.filter(s => s.status === 'Aktif' && s.nama.toLowerCase().includes(keyword));
-            currentAbsensiPage = 1; // reset ke halaman 1 saat pencarian
+            currentAbsensiPage = 1; 
             renderAbsensi(sourceSantri);
         }
 
@@ -1841,7 +1934,6 @@
             if (!db.arusKas || db.arusKas.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--gray);">Belum ada riwayat history keuangan</td></tr>`;
             } else {
-                // Sort from newest to oldest for history view
                 const sortedKas = [...db.arusKas].reverse();
                 sortedKas.forEach(k => {
                     let color = k.jenis === 'Pendapatan' ? 'color:var(--secondary)' : 'color:var(--danger)';
@@ -1937,7 +2029,6 @@
             const filterSppMulai = document.getElementById('tgl-spp-mulai').value;
             const filterSppSelesai = document.getElementById('tgl-spp-selesai').value;
 
-            // 1. Data Sudah Bayar (Riwayat & Pengajuan)
             let sppList = db.spp;
             if (filterSppMulai && filterSppSelesai) {
                 sppList = sppList.filter(s => s.tgl >= filterSppMulai && s.tgl <= filterSppSelesai);
@@ -1970,7 +2061,6 @@
             });
             if(sppList.length === 0) tbodySpp.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--gray);">Belum ada riwayat pembayaran / pengajuan</td></tr>`;
 
-            // 2. Data Belum Bayar
             const tbodyBelum = document.getElementById('table-spp-belum');
             tbodyBelum.innerHTML = "";
             
@@ -2005,7 +2095,6 @@
                 }
             }
 
-            // 3. Arus Kas (Hanya Admin)
             if (currentUser.role === 'admin') {
                 const tbodyKas = document.getElementById('table-arus-kas');
                 tbodyKas.innerHTML = "";
@@ -2032,7 +2121,7 @@
             initProgressChart();
             
             if (currentUser.role === 'admin') {
-                renderFinanceChart(); // Fixed Render Issue (membuat canvas diload saat section sudah aktif)
+                renderFinanceChart(); 
 
                 const santriAktif = db.santri.filter(s => s.status === "Aktif").length;
                 const totalGuru = db.guru.length;
@@ -2041,11 +2130,12 @@
                 let saldoKas = 0;
                 db.arusKas.forEach(k => { if(k.jenis==='Pendapatan') saldoKas += k.nominal; else saldoKas -= k.nominal; });
 
+                // Kartu Dashboard Admin dengan warna pastel & font estetik
                 cards.innerHTML = `
-                    <div class="card"><div class="card-title">Total Santri Aktif</div><div class="card-value" style="color:var(--primary)">${santriAktif}</div></div>
-                    <div class="card"><div class="card-title">Total Guru Pengajar</div><div class="card-value">${totalGuru}</div></div>
-                    <div class="card"><div class="card-title">Santri Belum Lunas SPP</div><div class="card-value" style="color:var(--danger)">${belumLunas > 0 ? belumLunas : 0}</div></div>
-                    <div class="card"><div class="card-title">Saldo Arus Kas</div><div class="card-value" style="color:var(--secondary)">Rp ${saldoKas.toLocaleString('id-ID')}</div></div>
+                    <div class="card card-pastel-1"><div class="card-title">Total Santri Aktif</div><div class="card-value">${santriAktif}</div></div>
+                    <div class="card card-pastel-2"><div class="card-title">Total Guru Pengajar</div><div class="card-value">${totalGuru}</div></div>
+                    <div class="card card-pastel-3"><div class="card-title">Santri Belum Lunas SPP</div><div class="card-value">${belumLunas > 0 ? belumLunas : 0}</div></div>
+                    <div class="card card-pastel-4"><div class="card-title">Saldo Arus Kas</div><div class="card-value" style="font-size: 1.6rem;">Rp ${saldoKas.toLocaleString('id-ID')}</div></div>
                 `;
             } 
             else if (currentUser.role === 'guru') {
