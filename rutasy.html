@@ -229,6 +229,10 @@
                 <div class="menu-item" onclick="switchTab('keuangan')" id="menu-keuangan">
                     <i class="fa-solid fa-wallet"></i> Keuangan & SPP
                 </div>
+                <!-- Menu Baru: Parameter -->
+                <div class="menu-item" onclick="switchTab('parameter')" id="menu-parameter" style="display:none;">
+                    <i class="fa-solid fa-gears"></i> Parameter
+                </div>
                 <hr style="margin: 20px; border-color: #e2e8f0;">
                 <div class="menu-item" style="color: var(--danger);" onclick="logout()">
                     <i class="fa-solid fa-sign-out-alt"></i> Keluar
@@ -262,42 +266,6 @@
                         <input type="date" id="dash-tgl-mulai" class="btn" style="background:white; color:var(--dark); border:1px solid #cbd5e1; padding:6px 10px; font-size:0.85rem;" onchange="loadDashboardData()">
                         <span style="font-size:0.85rem; font-weight:600;">s/d</span>
                         <input type="date" id="dash-tgl-selesai" class="btn" style="background:white; color:var(--dark); border:1px solid #cbd5e1; padding:6px 10px; font-size:0.85rem;" onchange="loadDashboardData()">
-                    </div>
-                </div>
-                
-                <!-- Admin Parameters Box -->
-                <div id="admin-param-box" style="display:none; background:white; padding:20px; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:25px;">
-                    <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-sliders"></i> Ketentuan Absensi & Parameter</h3>
-                    <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-end;">
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
-                            <label>Jam Masuk</label>
-                            <input type="time" id="param-jam-masuk">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
-                            <label>Jam Pulang</label>
-                            <input type="time" id="param-jam-pulang">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:150px;">
-                            <label>Potongan Telat (%)</label>
-                            <input type="number" id="param-potongan" placeholder="misal: 5">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:160px;">
-                            <label>Hari Kerja / Bulan</label>
-                            <input type="number" id="param-hari-kerja" placeholder="misal: 24">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:180px;">
-                            <label>Latitude Lokasi Pusat</label>
-                            <input type="text" id="param-lat" placeholder="Contoh: 3.5952">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:180px;">
-                            <label>Longitude Lokasi Pusat</label>
-                            <input type="text" id="param-lng" placeholder="Contoh: 98.6722">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:150px;">
-                            <label>Radius Maks (meter)</label>
-                            <input type="number" id="param-radius" placeholder="Contoh: 100">
-                        </div>
-                        <button class="btn" style="height:42px;" onclick="simpanParameterAdmin()">Simpan</button>
                     </div>
                 </div>
 
@@ -342,6 +310,7 @@
 
             <!-- 2. MASTER DATA SECTION -->
             <section id="sec-master" class="content-section">
+                <!-- SAMA SEPERTI SEBELUMNYA -->
                 <div class="section-header">
                     <h2>Master Data RUTASY</h2>
                     <div id="master-action-buttons">
@@ -403,7 +372,7 @@
 
             <!-- 3. PROGRES SANTRI (PPS) -->
             <section id="sec-progress" class="content-section">
-                
+                <!-- SAMA SEPERTI SEBELUMNYA -->
                 <!-- Setoran Form Khusus Guru -->
                 <div id="guru-setoran-box" style="display:none; background:white; padding:20px; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:25px;">
                     <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-book-open"></i> Input Setoran Anak-anak</h3>
@@ -499,6 +468,7 @@
 
             <!-- 4. ABSENSI -->
             <section id="sec-absensi" class="content-section">
+                <!-- SAMA SEPERTI SEBELUMNYA -->
                 <div class="section-header">
                     <h2>Kehadiran (Absensi) Harian Santri</h2>
                     <div style="display:flex; gap:10px; align-items:center;">
@@ -573,6 +543,7 @@
 
             <!-- 5. KEUANGAN & SPP -->
             <section id="sec-keuangan" class="content-section">
+                <!-- SAMA SEPERTI SEBELUMNYA -->
                 <div class="section-header">
                     <h2>Laporan Keuangan & Pembayaran SPP</h2>
                 </div>
@@ -669,7 +640,64 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </section>
 
+            <!-- 6. PARAMETER & LOKASI SECTION (FITUR BARU) -->
+            <section id="sec-parameter" class="content-section">
+                <div class="section-header">
+                    <h2>Parameter & Pengaturan Sistem</h2>
+                </div>
+                
+                <div class="grid-cards" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <!-- Bagian Ketentuan Absensi -->
+                    <div style="background:white; padding:20px; border-radius:var(--radius); box-shadow:var(--shadow);">
+                        <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-clock"></i> Ketentuan Absensi</h3>
+                        <div style="display:flex; flex-direction:column; gap:15px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Jam Masuk</label>
+                                <input type="time" id="param-jam-masuk">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Jam Pulang</label>
+                                <input type="time" id="param-jam-pulang">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Potongan Telat (%)</label>
+                                <input type="number" id="param-potongan" placeholder="misal: 5">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Hari Kerja / Bulan</label>
+                                <input type="number" id="param-hari-kerja" placeholder="misal: 24">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bagian Pengaturan Lokasi -->
+                    <div style="background:white; padding:20px; border-radius:var(--radius); box-shadow:var(--shadow);">
+                        <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-location-dot"></i> Pengaturan Lokasi Absensi</h3>
+                        <div style="display:flex; flex-direction:column; gap:15px;">
+                            <button type="button" class="btn btn-info" style="background-color: var(--primary-light); color: white; padding: 10px; border-radius: var(--radius); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: bold; width: 100%;" onclick="detectLocation()">
+                                <i class="fa-solid fa-location-crosshairs"></i> Deteksi Lokasi Anda Saat Ini
+                            </button>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Latitude Lokasi Pusat</label>
+                                <input type="text" id="param-lat" placeholder="Contoh: 3.5952">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Longitude Lokasi Pusat</label>
+                                <input type="text" id="param-lng" placeholder="Contoh: 98.6722">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Radius Maks (meter)</label>
+                                <input type="number" id="param-radius" placeholder="Contoh: 100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn btn-success" style="padding: 12px 30px; font-size: 1rem;" onclick="simpanParameterAdmin()"><i class="fa-solid fa-save"></i> Simpan Pengaturan Parameter</button>
                 </div>
             </section>
 
@@ -1065,7 +1093,6 @@
         };
 
         let db = JSON.parse(localStorage.getItem('rutasy_db')) || defaultDb;
-        // Migrasi data santri lama jika belum memiliki kolom baru
         db.santri = db.santri.map(s => ({
             ...s,
             nis: s.nis || "2026" + String(s.id).padStart(3, '0'),
@@ -1093,7 +1120,6 @@
         let chartDetailInstance = null;
 
         window.onload = function() {
-            // Set semua input date menjadi Default secara Real-time
             const today = getTodayISO();
             document.querySelectorAll('input[type="date"]').forEach(el => {
                 if(!el.value) el.value = today;
@@ -1175,7 +1201,7 @@
             document.getElementById('menu-master').style.display = 'flex';
             document.getElementById('menu-absensi').style.display = 'flex';
             document.getElementById('menu-keuangan').style.display = 'flex';
-            document.getElementById('admin-param-box').style.display = 'none';
+            document.getElementById('menu-parameter').style.display = 'none'; // Default disembunyikan
             document.getElementById('admin-dashboard-filter').style.display = 'none';
             document.getElementById('admin-finance-settings').style.display = 'none';
             document.getElementById('admin-finance-log').style.display = 'none';
@@ -1192,7 +1218,7 @@
                 document.getElementById('btn-unduh-pdf').style.display = 'inline-block';
                 chartsGrid.style.gridTemplateColumns = '1fr';
                 document.getElementById('finance-chart-container').style.display = 'block';
-                document.getElementById('admin-param-box').style.display = 'block';
+                document.getElementById('menu-parameter').style.display = 'flex'; // Munculkan Menu Parameter
                 document.getElementById('admin-dashboard-filter').style.display = 'flex';
                 document.getElementById('admin-finance-settings').style.display = 'block';
                 document.getElementById('admin-finance-log').style.display = 'block';
@@ -1216,7 +1242,6 @@
             else if (user.role === 'guru') {
                 badge.textContent = 'Guru / Pengajar';
                 document.getElementById('btn-unduh-pdf').style.display = 'inline-block';
-                
                 document.getElementById('menu-master').style.display = 'none';
                 document.getElementById('master-action-buttons').style.display = 'none'; 
                 document.getElementById('guru-setoran-box').style.display = 'block'; 
@@ -1234,6 +1259,33 @@
                 document.getElementById('menu-absensi').style.display = 'none';
                 chartsGrid.style.gridTemplateColumns = '1fr';
                 document.getElementById('finance-chart-container').style.display = 'none';
+            }
+        }
+
+        // FITUR BARU: Deteksi Lokasi Otomatis
+        function detectLocation() {
+            if (navigator.geolocation) {
+                Swal.fire({
+                    title: 'Mendeteksi Lokasi...',
+                    text: 'Mohon tunggu, sedang mencari koordinat GPS Anda.',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        Swal.close();
+                        document.getElementById('param-lat').value = position.coords.latitude;
+                        document.getElementById('param-lng').value = position.coords.longitude;
+                        Swal.fire('Berhasil!', 'Koordinat lokasi Anda berhasil dideteksi dan diisi otomatis.', 'success');
+                    },
+                    (error) => {
+                        Swal.close();
+                        Swal.fire('Gagal!', 'Tidak dapat mendeteksi lokasi. Pastikan GPS aktif dan Anda telah mengizinkan browser untuk mengakses lokasi. Error: ' + error.message, 'error');
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            } else {
+                Swal.fire('Error', 'Browser yang Anda gunakan tidak mendukung fitur Geolocation.', 'error');
             }
         }
 
@@ -1315,6 +1367,7 @@
             }
             if(tabId === 'keuangan') renderKeuangan();
             if(tabId === 'dashboard') loadDashboardData(); 
+            // Tab parameter tidak butuh render khusus
         }
 
         function openModalGuru() { document.getElementById('modal-guru').style.display = 'flex'; }
@@ -2007,27 +2060,29 @@
 
         function renderAbsensi(filteredSantri = null) {
             const tbodyLogPengajar = document.getElementById('table-log-pengajar-absensi');
-            tbodyLogPengajar.innerHTML = "";
-            let logPengajar = db.logPengajarAbsensi || [];
-            
-            const sortedLogPengajar = [...logPengajar].sort((a,b) => b.tgl.localeCompare(a.tgl));
-            sortedLogPengajar.forEach(l => {
-                tbodyLogPengajar.innerHTML += `<tr><td><strong>${l.tgl}</strong></td><td><span class="badge badge-info">${l.pengajarNama}</span></td></tr>`;
-            });
+            if (tbodyLogPengajar) {
+                tbodyLogPengajar.innerHTML = "";
+                let logPengajar = db.logPengajarAbsensi || [];
+                
+                const sortedLogPengajar = [...logPengajar].sort((a,b) => b.tgl.localeCompare(a.tgl));
+                sortedLogPengajar.forEach(l => {
+                    tbodyLogPengajar.innerHTML += `<tr><td><strong>${l.tgl}</strong></td><td><span class="badge badge-info">${l.pengajarNama}</span></td></tr>`;
+                });
+            }
             
             const tgl = document.getElementById('tgl-absensi-santri').value || getTodayISO();
             const tbodyAbsSantri = document.getElementById('table-absensi-santri');
             const paginationContainer = document.getElementById('pagination-absensi-santri');
-            tbodyAbsSantri.innerHTML = "";
-            paginationContainer.innerHTML = "";
+            if (tbodyAbsSantri) tbodyAbsSantri.innerHTML = "";
+            if (paginationContainer) paginationContainer.innerHTML = "";
             
             let sourceSantri = filteredSantri || db.santri.filter(s => s.status === 'Aktif');
             
             if (currentUser.role === 'ortu') {
                 sourceSantri = sourceSantri.filter(s => s.id === currentUser.santriId);
-                document.getElementById('container-log-pengajar').style.display = 'none';
+                if(document.getElementById('container-log-pengajar')) document.getElementById('container-log-pengajar').style.display = 'none';
             } else {
-                document.getElementById('container-log-pengajar').style.display = 'block';
+                if(document.getElementById('container-log-pengajar')) document.getElementById('container-log-pengajar').style.display = 'block';
             }
             
             const totalPages = Math.ceil(sourceSantri.length / absensiPageSize);
@@ -2037,425 +2092,213 @@
             const startIndex = (currentAbsensiPage - 1) * absensiPageSize;
             const paginatedSantri = sourceSantri.slice(startIndex, startIndex + absensiPageSize);
             
-            paginatedSantri.forEach(s => {
-                let absenRecord = db.absensiSantri ? db.absensiSantri.find(a => a.tgl === tgl && a.santriId === s.id) : null;
-                let statusHadir = absenRecord ? absenRecord.status : 'Hadir';
-                let guruNama = absenRecord && absenRecord.guruNama ? absenRecord.guruNama : '-';
-                let txtKelas = s.kelas && s.kelas !== "" ? s.kelas : 'Belum Ditentukan';
-                
-                let opsi = '';
-                if(currentUser.role === 'admin' || currentUser.role === 'ortu') {
-                    let bClass = statusHadir === 'Hadir' ? 'badge-success' : (statusHadir === 'Sakit' || statusHadir === 'Izin' ? 'badge-warning' : 'badge-danger');
-                    opsi = `<span class="badge ${bClass}">${statusHadir}</span>`;
-                } else {
-                    let selHadir = statusHadir === 'Hadir' ? 'selected' : '';
-                    let selSakit = statusHadir === 'Sakit' ? 'selected' : '';
-                    let selIzin = statusHadir === 'Izin' ? 'selected' : '';
-                    let selAlpa = statusHadir === 'Alpa' ? 'selected' : '';
+            if (tbodyAbsSantri) {
+                paginatedSantri.forEach(s => {
+                    let absenRecord = db.absensiSantri ? db.absensiSantri.find(a => a.tgl === tgl && a.santriId === s.id) : null;
+                    let statusHadir = absenRecord ? absenRecord.status : 'Hadir';
+                    let guruNama = absenRecord && absenRecord.guruNama ? absenRecord.guruNama : '-';
+                    let txtKelas = s.kelas && s.kelas !== "" ? s.kelas : 'Belum Ditentukan';
                     
-                    opsi = `
-                    <select class="select-absensi-santri" style="padding:6px; border-radius:4px; border:1px solid #ccc; width:120px;" 
-                        data-santri-id="${s.id}" data-santri-nama="${s.nama}" data-santri-kelas="${txtKelas}">
-                        <option value="Hadir" ${selHadir}>Hadir</option>
-                        <option value="Sakit" ${selSakit}>Sakit</option>
-                        <option value="Izin" ${selIzin}>Izin</option>
-                        <option value="Alpa" ${selAlpa}>Alpa</option>
-                    </select>`;
-                }
-                
-                tbodyAbsSantri.innerHTML += `
-                    <tr>
+                    let opsi = '';
+                    if(currentUser.role === 'admin' || currentUser.role === 'ortu') {
+                        let bClass = statusHadir === 'Hadir' ? 'badge-success' : (statusHadir === 'Sakit' || statusHadir === 'Izin' ? 'badge-warning' : 'badge-danger');
+                        opsi = `<span class="badge ${bClass}">${statusHadir}</span>`;
+                    } else {
+                        let selHadir = statusHadir === 'Hadir' ? 'selected' : '';
+                        let selSakit = statusHadir === 'Sakit' ? 'selected' : '';
+                        let selIzin = statusHadir === 'Izin' ? 'selected' : '';
+                        let selAlpa = statusHadir === 'Alpa' ? 'selected' : '';
+                        opsi = `<select class="select-absensi-santri" style="padding: 5px; border-radius: 4px; border: 1px solid #cbd5e1;" data-santri-id="${s.id}" data-santri-nama="${s.nama}" data-santri-kelas="${s.kelas}">
+                            <option value="Hadir" ${selHadir}>Hadir</option>
+                            <option value="Sakit" ${selSakit}>Sakit</option>
+                            <option value="Izin" ${selIzin}>Izin</option>
+                            <option value="Alpa" ${selAlpa}>Alpa</option>
+                        </select>`;
+                    }
+                    
+                    tbodyAbsSantri.innerHTML += `<tr>
                         <td><strong>${s.nama}</strong></td>
                         <td><span class="badge badge-info">${txtKelas}</span></td>
                         <td>${opsi}</td>
-                        <td><span class="badge badge-info">${guruNama}</span></td>
+                        <td>${guruNama}</td>
                     </tr>`;
-            });
-            
-            if (paginatedSantri.length === 0) {
-                 tbodyAbsSantri.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--gray);">Data tidak ditemukan</td></tr>`;
-            }
-
-            if (totalPages > 1) {
-                let pageButtonsHTML = `<div style="font-size:0.85rem; color:var(--gray);">Halaman ${currentAbsensiPage} dari ${totalPages} (Total: ${sourceSantri.length} Data)</div>`;
-                pageButtonsHTML += `<div class="pagination-buttons">`;
-                pageButtonsHTML += `<button class="page-btn" onclick="changeAbsensiPage(${currentAbsensiPage - 1})" ${currentAbsensiPage === 1 ? 'disabled style="cursor:not-allowed; opacity:0.5;"' : ''}>&laquo; Prev</button>`;
-                for (let i = 1; i <= totalPages; i++) {
-                    let activeClass = i === currentAbsensiPage ? 'active' : '';
-                    pageButtonsHTML += `<button class="page-btn ${activeClass}" onclick="changeAbsensiPage(${i})">${i}</button>`;
-                }
-                pageButtonsHTML += `<button class="page-btn" onclick="changeAbsensiPage(${currentAbsensiPage + 1})" ${currentAbsensiPage === totalPages ? 'disabled style="cursor:not-allowed; opacity:0.5;"' : ''}>Next &raquo;</button>`;
-                pageButtonsHTML += `</div>`;
-                paginationContainer.innerHTML = pageButtonsHTML;
-            }
-
-            const tbodyGuruLog = document.getElementById('table-absensi-guru-log');
-            const thAksi = document.getElementById('th-aksi-guru-log');
-            if (currentUser.role === 'admin') {
-                thAksi.style.display = '';
-            } else {
-                thAksi.style.display = 'none';
-            }
-            tbodyGuruLog.innerHTML = "";
-            let listAbsensiGuru = db.absensiGuru || [];
-            
-            const filterTglGuru = document.getElementById('filter-tgl-absen-guru') ? document.getElementById('filter-tgl-absen-guru').value : "";
-            if (filterTglGuru) {
-                listAbsensiGuru = listAbsensiGuru.filter(g => g.date === filterTglGuru);
+                });
             }
             
-            if (currentUser.role === 'guru') {
-                listAbsensiGuru = listAbsensiGuru.filter(g => g.idGuru === currentUser.guruId);
-            } else if (currentUser.role === 'ortu') {
-                document.getElementById('container-absensi-guru-log').style.display = 'none';
-            }
-            
-            listAbsensiGuru.forEach(g => {
-                let potongTeks = g.potongan > 0 ? `<span style="color:var(--danger)">${g.potongan}%</span>` : '-';
-                let bClass = g.status === 'Tepat Waktu' ? 'badge-success' : 'badge-danger';
-                let aksiTd = currentUser.role === 'admin' ? `<td><button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="hapusAbsensiGuru(${g.id})"><i class="fa-solid fa-trash"></i> Hapus</button></td>` : '';
-                tbodyGuruLog.innerHTML += `
-                    <tr>
-                        <td><strong>${g.date}</strong></td>
-                        <td>${g.nama}</td>
-                        <td>${g.jamMasuk}</td>
-                        <td>${g.jamPulang || '-'}</td>
-                        <td><span class="badge ${bClass}">${g.status}</span></td>
-                        <td>${potongTeks}</td>
-                        ${aksiTd}
+            // Absensi Guru Log
+            const tbodyAbsGuru = document.getElementById('table-absensi-guru-log');
+            if (tbodyAbsGuru) {
+                tbodyAbsGuru.innerHTML = "";
+                const filterTglGuru = document.getElementById('filter-tgl-absen-guru') ? document.getElementById('filter-tgl-absen-guru').value : "";
+                let logGuru = db.absensiGuru || [];
+                if(filterTglGuru) logGuru = logGuru.filter(g => g.date === filterTglGuru);
+                
+                logGuru.forEach(g => {
+                    let btnAksi = currentUser.role === 'admin' ? `<td><button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="hapusAbsensiGuru(${g.id})"><i class="fa-solid fa-trash"></i></button></td>` : '<td>-</td>';
+                    tbodyAbsGuru.innerHTML += `<tr>
+                        <td>${g.date}</td><td><strong>${g.nama}</strong></td>
+                        <td>${g.jamMasuk || '-'}</td><td>${g.jamPulang || '-'}</td>
+                        <td><span class="badge ${g.status === 'Tepat Waktu' ? 'badge-success' : 'badge-danger'}">${g.status}</span></td>
+                        <td>${g.potongan}%</td>${btnAksi}
                     </tr>`;
-            });
+                });
+            }
         }
 
+        // --- PENYEMPURNAAN FUNGSI JS YANG TERPOTONG DI KODE AWAL ---
+        
         function onSearchAbsensiSantriChange() {
-            const keyword = document.getElementById('search-santri-absensi').value.toLowerCase();
-            const sourceSantri = db.santri.filter(s => s.status === 'Aktif' && s.nama.toLowerCase().includes(keyword));
-            currentAbsensiPage = 1; 
-            renderAbsensi(sourceSantri);
+            const searchVal = document.getElementById('search-santri-absensi').value.toLowerCase();
+            const filteredSantri = db.santri.filter(s => s.status === 'Aktif' && s.nama.toLowerCase().includes(searchVal));
+            currentAbsensiPage = 1;
+            renderAbsensi(filteredSantri);
         }
 
-        function changeAbsensiPage(pageNumber) {
-            currentAbsensiPage = pageNumber;
-            const keyword = document.getElementById('search-santri-absensi') ? document.getElementById('search-santri-absensi').value.toLowerCase() : "";
-            if (keyword) {
-                 const sourceSantri = db.santri.filter(s => s.status === 'Aktif' && s.nama.toLowerCase().includes(keyword));
-                 renderAbsensi(sourceSantri);
-            } else {
-                 renderAbsensi();
-            }
-        }
-
-        // --- 6. KEUANGAN & SPP ---
         function simpanParameterAdmin() {
-            const jM = document.getElementById('param-jam-masuk').value;
-            const jP = document.getElementById('param-jam-pulang').value;
-            const pot = document.getElementById('param-potongan').value;
-            const hr = document.getElementById('param-hari-kerja').value;
-            const lat = document.getElementById('param-lat').value;
-            const lng = document.getElementById('param-lng').value;
-            const radius = document.getElementById('param-radius').value;
-            
-            if(!db.settings) db.settings = {};
-            db.settings.jamMasuk = jM;
-            db.settings.jamPulang = jP;
-            db.settings.potonganTelat = pot;
-            db.settings.hariKerjaBulan = hr;
-            db.settings.geoLat = parseFloat(lat) || 0;
-            db.settings.geoLng = parseFloat(lng) || 0;
-            db.settings.geoRadius = parseFloat(radius) || 100;
+            db.settings.jamMasuk = document.getElementById('param-jam-masuk').value;
+            db.settings.jamPulang = document.getElementById('param-jam-pulang').value;
+            db.settings.potonganTelat = parseFloat(document.getElementById('param-potongan').value) || 0;
+            db.settings.hariKerjaBulan = parseInt(document.getElementById('param-hari-kerja').value) || 0;
+            db.settings.geoLat = parseFloat(document.getElementById('param-lat').value) || 0;
+            db.settings.geoLng = parseFloat(document.getElementById('param-lng').value) || 0;
+            db.settings.geoRadius = parseFloat(document.getElementById('param-radius').value) || 100;
             
             saveDb();
-            Swal.fire('Berhasil!', 'Parameter absensi dan geofencing berhasil disimpan.', 'success');
+            Swal.fire('Berhasil!', 'Parameter Ketentuan dan Pengaturan Lokasi berhasil disimpan.', 'success');
+        }
+
+        function renderKeuangan() {
+            if(!db.arusKas) db.arusKas = [];
+            if(!db.spp) db.spp = [];
+
+            // Render Arus Kas
+            const tglMulaiKas = document.getElementById('tgl-mulai-arus-kas').value;
+            const tglSelesaiKas = document.getElementById('tgl-selesai-arus-kas').value;
+            let kasList = db.arusKas;
+            if (tglMulaiKas && tglSelesaiKas) {
+                kasList = kasList.filter(k => k.tgl >= tglMulaiKas && k.tgl <= tglSelesaiKas);
+            }
+            const tbodyKas = document.getElementById('table-arus-kas');
+            if (tbodyKas) {
+                tbodyKas.innerHTML = "";
+                kasList.forEach(k => {
+                    let badgeJenis = k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger';
+                    tbodyKas.innerHTML += `<tr>
+                        <td>${k.tgl}</td>
+                        <td><span class="badge ${badgeJenis}">${k.jenis}</span></td>
+                        <td>${k.ket}</td>
+                        <td>Rp ${k.nominal.toLocaleString('id-ID')}</td>
+                    </tr>`;
+                });
+            }
+
+            // Render SPP Sudah Bayar
+            const tglSppMulai = document.getElementById('tgl-spp-mulai').value;
+            const tglSppSelesai = document.getElementById('tgl-spp-selesai').value;
+            let sppList = db.spp;
+            if (tglSppMulai && tglSppSelesai) {
+                sppList = sppList.filter(s => s.tgl >= tglSppMulai && s.tgl <= tglSppSelesai);
+            }
+            
+            const tbodySpp = document.getElementById('table-spp');
+            if (tbodySpp) {
+                tbodySpp.innerHTML = "";
+                sppList.forEach(s => {
+                    tbodySpp.innerHTML += `<tr>
+                        <td>${s.santri}</td>
+                        <td>Rp ${s.nominal.toLocaleString('id-ID')}</td>
+                        <td>${s.tgl}</td>
+                        <td><span class="badge badge-success">${s.status}</span></td>
+                        <td>${s.metode}</td>
+                    </tr>`;
+                });
+            }
+
+            // Render SPP Belum Bayar
+            const tbodySppBelum = document.getElementById('table-spp-belum');
+            if (tbodySppBelum) {
+                tbodySppBelum.innerHTML = "";
+                db.santri.filter(s => s.status === 'Aktif').forEach(s => {
+                    let sudahBayar = db.spp.some(p => p.santriId === s.id && p.status === 'Lunas');
+                    if(!sudahBayar) {
+                        tbodySppBelum.innerHTML += `<tr>
+                            <td><strong>${s.nama}</strong></td>
+                            <td>${s.wali}</td>
+                            <td>Rp ${(db.settings.sppNominal || 150000).toLocaleString('id-ID')}</td>
+                            <td><span class="badge badge-danger">Belum Lunas</span></td>
+                        </tr>`;
+                    }
+                });
+            }
         }
 
         function simpanSettingKeuangan() {
-            const spp = document.getElementById('setting-spp-nominal').value;
-            const bank = document.getElementById('setting-bank').value;
-            const ewallet = document.getElementById('setting-ewallet').value;
-
-            if(!db.settings) db.settings = {};
-            db.settings.sppNominal = Number(spp);
-            db.settings.rekeningBank = bank;
-            db.settings.ewallet = ewallet;
-
+            db.settings.sppNominal = parseInt(document.getElementById('setting-spp-nominal').value) || 0;
+            db.settings.rekeningBank = document.getElementById('setting-bank').value;
+            db.settings.ewallet = document.getElementById('setting-ewallet').value;
             saveDb();
-            renderKeuangan();
-            Swal.fire('Berhasil!', 'Pengaturan keuangan & SPP diperbarui.', 'success');
+            Swal.fire('Berhasil', 'Pengaturan Rekening & Nominal SPP berhasil disimpan!', 'success');
         }
 
         function simpanTransaksiKas(e) {
             e.preventDefault();
-            const jenis = document.getElementById('kas-jenis').value;
-            const ket = document.getElementById('kas-ket').value;
-            const nominal = Number(document.getElementById('kas-nominal').value);
-
-            if(!db.arusKas) db.arusKas = [];
             db.arusKas.push({
-                id: Date.now(), tgl: getTodayISO(), jenis, ket, nominal
+                id: Date.now(),
+                tgl: getTodayISO(),
+                jenis: document.getElementById('kas-jenis').value,
+                ket: document.getElementById('kas-ket').value,
+                nominal: parseInt(document.getElementById('kas-nominal').value)
             });
-
             saveDb();
             closeModal('modal-kas');
             renderKeuangan();
-            if(currentUser.role === 'admin') loadDashboardData();
-            Swal.fire('Berhasil!', 'Arus kas berhasil ditambahkan.', 'success');
-        }
-
-        function renderKeuangan() {
-            const tbodyKas = document.getElementById('table-arus-kas');
-            if(tbodyKas) {
-                tbodyKas.innerHTML = "";
-                let listKas = db.arusKas || [];
-                const tglMulaiKas = document.getElementById('tgl-mulai-arus-kas') ? document.getElementById('tgl-mulai-arus-kas').value : "";
-                const tglSelesaiKas = document.getElementById('tgl-selesai-arus-kas') ? document.getElementById('tgl-selesai-arus-kas').value : "";
-                
-                if(tglMulaiKas && tglSelesaiKas) {
-                    listKas = listKas.filter(k => k.tgl >= tglMulaiKas && k.tgl <= tglSelesaiKas);
-                }
-
-                listKas.sort((a,b) => b.tgl.localeCompare(a.tgl)).forEach(k => {
-                    let color = k.jenis === 'Pendapatan' ? 'color:var(--secondary);' : 'color:var(--danger);';
-                    let sign = k.jenis === 'Pendapatan' ? '+' : '-';
-                    tbodyKas.innerHTML += `
-                        <tr>
-                            <td><strong>${k.tgl}</strong></td>
-                            <td><span style="${color} font-weight:bold;">${k.jenis}</span></td>
-                            <td>${k.ket}</td>
-                            <td style="${color} font-weight:bold;">${sign} Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
-                        </tr>`;
-                });
-            }
-
-            const tbodyBelum = document.getElementById('table-spp-belum');
-            const tbodySudah = document.getElementById('table-spp');
-            tbodyBelum.innerHTML = "";
-            tbodySudah.innerHTML = "";
-
-            let santriAktif = db.santri.filter(s => s.status === 'Aktif');
-            if (currentUser.role === 'ortu') {
-                santriAktif = santriAktif.filter(s => s.id === currentUser.santriId);
-            }
-
-            let sppList = db.spp || [];
-            const tglSppMulai = document.getElementById('tgl-spp-mulai') ? document.getElementById('tgl-spp-mulai').value : "";
-            const tglSppSelesai = document.getElementById('tgl-spp-selesai') ? document.getElementById('tgl-spp-selesai').value : "";
-            
-            if(tglSppMulai && tglSppSelesai) {
-                sppList = sppList.filter(s => s.tgl >= tglSppMulai && s.tgl <= tglSppSelesai);
-            }
-
-            let nominalSppDefault = db.settings.sppNominal || 150000;
-
-            santriAktif.forEach(s => {
-                let sppRecord = sppList.find(sp => sp.santriId === s.id);
-                
-                if (!sppRecord) {
-                    tbodyBelum.innerHTML += `
-                        <tr>
-                            <td><strong>${s.nama}</strong></td>
-                            <td>${s.wali || '-'}</td>
-                            <td>Rp ${nominalSppDefault.toLocaleString('id-ID')}</td>
-                            <td><span class="badge badge-danger">Belum Bayar</span></td>
-                        </tr>`;
-                } else {
-                    let badgeCl = sppRecord.status === 'Lunas' ? 'badge-success' : 'badge-warning';
-                    let aksi = '';
-                    
-                    if (currentUser.role === 'admin') {
-                        if (sppRecord.status === 'Menunggu Konfirmasi') {
-                            aksi = `<button class="btn btn-success" style="padding:4px 10px; font-size:0.8rem;" onclick="verifikasiSpp(${s.id})"><i class="fa-solid fa-check"></i> Verifikasi Lunas</button>`;
-                        } else {
-                            aksi = `<span style="color:var(--gray); font-size:0.85rem;">Terverifikasi</span>`;
-                        }
-                    } else if (currentUser.role === 'ortu') {
-                        aksi = `<span style="color:var(--gray); font-size:0.85rem;">Metode: ${sppRecord.metode || '-'}</span>`;
-                    }
-
-                    tbodySudah.innerHTML += `
-                        <tr>
-                            <td><strong>${s.nama}</strong></td>
-                            <td>Rp ${Number(sppRecord.nominal).toLocaleString('id-ID')}</td>
-                            <td>${sppRecord.tgl}</td>
-                            <td><span class="badge ${badgeCl}">${sppRecord.status}</span></td>
-                            <td>${aksi}</td>
-                        </tr>`;
-                }
-            });
-
-            if (currentUser.role === 'ortu') {
-                let mySpp = sppList.find(sp => sp.santriId === currentUser.santriId);
-                if (!mySpp) {
-                    tbodySudah.innerHTML += `
-                        <tr>
-                            <td><strong>${db.santri.find(s=>s.id===currentUser.santriId).nama}</strong></td>
-                            <td>Rp ${nominalSppDefault.toLocaleString('id-ID')}</td>
-                            <td>-</td>
-                            <td><span class="badge badge-danger">Belum Bayar</span></td>
-                            <td><button class="btn btn-success" style="padding:6px 12px; font-size:0.85rem;" onclick="bukaModalBayarSpp(${currentUser.santriId})"><i class="fa-solid fa-wallet"></i> Bayar SPP</button></td>
-                        </tr>`;
-                }
-            }
-        }
-
-        function bukaModalBayarSpp(santriId) {
-            const nominal = db.settings.sppNominal || 150000;
-            document.getElementById('tagihan-spp-display').innerText = nominal.toLocaleString('id-ID');
-            document.getElementById('info-bank').innerText = db.settings.rekeningBank || "Belum diatur admin";
-            document.getElementById('info-ewallet').innerText = db.settings.ewallet || "Belum diatur admin";
-            document.getElementById('bayar-spp-santri-id').value = santriId;
-            document.getElementById('modal-bayar-spp').style.display = 'flex';
-        }
-
-        function highlightMetodePembayaran() {
-            const val = document.getElementById('metode-bayar').value;
-            document.getElementById('li-metode-bank').style.fontWeight = val === 'Transfer Bank' ? 'bold' : 'normal';
-            document.getElementById('li-metode-ewallet').style.fontWeight = val === 'E-Wallet' ? 'bold' : 'normal';
-            document.getElementById('li-metode-tunai').style.fontWeight = val === 'Tunai' ? 'bold' : 'normal';
-        }
-
-        function prosesBayarSppOrtu(e) {
-            e.preventDefault();
-            const santriId = parseInt(document.getElementById('bayar-spp-santri-id').value);
-            const metode = document.getElementById('metode-bayar').value;
-            const santri = db.santri.find(s => s.id === santriId);
-            const nominal = db.settings.sppNominal || 150000;
-
-            if(!db.spp) db.spp = [];
-            let idx = db.spp.findIndex(sp => sp.santriId === santriId);
-            if(idx > -1) {
-                db.spp[idx].status = "Menunggu Konfirmasi";
-                db.spp[idx].metode = metode;
-                db.spp[idx].tgl = getTodayISO();
-            } else {
-                db.spp.push({
-                    santriId: santriId, santri: santri ? santri.nama : '', nominal: nominal,
-                    tgl: getTodayISO(), status: "Menunggu Konfirmasi", metode: metode
-                });
-            }
-
-            saveDb();
-            closeModal('modal-bayar-spp');
-            renderKeuangan();
-            Swal.fire('Konfirmasi Terkirim', 'Mohon tunggu verifikasi dari Admin / Bendahara.', 'success');
-        }
-
-        function verifikasiSpp(santriId) {
-            let sppRecord = db.spp.find(sp => sp.santriId === santriId);
-            if(sppRecord) {
-                sppRecord.status = "Lunas";
-                
-                if(!db.arusKas) db.arusKas = [];
-                db.arusKas.push({
-                    id: Date.now(), tgl: getTodayISO(), jenis: "Pendapatan",
-                    ket: `SPP ${sppRecord.santri}`, nominal: Number(sppRecord.nominal)
-                });
-
-                saveDb();
-                renderKeuangan();
-                if(currentUser.role === 'admin') loadDashboardData();
-                Swal.fire('Berhasil!', 'Pembayaran SPP telah diverifikasi lunas.', 'success');
-            }
-        }
-
-        function bersihkanCacheSpp() {
-            Swal.fire({
-                title: 'Hapus Semua Data SPP?',
-                text: "Tindakan ini akan mereset seluruh riwayat dan status pembayaran SPP santri!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#94a3b8',
-                confirmButtonText: 'Ya, Hapus Semua!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    db.spp = [];
-                    saveDb();
-                    renderKeuangan();
-                    Swal.fire('Terbersihkan!', 'Cache data SPP berhasil dikosongkan.', 'success');
-                }
-            });
+            Swal.fire('Berhasil', 'Transaksi arus kas berhasil ditambahkan!', 'success');
         }
 
         function renderFinanceChart() {
-            const ctx = document.getElementById('financeChart').getContext('2d');
+            const ctx = document.getElementById('financeChart');
+            if (!ctx) return;
+            if (chartInstanceFinance) chartInstanceFinance.destroy();
+            
+            let masuk = 0; 
+            let keluar = 0;
+            
             const tglMulai = document.getElementById('tgl-mulai-keuangan').value;
             const tglSelesai = document.getElementById('tgl-selesai-keuangan').value;
             
-            let filteredKas = db.arusKas || [];
+            let kasData = db.arusKas || [];
             if(tglMulai && tglSelesai) {
-                filteredKas = filteredKas.filter(k => k.tgl >= tglMulai && k.tgl <= tglSelesai);
+                kasData = kasData.filter(k => k.tgl >= tglMulai && k.tgl <= tglSelesai);
             }
 
-            let totalMasuk = 0;
-            let totalKeluar = 0;
-            filteredKas.forEach(k => {
-                if(k.jenis === 'Pendapatan') totalMasuk += Number(k.nominal);
-                if(k.jenis === 'Pengeluaran') totalKeluar += Number(k.nominal);
+            kasData.forEach(k => {
+                if(k.jenis === 'Pendapatan') masuk += Number(k.nominal);
+                if(k.jenis === 'Pengeluaran') keluar += Number(k.nominal);
             });
-            let saldoBersih = totalMasuk - totalKeluar;
 
-            document.getElementById('finance-summary-text').innerHTML = `
-                <div style="display:flex; gap:15px; margin-bottom:15px; flex-wrap:wrap;">
-                    <div style="background:#dcfce7; color:#16a34a; padding:10px 15px; border-radius:8px; font-weight:600; flex:1;">Pendapatan: Rp ${totalMasuk.toLocaleString('id-ID')}</div>
-                    <div style="background:#fee2e2; color:#dc2626; padding:10px 15px; border-radius:8px; font-weight:600; flex:1;">Pengeluaran: Rp ${totalKeluar.toLocaleString('id-ID')}</div>
-                    <div style="background:#e0f2fe; color:#0284c7; padding:10px 15px; border-radius:8px; font-weight:600; flex:1;">Saldo Bersih: Rp ${saldoBersih.toLocaleString('id-ID')}</div>
-                </div>`;
-
-            let labels = [];
-            let dataMasuk = [];
-            let dataKeluar = [];
-            
-            for(let i=5; i>=0; i--) {
-                let d = new Date();
-                d.setDate(d.getDate() - i);
-                let isoD = d.toISOString().split('T')[0];
-                labels.push(`Tgl ${d.getDate()}`);
-                
-                let mDay = 0;
-                let kDay = 0;
-                (db.arusKas || []).forEach(k => {
-                    if(k.tgl === isoD) {
-                        if(k.jenis === 'Pendapatan') mDay += Number(k.nominal);
-                        if(k.jenis === 'Pengeluaran') kDay += Number(k.nominal);
-                    }
-                });
-                dataMasuk.push(mDay);
-                dataKeluar.push(kDay);
-            }
-
-            if(chartInstanceFinance) chartInstanceFinance.destroy();
-            chartInstanceFinance = new Chart(ctx, {
+            chartInstanceFinance = new Chart(ctx.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Pendapatan (+)', data: dataMasuk, backgroundColor: '#10b981', borderRadius: 4 },
-                        { label: 'Pengeluaran (-)', data: dataKeluar, backgroundColor: '#ef4444', borderRadius: 4 }
-                    ]
+                    labels: ['Pendapatan (Masuk)', 'Pengeluaran (Keluar)'],
+                    datasets: [{
+                        label: 'Total Keuangan (Rp)',
+                        data: [masuk, keluar],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderWidth: 1
+                    }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
             });
         }
-
-        function renderModalHistoryKeuangan() {
-            const tbody = document.getElementById('table-modal-history-keuangan');
-            tbody.innerHTML = "";
-            (db.arusKas || []).sort((a,b) => b.tgl.localeCompare(a.tgl)).forEach(k => {
-                let color = k.jenis === 'Pendapatan' ? 'color:var(--secondary);' : 'color:var(--danger);';
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${k.tgl}</td>
-                        <td><span style="${color} font-weight:bold;">${k.jenis}</span></td>
-                        <td>${k.ket}</td>
-                        <td style="${color} font-weight:bold;">Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
-                    </tr>`;
-            });
-        }
-
+        
         function clearHistoryKeuangan() {
             Swal.fire({
                 title: 'Bersihkan History?',
-                text: "Semua riwayat arus kas keuangan akan dihapus!",
+                text: "Semua riwayat arus kas (Keluar-Masuk) akan dihapus secara permanen!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
@@ -2466,14 +2309,76 @@
                     db.arusKas = [];
                     saveDb();
                     renderModalHistoryKeuangan();
-                    if(currentUser.role === 'admin') {
-                        renderKeuangan();
-                        loadDashboardData();
-                    }
-                    Swal.fire('Terbersihkan!', 'History keuangan berhasil dikosongkan.', 'success');
+                    renderKeuangan();
+                    if(currentUser.role === 'admin') loadDashboardData();
+                    Swal.fire('Terhapus!', 'History keuangan telah dibersihkan.', 'success');
                 }
             });
         }
+
+        function renderModalHistoryKeuangan() {
+            const tbody = document.getElementById('table-modal-history-keuangan');
+            if (tbody) {
+                tbody.innerHTML = "";
+                const dataKas = db.arusKas || [];
+                dataKas.forEach(k => {
+                    let badgeClass = k.jenis === 'Pendapatan' ? 'color:#10b981;' : 'color:#ef4444;';
+                    tbody.innerHTML += `<tr>
+                        <td>${k.tgl}</td>
+                        <td style="font-weight:bold; ${badgeClass}">${k.jenis}</td>
+                        <td>${k.ket}</td>
+                        <td>Rp ${k.nominal.toLocaleString('id-ID')}</td>
+                    </tr>`;
+                });
+            }
+        }
+        
+        function bersihkanCacheSpp() {
+            Swal.fire({
+                title: 'Hapus Semua Data SPP?',
+                text: "Anda yakin ingin mereset dan menghapus riwayat pembayaran SPP?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'Ya, Hapus!'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    db.spp = [];
+                    saveDb();
+                    renderKeuangan();
+                    Swal.fire('Berhasil', 'Seluruh riwayat SPP berhasil dibersihkan', 'success');
+                }
+            });
+        }
+        
+        function prosesBayarSppOrtu(e) {
+            e.preventDefault();
+            const metode = document.getElementById('metode-bayar').value;
+            if(!metode) return Swal.fire('Error', 'Pilih metode pembayaran terlebih dahulu', 'error');
+
+            const nominalSpp = db.settings.sppNominal || 150000;
+            db.spp.push({
+                santriId: currentUser.santriId,
+                santri: currentUser.name.replace('Wali ', ''), // Menghilangkan kata 'Wali ' di depan
+                nominal: nominalSpp,
+                tgl: getTodayISO(),
+                status: "Menunggu Konfirmasi",
+                metode: metode
+            });
+            saveDb();
+            closeModal('modal-bayar-spp');
+            renderKeuangan();
+            Swal.fire('Berhasil', 'Pengajuan pembayaran SPP Anda sedang diproses dan menunggu verifikasi Admin.', 'success');
+        }
+
+        function highlightMetodePembayaran() {
+            const metode = document.getElementById('metode-bayar').value;
+            document.getElementById('li-metode-bank').style.fontWeight = metode === 'Transfer Bank' ? 'bold' : 'normal';
+            document.getElementById('li-metode-ewallet').style.fontWeight = metode === 'E-Wallet' ? 'bold' : 'normal';
+            document.getElementById('li-metode-tunai').style.fontWeight = metode === 'Tunai' ? 'bold' : 'normal';
+        }
+
     </script>
 </body>
 </html>
