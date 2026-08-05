@@ -6,7 +6,7 @@
     <!-- PWA & Favicon Config -->
     <meta name="theme-color" content="#1e3a8a">
     <title>Sistem Informasi RUTASY (Rumah Tahfidz Asy-Syamil)</title>
-    <!-- Favicon Logo Rutasy (Diperbarui untuk Chrome Install) -->
+    <!-- Favicon Logo Rutasy -->
     <link rel="icon" type="image/png" sizes="192x192" href="logo.png">
     <link rel="icon" type="image/png" sizes="512x512" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
@@ -42,9 +42,9 @@
             justify-content: center; 
             align-items: center; 
             background-image: url('bg.png');
-            background-size: cover;          /* Memastikan gambar menutupi seluruh area elemen */
-            background-position: center;     /* Memposisikan gambar agar selalu di tengah */
-            background-repeat: no-repeat;    /* Mencegah gambar berulang (tiling) */
+            background-size: cover;          
+            background-position: center;     
+            background-repeat: no-repeat;    
         }
         .login-box {
             background: white; padding: 40px; border-radius: var(--radius); box-shadow: var(--shadow); width: 100%; max-width: 400px; text-align: center;
@@ -109,7 +109,6 @@
         .card-title { font-size: 0.9rem; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
         .card-value { font-size: 2rem; font-weight: bold; color: var(--dark); }
 
-        /* Style khusus kartu pastel admin */
         .card-pastel-1 { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-left: 5px solid #3b82f6; }
         .card-pastel-1 .card-title { color: #1e40af; font-weight: 600; }
         .card-pastel-1 .card-value { color: #1e3a8a; font-family: 'Poppins', 'Segoe UI', sans-serif; letter-spacing: -0.5px; }
@@ -229,6 +228,10 @@
                 <div class="menu-item" onclick="switchTab('keuangan')" id="menu-keuangan">
                     <i class="fa-solid fa-wallet"></i> Keuangan & SPP
                 </div>
+                <!-- Menu Pengaturan Ditambahkan -->
+                <div class="menu-item" onclick="switchTab('pengaturan')" id="menu-pengaturan" style="display: none;">
+                    <i class="fa-solid fa-gears"></i> Pengaturan
+                </div>
                 <hr style="margin: 20px; border-color: #e2e8f0;">
                 <div class="menu-item" style="color: var(--danger);" onclick="logout()">
                     <i class="fa-solid fa-sign-out-alt"></i> Keluar
@@ -262,42 +265,6 @@
                         <input type="date" id="dash-tgl-mulai" class="btn" style="background:white; color:var(--dark); border:1px solid #cbd5e1; padding:6px 10px; font-size:0.85rem;" onchange="loadDashboardData()">
                         <span style="font-size:0.85rem; font-weight:600;">s/d</span>
                         <input type="date" id="dash-tgl-selesai" class="btn" style="background:white; color:var(--dark); border:1px solid #cbd5e1; padding:6px 10px; font-size:0.85rem;" onchange="loadDashboardData()">
-                    </div>
-                </div>
-                
-                <!-- Admin Parameters Box -->
-                <div id="admin-param-box" style="display:none; background:white; padding:20px; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:25px;">
-                    <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-sliders"></i> Ketentuan Absensi & Parameter</h3>
-                    <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-end;">
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
-                            <label>Jam Masuk</label>
-                            <input type="time" id="param-jam-masuk">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
-                            <label>Jam Pulang</label>
-                            <input type="time" id="param-jam-pulang">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:150px;">
-                            <label>Potongan Telat (%)</label>
-                            <input type="number" id="param-potongan" placeholder="misal: 5">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:160px;">
-                            <label>Hari Kerja / Bulan</label>
-                            <input type="number" id="param-hari-kerja" placeholder="misal: 24">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:180px;">
-                            <label>Latitude Lokasi Pusat</label>
-                            <input type="text" id="param-lat" placeholder="Contoh: 3.5952">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:180px;">
-                            <label>Longitude Lokasi Pusat</label>
-                            <input type="text" id="param-lng" placeholder="Contoh: 98.6722">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:150px;">
-                            <label>Radius Maks (meter)</label>
-                            <input type="number" id="param-radius" placeholder="Contoh: 100">
-                        </div>
-                        <button class="btn" style="height:42px;" onclick="simpanParameterAdmin()">Simpan</button>
                     </div>
                 </div>
 
@@ -414,12 +381,11 @@
                         </div>
                         <div class="form-group">
                             <label>Cari & Pilih Nama Santri</label>
-                            <!-- Searchable Select menggunakan kombinasi input dan datalist -->
-                            <input type="text" id="search-santri-setoran" placeholder="Ketik nama santri..." list="list-santri-setoran" oninput="onSantriSearchInput()" autocomplete="off">
-                            <datalist id="list-santri-setoran">
+                            <!-- Search Ditambahkan Disini -->
+                            <input type="text" id="search-santri-setoran" placeholder="Ketik nama untuk mencari..." onkeyup="filterSetoranSantri()" style="margin-bottom: 8px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: var(--radius); font-size: 0.85rem;">
+                            <select id="setoran-santri-id" onchange="loadSantriDataForSetoran()">
                                 <!-- Injected via JS -->
-                            </datalist>
-                            <input type="hidden" id="setoran-santri-id">
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Kategori Kelas</label>
@@ -580,26 +546,6 @@
                     <h2>Laporan Keuangan & Pembayaran SPP</h2>
                 </div>
 
-                <!-- Admin Finance Settings Box -->
-                <div id="admin-finance-settings" style="display:none; background:white; padding:20px; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:25px;">
-                    <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-gear"></i> Pengaturan Rekening & SPP</h3>
-                    <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-end;">
-                        <div class="form-group" style="margin-bottom:0; flex:1;">
-                            <label>Nominal SPP/Bulan (Rp)</label>
-                            <input type="number" id="setting-spp-nominal">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1;">
-                            <label>Rekening Bank (Penerima)</label>
-                            <input type="text" id="setting-bank" placeholder="Contoh: BSI 123456789 a.n Rutasy">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; flex:1;">
-                            <label>E-Wallet (Dana/Ovo/Gopay)</label>
-                            <input type="text" id="setting-ewallet" placeholder="Contoh: Dana 08123456789">
-                        </div>
-                        <button class="btn btn-success" style="height:42px;" onclick="simpanSettingKeuangan()">Simpan Pengaturan</button>
-                    </div>
-                </div>
-
                 <!-- Data Arus Kas (Admin) -->
                 <div class="table-container" id="admin-finance-log" style="display:none; margin-bottom:25px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -631,22 +577,24 @@
                     <div style="background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
                             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                                <label style="font-weight:600; font-size:0.9rem;">Filter Bulan / Riwayat SPP:</label>
-                                <input type="month" id="filter-bulan-spp" class="btn" style="background: white; color: var(--dark); border: 1px solid #ccc; padding:6px 10px; font-size:0.85rem;" onchange="renderKeuangan()">
+                                <label style="font-weight:600; font-size:0.9rem;">Filter Tanggal Pembayaran SPP:</label>
+                                <input type="date" id="tgl-spp-mulai" class="btn" style="background: white; color: var(--dark); border: 1px solid #ccc; padding:6px 10px; font-size:0.85rem;" onchange="renderKeuangan()">
+                                <span style="font-size:0.85rem;">s/d</span>
+                                <input type="date" id="tgl-spp-selesai" class="btn" style="background: white; color: var(--dark); border: 1px solid #ccc; padding:6px 10px; font-size:0.85rem;" onchange="renderKeuangan()">
                             </div>
-                            <!-- Tombol Clear History Pembayaran SPP -->
-                            <button class="btn btn-danger" id="btn-clear-spp" style="padding: 8px 16px; font-size:0.85rem;" onclick="bersihkanHistorySpp()"><i class="fa-solid fa-broom"></i> Clear History Pembayaran SPP</button>
+                            <!-- Hanya tampil untuk admin (Logika Baru) -->
+                            <button class="btn btn-danger" id="btn-clear-spp-admin" style="display:none; padding: 8px 16px; font-size:0.85rem;" onclick="bersihkanCacheSpp()"><i class="fa-solid fa-trash-can"></i> Clear / Sembunyikan History SPP</button>
                         </div>
                     </div>
 
                     <!-- BAGIAN 1: SANTRI YANG BELUM BAYAR SPP -->
                     <div class="table-container" id="container-belum-bayar-spp" style="margin-bottom: 20px;">
-                        <h3 style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Daftar Tagihan SPP Bulan Ini</h3>
+                        <h3 style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Daftar Tagihan SPP</h3>
                         <br>
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Nama Santri</th><th>Wali Santri</th><th>Nominal Tagihan</th><th>Status Bulan Ini</th>
+                                    <th>Nama Santri</th><th>Wali Santri</th><th>Nominal Tagihan</th><th>Status</th>
                                 </tr>
                             </thead>
                             <tbody id="table-spp-belum">
@@ -662,7 +610,7 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Nama Santri</th><th>Nominal</th><th>Tanggal & Waktu Pembayaran</th><th>Status</th><th>Aksi / Keterangan</th>
+                                    <th>Nama Santri</th><th>Nominal</th><th>Tanggal Pembayaran</th><th>Status</th><th>Aksi / Keterangan</th>
                                 </tr>
                             </thead>
                             <tbody id="table-spp">
@@ -671,6 +619,69 @@
                         </table>
                     </div>
 
+                </div>
+            </section>
+
+            <!-- 6. PENGATURAN & PARAMETER (DIPISAHKAN) -->
+            <section id="sec-pengaturan" class="content-section">
+                <div class="section-header">
+                    <h2>Pengaturan Sistem & Parameter</h2>
+                </div>
+
+                <!-- Admin Parameters Box (Dipindahkan) -->
+                <div id="admin-param-box" style="display:none; background:white; padding:20px; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:25px;">
+                    <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-sliders"></i> Ketentuan Absensi & Parameter</h3>
+                    <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-end;">
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
+                            <label>Jam Masuk</label>
+                            <input type="time" id="param-jam-masuk">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
+                            <label>Jam Pulang</label>
+                            <input type="time" id="param-jam-pulang">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:150px;">
+                            <label>Potongan Telat (%)</label>
+                            <input type="number" id="param-potongan" placeholder="misal: 5">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:160px;">
+                            <label>Hari Kerja / Bulan</label>
+                            <input type="number" id="param-hari-kerja" placeholder="misal: 24">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:180px;">
+                            <label>Latitude Lokasi Pusat</label>
+                            <input type="text" id="param-lat" placeholder="Contoh: 3.5952">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:180px;">
+                            <label>Longitude Lokasi Pusat</label>
+                            <input type="text" id="param-lng" placeholder="Contoh: 98.6722">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:150px;">
+                            <label>Radius Maks (meter)</label>
+                            <input type="number" id="param-radius" placeholder="Contoh: 100">
+                        </div>
+                        <button class="btn" style="height:42px;" onclick="simpanParameterAdmin()">Simpan</button>
+                    </div>
+                </div>
+
+                <!-- Admin Finance Settings Box (Dipindahkan) -->
+                <div id="admin-finance-settings" style="display:none; background:white; padding:20px; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:25px;">
+                    <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fa-solid fa-gear"></i> Pengaturan Rekening & SPP</h3>
+                    <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-end;">
+                        <div class="form-group" style="margin-bottom:0; flex:1;">
+                            <label>Nominal SPP/Bulan (Rp)</label>
+                            <input type="number" id="setting-spp-nominal">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0; flex:1;">
+                            <label>Rekening Bank (Penerima)</label>
+                            <input type="text" id="setting-bank" placeholder="Contoh: BSI 123456789 a.n Rutasy">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0; flex:1;">
+                            <label>E-Wallet (Dana/Ovo/Gopay)</label>
+                            <input type="text" id="setting-ewallet" placeholder="Contoh: Dana 08123456789">
+                        </div>
+                        <button class="btn btn-success" style="height:42px;" onclick="simpanSettingKeuangan()">Simpan Pengaturan</button>
+                    </div>
                 </div>
             </section>
 
@@ -1018,13 +1029,6 @@
             return `${year}-${month}-${day}`;
         }
 
-        function getCurrentMonthYM() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            return `${year}-${month}`;
-        }
-
         // --- 1. MOCK DATABASE INITIALIZATION ---
         const defaultDb = {
             settings: {
@@ -1060,8 +1064,8 @@
                 { id: 3, santriId: 3, santri: "Zaid bin Tsabit", surah: "Jilid 3 Hal 12", kelancaran: 75, tajwid: 0, kelas: "Kelas Iqro", tgl: getTodayISO() }
             ],
             spp: [
-                { santriId: 1, santri: "Fatih Ramadhan", nominal: 150000, tgl: `${getCurrentMonthYM()}-06`, status: "Lunas", metode: "Transfer Bank", bulan: getCurrentMonthYM() },
-                { santriId: 3, santri: "Zaid bin Tsabit", nominal: 150000, tgl: `${getCurrentMonthYM()}-06`, status: "Menunggu Konfirmasi", metode: "Tunai", bulan: getCurrentMonthYM() }
+                { santriId: 1, santri: "Fatih Ramadhan", nominal: 150000, tgl: getTodayISO(), status: "Lunas", metode: "Transfer Bank" },
+                { santriId: 3, santri: "Zaid bin Tsabit", nominal: 150000, tgl: getTodayISO(), status: "Menunggu Konfirmasi", metode: "Tunai" }
             ],
             arusKas: [
                 { id: 1, tgl: getTodayISO(), jenis: "Pendapatan", ket: "SPP Fatih Ramadhan", nominal: 150000 },
@@ -1073,6 +1077,7 @@
         };
 
         let db = JSON.parse(localStorage.getItem('rutasy_db')) || defaultDb;
+        // Migrasi data santri lama jika belum memiliki kolom baru
         db.santri = db.santri.map(s => ({
             ...s,
             nis: s.nis || "2026" + String(s.id).padStart(3, '0'),
@@ -1087,6 +1092,7 @@
 
         let currentUser = JSON.parse(localStorage.getItem('rutasy_session')) || null;
 
+        // Pagination State untuk Absensi Santri
         let currentAbsensiPage = 1;
         const absensiPageSize = 5;
 
@@ -1099,14 +1105,11 @@
         let chartDetailInstance = null;
 
         window.onload = function() {
+            // Set semua input date menjadi Default secara Real-time
             const today = getTodayISO();
             document.querySelectorAll('input[type="date"]').forEach(el => {
                 if(!el.value) el.value = today;
             });
-            const filterBulanEl = document.getElementById('filter-bulan-spp');
-            if (filterBulanEl && !filterBulanEl.value) {
-                filterBulanEl.value = getCurrentMonthYM();
-            }
 
             const savedRem = JSON.parse(localStorage.getItem('rutasy_remember'));
             if (savedRem) {
@@ -1184,6 +1187,7 @@
             document.getElementById('menu-master').style.display = 'flex';
             document.getElementById('menu-absensi').style.display = 'flex';
             document.getElementById('menu-keuangan').style.display = 'flex';
+            document.getElementById('menu-pengaturan').style.display = 'none';
             document.getElementById('admin-param-box').style.display = 'none';
             document.getElementById('admin-dashboard-filter').style.display = 'none';
             document.getElementById('admin-finance-settings').style.display = 'none';
@@ -1194,19 +1198,24 @@
             document.getElementById('admin-table-hint').style.display = 'none';
             document.getElementById('hint-absensi-read').style.display = 'none';
             document.getElementById('btn-simpan-abs-santri').style.display = 'block';
+            document.getElementById('btn-clear-spp-admin').style.display = 'none';
 
             if (user.role === 'admin') {
                 badge.textContent = 'Admin / Bendahara';
                 document.getElementById('btn-unduh-pdf').style.display = 'inline-block';
                 chartsGrid.style.gridTemplateColumns = '1fr';
                 document.getElementById('finance-chart-container').style.display = 'block';
+                
+                document.getElementById('menu-pengaturan').style.display = 'flex';
                 document.getElementById('admin-param-box').style.display = 'block';
-                document.getElementById('admin-dashboard-filter').style.display = 'flex';
                 document.getElementById('admin-finance-settings').style.display = 'block';
+                
+                document.getElementById('admin-dashboard-filter').style.display = 'flex';
                 document.getElementById('admin-finance-log').style.display = 'block';
                 document.getElementById('admin-table-hint').style.display = 'inline';
                 document.getElementById('hint-absensi-read').style.display = 'inline';
                 document.getElementById('btn-simpan-abs-santri').style.display = 'none'; 
+                document.getElementById('btn-clear-spp-admin').style.display = 'inline-block';
                 
                 document.getElementById('param-jam-masuk').value = db.settings.jamMasuk || "07:00";
                 document.getElementById('param-jam-pulang').value = db.settings.jamPulang || "15:00";
@@ -1311,7 +1320,9 @@
             }
             
             document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
-            document.getElementById(`sec-${tabId}`).classList.add('active'); 
+            if(document.getElementById(`sec-${tabId}`)) {
+                document.getElementById(`sec-${tabId}`).classList.add('active'); 
+            }
 
             if(tabId === 'master') renderMaster();
             if(tabId === 'progress') renderProgress();
@@ -1623,32 +1634,22 @@
         }
 
         // --- 3. PROGRES & SETORAN SANTRI ---
-        function populateSetoranSantriDropdown() {
-            const listEl = document.getElementById('list-santri-setoran');
-            if(!listEl) return;
-            let options = ``;
-            db.santri.filter(s => s.status === "Aktif").forEach(s => {
-                options += `<option value="${s.nama}" data-id="${s.id}"></option>`;
-            });
-            listEl.innerHTML = options;
+        function populateSetoranSantriDropdown(keyword = "") {
+            if(!document.getElementById('setoran-santri-id')) return;
+            let options = `<option value="">-- Pilih Santri --</option>`;
+            
+            db.santri
+              .filter(s => s.status === "Aktif" && s.nama.toLowerCase().includes(keyword.toLowerCase()))
+              .forEach(s => {
+                  options += `<option value="${s.id}">${s.nama}</option>`;
+              });
+              
+            document.getElementById('setoran-santri-id').innerHTML = options;
         }
 
-        function onSantriSearchInput() {
-            const val = document.getElementById('search-santri-setoran').value;
-            const listEl = document.getElementById('list-santri-setoran');
-            const options = listEl.querySelectorAll('option');
-            let selectedId = "";
-            
-            options.forEach(opt => {
-                if(opt.value === val) {
-                    selectedId = opt.getAttribute('data-id');
-                }
-            });
-
-            document.getElementById('setoran-santri-id').value = selectedId;
-            if(selectedId) {
-                loadSantriDataForSetoran();
-            }
+        function filterSetoranSantri() {
+            const keyword = document.getElementById('search-santri-setoran').value;
+            populateSetoranSantriDropdown(keyword);
         }
 
         function loadSantriDataForSetoran() {
@@ -1684,7 +1685,7 @@
 
         function simpanSetoran() {
             const sId = parseInt(document.getElementById('setoran-santri-id').value);
-            if(!sId) { Swal.fire('Perhatian', 'Pilih/Cari nama santri terlebih dahulu dari list!', 'warning'); return; }
+            if(!sId) { Swal.fire('Perhatian', 'Pilih nama santri terlebih dahulu!', 'warning'); return; }
             
             const kelas = document.getElementById('setoran-kelas').value;
             if(!kelas) { Swal.fire('Perhatian', 'Pilih kategori kelas terlebih dahulu!', 'warning'); return; }
@@ -1718,8 +1719,6 @@
             saveDb();
             renderProgress();
             
-            document.getElementById('search-santri-setoran').value = "";
-            document.getElementById('setoran-santri-id').value = "";
             document.getElementById('setoran-halaman').value = "";
             document.getElementById('setoran-surah').value = "";
             document.getElementById('setoran-ayat').value = "";
@@ -1939,7 +1938,7 @@
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
+            const R = 6371e3; 
             const φ1 = lat1 * Math.PI/180;
             const φ2 = lat2 * Math.PI/180;
             const Δφ = (lat2-lat1) * Math.PI/180;
@@ -1950,7 +1949,7 @@
                       Math.sin(Δλ/2) * Math.sin(Δλ/2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
-            return R * c;
+            return R * c; 
         }
 
         function prosesAbsenMasukGuruAction() {
@@ -2031,6 +2030,13 @@
             Swal.fire('Berhasil!', 'Absensi Santri berhasil disimpan.', 'success');
         }
 
+        function onSearchAbsensiSantriChange() {
+            let keyword = document.getElementById('search-santri-absensi').value.toLowerCase();
+            let filtered = db.santri.filter(s => s.status === 'Aktif' && s.nama.toLowerCase().includes(keyword));
+            currentAbsensiPage = 1;
+            renderAbsensi(filtered);
+        }
+
         function renderAbsensi(filteredSantri = null) {
             const tbodyLogPengajar = document.getElementById('table-log-pengajar-absensi');
             tbodyLogPengajar.innerHTML = "";
@@ -2103,346 +2109,271 @@
             }
 
             if (totalPages > 1) {
-                let btnHtml = `<div style="font-size:0.85rem; color:var(--gray);">Halaman ${currentAbsensiPage} dari ${totalPages}</div><div class="pagination-buttons">`;
-                btnHtml += `<button class="page-btn" onclick="changeAbsensiPage(${currentAbsensiPage - 1})" ${currentAbsensiPage === 1 ? 'disabled' : ''}>Prev</button>`;
-                for(let i=1; i<=totalPages; i++) {
-                    btnHtml += `<button class="page-btn ${i === currentAbsensiPage ? 'active' : ''}" onclick="changeAbsensiPage(${i})">${i}</button>`;
-                }
-                btnHtml += `<button class="page-btn" onclick="changeAbsensiPage(${currentAbsensiPage + 1})" ${currentAbsensiPage === totalPages ? 'disabled' : ''}>Next</button>`;
-                btnHtml += `</div>`;
-                paginationContainer.innerHTML = btnHtml;
-            }
-
-            const tbodyAbsGuru = document.getElementById('table-absensi-guru-log');
-            tbodyAbsGuru.innerHTML = "";
-            const filterTglGuru = document.getElementById('filter-tgl-absen-guru').value;
-            let listAbsGuru = db.absensiGuru || [];
-            if(filterTglGuru) {
-                listAbsGuru = listAbsGuru.filter(g => g.date === filterTglGuru);
-            }
-            
-            listAbsGuru.forEach(g => {
-                let statusBadge = g.status === 'Tepat Waktu' ? 'badge-success' : 'badge-danger';
-                let aksiDel = currentUser.role === 'admin' ? `<td><button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="hapusAbsensiGuru(${g.id})"><i class="fa-solid fa-trash"></i></button></td>` : '';
-                tbodyAbsGuru.innerHTML += `
-                    <tr>
-                        <td><strong>${g.date}</strong></td>
-                        <td>${g.nama}</td>
-                        <td>${g.jamMasuk}</td>
-                        <td>${g.jamPulang || '-'}</td>
-                        <td><span class="badge ${statusBadge}">${g.status}</span></td>
-                        <td>${g.potongan}%</td>
-                        ${aksiDel}
-                    </tr>`;
-            });
-        }
-
-        function changeAbsensiPage(page) {
-            currentAbsensiPage = page;
-            const query = document.getElementById('search-santri-absensi').value.toLowerCase();
-            if(query) {
-                let filtered = db.santri.filter(s => s.status === 'Aktif' && s.nama.toLowerCase().includes(query));
-                renderAbsensi(filtered);
-            } else {
-                renderAbsensi();
+                let pageButtonsHTML = `<div style="font-size:0.85rem; color:var(--gray);">Halaman ${currentAbsensiPage} dari ${totalPages} (Total: ${sourceSantri.length} Data)</div>`;
+                pageButtonsHTML += `<div class="pagination-buttons">`;
+                pageButtonsHTML += `<button class="page-btn" onclick="changeAbsensiPage(${currentAbsensiPage - 1})" ${currentAbsensiPage === 1 ? 'disabled style="cursor:not-allowed; opacity:0.5;"' : ''}>&laquo; Prev</button>`;
+                pageButtonsHTML += `<button class="page-btn" onclick="changeAbsensiPage(${currentAbsensiPage + 1})" ${currentAbsensiPage >= totalPages ? 'disabled style="cursor:not-allowed; opacity:0.5;"' : ''}>Next &raquo;</button>`;
+                pageButtonsHTML += `</div>`;
+                paginationContainer.innerHTML = pageButtonsHTML;
             }
         }
 
-        function onSearchAbsensiSantriChange() {
-            const query = document.getElementById('search-santri-absensi').value.toLowerCase();
-            currentAbsensiPage = 1;
-            let filtered = db.santri.filter(s => s.status === 'Aktif' && s.nama.toLowerCase().includes(query));
-            renderAbsensi(filtered);
+        function changeAbsensiPage(newPage) {
+            currentAbsensiPage = newPage;
+            renderAbsensi();
         }
 
-        // --- 6. KEUANGAN & PEMBAYARAN SPP REAL-TIME ---
-        function renderKeuangan() {
-            const filterBulan = document.getElementById('filter-bulan-spp').value || getCurrentMonthYM();
-            const nominalSpp = Number(db.settings.sppNominal || 150000);
-            
-            const tbodyBelum = document.getElementById('table-spp-belum');
-            const tbodySudah = document.getElementById('table-spp');
-            tbodyBelum.innerHTML = "";
-            tbodySudah.innerHTML = "";
-
-            let santriAktif = db.santri.filter(s => s.status === 'Aktif');
-            let listSpp = db.spp || [];
-
-            // Filter berdasarkan bulan real-time
-            let sppBulanIni = listSpp.filter(s => {
-                let sBulan = s.bulan || (s.tgl ? s.tgl.substring(0, 7) : "");
-                return sBulan === filterBulan;
-            });
-
-            if (currentUser.role === 'ortu') {
-                santriAktif = santriAktif.filter(s => s.id === currentUser.santriId);
-                sppBulanIni = sppBulanIni.filter(s => s.santriId === currentUser.santriId);
-            }
-
-            // Render Belum Bayar
-            santriAktif.forEach(s => {
-                let su = sppBulanIni.find(x => x.santriId === s.id && (x.status === 'Lunas' || x.status === 'Menunggu Konfirmasi'));
-                if (!su) {
-                    let tombolBayar = (currentUser.role === 'ortu') ? 
-                        `<button class="btn btn-success" style="padding:6px 12px; font-size:0.8rem;" onclick="bukaModalBayarSpp(${s.id})"><i class="fa-solid fa-credit-card"></i> Bayar SPP</button>` : 
-                        `<span class="badge badge-danger">Belum Bayar</span>`;
-
-                    tbodyBelum.innerHTML += `
-                        <tr>
-                            <td><strong>${s.nama}</strong></td>
-                            <td>${s.wali || '-'}</td>
-                            <td>Rp ${nominalSpp.toLocaleString('id-ID')}</td>
-                            <td>${tombolBayar}</td>
-                        </tr>`;
-                }
-            });
-
-            if(tbodyBelum.innerHTML === "") {
-                tbodyBelum.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--gray);">Semua santri sudah membayar SPP untuk bulan ini.</td></tr>`;
-            }
-
-            // Render Sudah Bayar / Pengajuan
-            sppBulanIni.forEach(s => {
-                let badgeStatus = s.status === 'Lunas' ? 'badge-success' : 'badge-warning';
-                let aksi = '-';
-                if (currentUser.role === 'admin' && s.status === 'Menunggu Konfirmasi') {
-                    aksi = `<button class="btn btn-success" style="padding:4px 10px; font-size:0.75rem;" onclick="verifikasiSpp(${s.santriId}, '${s.bulan}')">Konfirmasi & Terima</button>`;
-                } else {
-                    aksi = `<span style="font-size:0.85rem; color:var(--gray);">${s.metode || 'Transfer'}</span>`;
-                }
-
-                tbodySudah.innerHTML += `
-                    <tr>
-                        <td><strong>${s.santri}</strong></td>
-                        <td>Rp ${Number(s.nominal).toLocaleString('id-ID')}</td>
-                        <td>${s.tgl}</td>
-                        <td><span class="badge ${badgeStatus}">${s.status}</span></td>
-                        <td>${aksi}</td>
-                    </tr>`;
-            });
-
-            if(tbodySudah.innerHTML === "") {
-                tbodySudah.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--gray);">Belum ada riwayat pembayaran SPP di bulan ini.</td></tr>`;
-            }
-
-            // Render Arus Kas Admin
-            if(currentUser.role === 'admin') {
-                const tbodyArus = document.getElementById('table-arus-kas');
-                if(tbodyArus) {
-                    tbodyArus.innerHTML = "";
-                    const tMulai = document.getElementById('tgl-mulai-arus-kas').value;
-                    const tSelesai = document.getElementById('tgl-selesai-arus-kas').value;
-                    let kasList = db.arusKas || [];
-                    if(tMulai && tSelesai) {
-                        kasList = kasList.filter(k => k.tgl >= tMulai && k.tgl <= tSelesai);
-                    }
-                    kasList.forEach(k => {
-                        let b = k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger';
-                        tbodyArus.innerHTML += `
-                            <tr>
-                                <td>${k.tgl}</td>
-                                <td><span class="badge ${b}">${k.jenis}</span></td>
-                                <td>${k.ket}</td>
-                                <td>Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
-                            </tr>`;
-                    });
-                }
-            }
+        // --- 6. LOGIC KEUANGAN & SETTINGS ---
+        function simpanSettingKeuangan() {
+            db.settings.sppNominal = document.getElementById('setting-spp-nominal').value;
+            db.settings.rekeningBank = document.getElementById('setting-bank').value;
+            db.settings.ewallet = document.getElementById('setting-ewallet').value;
+            saveDb();
+            Swal.fire('Berhasil', 'Pengaturan Keuangan Disimpan', 'success');
         }
 
-        function bersihkanHistorySpp() {
+        function simpanParameterAdmin() {
+            db.settings.jamMasuk = document.getElementById('param-jam-masuk').value;
+            db.settings.jamPulang = document.getElementById('param-jam-pulang').value;
+            db.settings.potonganTelat = document.getElementById('param-potongan').value;
+            db.settings.hariKerjaBulan = document.getElementById('param-hari-kerja').value;
+            db.settings.geoLat = document.getElementById('param-lat').value;
+            db.settings.geoLng = document.getElementById('param-lng').value;
+            db.settings.geoRadius = document.getElementById('param-radius').value;
+            saveDb();
+            Swal.fire('Berhasil', 'Parameter Absensi Disimpan', 'success');
+        }
+
+        function bersihkanCacheSpp() {
             Swal.fire({
-                title: 'Clear History SPP?',
-                text: "Semua riwayat pembayaran SPP akan dibersihkan agar lebih rapi.",
+                title: 'Sembunyikan Riwayat SPP?',
+                text: "Riwayat pembayaran akan disembunyikan dari tabel, namun sistem akan tetap menganggap santri SUDAH BAYAR.",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 cancelButtonColor: '#94a3b8',
-                confirmButtonText: 'Ya, Clear!'
+                confirmButtonText: 'Ya, Sembunyikan!'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    db.spp = [];
+                    // Menandai flag "hiddenHistory" agar tidak ditampilkan di riwayat
+                    // tapi fungsi pengecekan pembayaran tetap aktif.
+                    db.spp.forEach(s => s.hiddenHistory = true);
                     saveDb();
                     renderKeuangan();
-                    Swal.fire('Berhasil!', 'History pembayaran SPP telah dibersihkan.', 'success');
+                    Swal.fire('Berhasil!', 'Riwayat pembayaran berhasil dibersihkan dari tampilan.', 'success');
                 }
             });
         }
 
-        function bukaModalBayarSpp(santriId) {
-            const nominal = db.settings.sppNominal || 150000;
+        function renderKeuangan() {
+            if(currentUser.role === 'admin') {
+                const tbodyKas = document.getElementById('table-arus-kas');
+                tbodyKas.innerHTML = "";
+                let arus = db.arusKas || [];
+                
+                let tglMulai = document.getElementById('tgl-mulai-arus-kas').value;
+                let tglSelesai = document.getElementById('tgl-selesai-arus-kas').value;
+                
+                if(tglMulai && tglSelesai) {
+                    arus = arus.filter(a => a.tgl >= tglMulai && a.tgl <= tglSelesai);
+                }
+                
+                arus.forEach(a => {
+                    let badgeClass = a.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger';
+                    tbodyKas.innerHTML += `<tr>
+                        <td>${a.tgl}</td>
+                        <td><span class="badge ${badgeClass}">${a.jenis}</span></td>
+                        <td>${a.ket}</td>
+                        <td>Rp ${Number(a.nominal).toLocaleString('id-ID')}</td>
+                    </tr>`;
+                });
+            }
+            
+            const tglMulaiSpp = document.getElementById('tgl-spp-mulai').value;
+            const tglSelesaiSpp = document.getElementById('tgl-spp-selesai').value;
+
+            let sppList = db.spp || [];
+            if(tglMulaiSpp && tglSelesaiSpp) {
+                sppList = sppList.filter(s => s.tgl >= tglMulaiSpp && s.tgl <= tglSelesaiSpp);
+            }
+
+            const tbodySudah = document.getElementById('table-spp');
+            tbodySudah.innerHTML = "";
+            
+            // Render riwayat: Sembunyikan yang sudah di hide history nya
+            let displaySpp = sppList.filter(s => !s.hiddenHistory);
+            if (currentUser.role === 'ortu') {
+                displaySpp = displaySpp.filter(s => s.santriId === currentUser.santriId);
+            }
+            
+            displaySpp.forEach(s => {
+                let statusBadge = s.status === 'Lunas' ? 'badge-success' : 'badge-warning';
+                let aksi = '-';
+                if (currentUser.role === 'admin' && s.status !== 'Lunas') {
+                    aksi = `<button class="btn btn-success" style="padding: 5px 10px; font-size: 0.8rem;" onclick="konfirmasiSpp(${s.santriId})"><i class="fa-solid fa-check"></i> Konfirmasi</button>`;
+                }
+                tbodySudah.innerHTML += `<tr>
+                    <td><strong>${s.santri}</strong></td>
+                    <td>Rp ${Number(s.nominal).toLocaleString('id-ID')}</td>
+                    <td>${s.tgl}</td>
+                    <td><span class="badge ${statusBadge}">${s.status}</span></td>
+                    <td>${aksi}</td>
+                </tr>`;
+            });
+            
+            const tbodyBelum = document.getElementById('table-spp-belum');
+            tbodyBelum.innerHTML = "";
+            
+            let santriAktif = db.santri.filter(s => s.status === 'Aktif');
+            if (currentUser.role === 'ortu') {
+                santriAktif = santriAktif.filter(s => s.id === currentUser.santriId);
+            }
+            
+            santriAktif.forEach(santri => {
+                // Pengecekan tagihan MENGABAIKAN hiddenHistory, sehingga tidak tertagih double
+                let hasPaid = db.spp.find(s => s.santriId === santri.id);
+                if (!hasPaid) {
+                    let tagihan = db.settings.sppNominal || 150000;
+                    let aksi = currentUser.role === 'ortu' ? `<button class="btn btn-success" style="padding:5px 10px; font-size:0.8rem;" onclick="openModalBayarSpp(${santri.id}, ${tagihan})"><i class="fa-solid fa-wallet"></i> Bayar SPP</button>` : `<span class="badge badge-danger">Belum Lunas</span>`;
+                    
+                    tbodyBelum.innerHTML += `<tr>
+                        <td><strong>${santri.nama}</strong></td>
+                        <td>${santri.wali || '-'}</td>
+                        <td>Rp ${Number(tagihan).toLocaleString('id-ID')}</td>
+                        <td>${aksi}</td>
+                    </tr>`;
+                }
+            });
+        }
+
+        function renderFinanceChart() {
+            if (chartInstanceFinance) chartInstanceFinance.destroy();
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            
+            let masuk = 0; let keluar = 0;
+            let tglMulai = document.getElementById('tgl-mulai-keuangan').value;
+            let tglSelesai = document.getElementById('tgl-selesai-keuangan').value;
+            
+            let filteredKas = db.arusKas || [];
+            if(tglMulai && tglSelesai) {
+                filteredKas = filteredKas.filter(k => k.tgl >= tglMulai && k.tgl <= tglSelesai);
+            }
+            
+            filteredKas.forEach(k => {
+                if(k.jenis === 'Pendapatan') masuk += Number(k.nominal);
+                if(k.jenis === 'Pengeluaran') keluar += Number(k.nominal);
+            });
+            
+            document.getElementById('finance-summary-text').innerHTML = `<strong>Total Masuk:</strong> Rp ${masuk.toLocaleString('id-ID')} | <strong>Total Keluar:</strong> Rp ${keluar.toLocaleString('id-ID')}`;
+
+            chartInstanceFinance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Pendapatan', 'Pengeluaran'],
+                    datasets: [{
+                        label: 'Nominal Rupiah',
+                        data: [masuk, keluar],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function konfirmasiSpp(santriId) {
+            let sppIndex = db.spp.findIndex(s => s.santriId === santriId);
+            if(sppIndex > -1) {
+                db.spp[sppIndex].status = 'Lunas';
+                db.arusKas.push({
+                    id: Date.now(), tgl: getTodayISO(), jenis: "Pendapatan", ket: `SPP ${db.spp[sppIndex].santri}`, nominal: db.spp[sppIndex].nominal
+                });
+                saveDb();
+                renderKeuangan();
+                Swal.fire('Berhasil', 'Pembayaran SPP telah dikonfirmasi dan masuk ke Arus Kas', 'success');
+            }
+        }
+
+        function openModalBayarSpp(id, nominal) {
+            document.getElementById('bayar-spp-santri-id').value = id;
             document.getElementById('tagihan-spp-display').textContent = Number(nominal).toLocaleString('id-ID');
-            document.getElementById('bayar-spp-santri-id').value = santriId;
             document.getElementById('info-bank').textContent = db.settings.rekeningBank || "Belum diatur";
             document.getElementById('info-ewallet').textContent = db.settings.ewallet || "Belum diatur";
             document.getElementById('modal-bayar-spp').style.display = 'flex';
         }
 
         function highlightMetodePembayaran() {
-            const metode = document.getElementById('metode-bayar').value;
-            document.getElementById('li-metode-bank').style.fontWeight = metode === 'Transfer Bank' ? 'bold' : 'normal';
-            document.getElementById('li-metode-ewallet').style.fontWeight = metode === 'E-Wallet' ? 'bold' : 'normal';
-            document.getElementById('li-metode-tunai').style.fontWeight = metode === 'Tunai' ? 'bold' : 'normal';
+            const val = document.getElementById('metode-bayar').value;
+            document.getElementById('li-metode-bank').style.opacity = (val === 'Transfer Bank' || !val) ? '1' : '0.3';
+            document.getElementById('li-metode-ewallet').style.opacity = (val === 'E-Wallet' || !val) ? '1' : '0.3';
+            document.getElementById('li-metode-tunai').style.opacity = (val === 'Tunai' || !val) ? '1' : '0.3';
         }
 
         function prosesBayarSppOrtu(e) {
             e.preventDefault();
-            const santriId = parseInt(document.getElementById('bayar-spp-santri-id').value);
+            const id = parseInt(document.getElementById('bayar-spp-santri-id').value);
             const metode = document.getElementById('metode-bayar').value;
-            const santri = db.santri.find(s => s.id === santriId);
-            const nominal = Number(db.settings.sppNominal || 150000);
-            const currentBulan = getCurrentMonthYM();
-            const waktuSekarang = `${getTodayISO()} ${new Date().toLocaleTimeString()}`;
-
-            if(!db.spp) db.spp = [];
+            const santri = db.santri.find(s => s.id === id);
+            const nominal = db.settings.sppNominal || 150000;
+            
             db.spp.push({
-                santriId: santriId, santri: santri ? santri.nama : '-',
-                nominal: nominal, tgl: waktuSekarang, status: "Menunggu Konfirmasi",
-                metode: metode, bulan: currentBulan
+                santriId: id, santri: santri.nama, nominal: nominal, tgl: getTodayISO(), status: "Menunggu Konfirmasi", metode: metode
             });
-
             saveDb();
             closeModal('modal-bayar-spp');
             renderKeuangan();
-            Swal.fire('Berhasil Mengonfirmasi!', 'Pembayaran Anda telah dikirim dan menunggu verifikasi admin.', 'success');
-        }
-
-        function verifikasiSpp(santriId, bulan) {
-            const sppItem = db.spp.find(s => s.santriId === santriId && s.bulan === bulan);
-            if(sppItem) {
-                sppItem.status = 'Lunas';
-                
-                if(!db.arusKas) db.arusKas = [];
-                db.arusKas.push({
-                    id: Date.now(), tgl: getTodayISO(), jenis: "Pendapatan",
-                    ket: `SPP ${sppItem.santri} (${bulan})`, nominal: sppItem.nominal
-                });
-
-                saveDb();
-                renderKeuangan();
-                Swal.fire('Berhasil!', 'Pembayaran SPP telah dikonfirmasi sebagai Lunas.', 'success');
-            }
-        }
-
-        function simpanSettingKeuangan() {
-            db.settings.sppNominal = parseFloat(document.getElementById('setting-spp-nominal').value) || 150000;
-            db.settings.rekeningBank = document.getElementById('setting-bank').value;
-            db.settings.ewallet = document.getElementById('setting-ewallet').value;
-            saveDb();
-            renderKeuangan();
-            Swal.fire('Berhasil', 'Pengaturan rekening dan nominal SPP berhasil disimpan.', 'success');
+            Swal.fire('Berhasil', 'Pengajuan Pembayaran SPP terkirim. Menunggu verifikasi admin.', 'success');
         }
 
         function simpanTransaksiKas(e) {
             e.preventDefault();
-            const jenis = document.getElementById('kas-jenis').value;
-            const ket = document.getElementById('kas-ket').value;
-            const nominal = parseFloat(document.getElementById('kas-nominal').value);
-
-            if(!db.arusKas) db.arusKas = [];
             db.arusKas.push({
-                id: Date.now(), tgl: getTodayISO(), jenis: jenis, ket: ket, nominal: nominal
+                id: Date.now(),
+                tgl: getTodayISO(),
+                jenis: document.getElementById('kas-jenis').value,
+                ket: document.getElementById('kas-ket').value,
+                nominal: document.getElementById('kas-nominal').value
             });
-
             saveDb();
             closeModal('modal-kas');
             renderKeuangan();
-            loadDashboardData();
-            Swal.fire('Berhasil', 'Transaksi arus kas berhasil disimpan.', 'success');
+            if(currentUser.role === 'admin') loadDashboardData(); 
+            Swal.fire('Berhasil', 'Transaksi Kas ditambahkan', 'success');
         }
 
         function renderModalHistoryKeuangan() {
             const tbody = document.getElementById('table-modal-history-keuangan');
             tbody.innerHTML = "";
-            let list = db.arusKas || [];
-            list.forEach(k => {
-                let badge = k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger';
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${k.tgl}</td>
-                        <td><span class="badge ${badge}">${k.jenis}</span></td>
-                        <td>${k.ket}</td>
-                        <td>Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
-                    </tr>`;
+            let sorted = (db.arusKas || []).sort((a,b) => b.tgl.localeCompare(a.tgl));
+            sorted.forEach(a => {
+                let badgeClass = a.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger';
+                tbody.innerHTML += `<tr>
+                    <td>${a.tgl}</td>
+                    <td><span class="badge ${badgeClass}">${a.jenis}</span></td>
+                    <td>${a.ket}</td>
+                    <td>Rp ${Number(a.nominal).toLocaleString('id-ID')}</td>
+                </tr>`;
             });
         }
 
         function clearHistoryKeuangan() {
             Swal.fire({
-                title: 'Bersihkan History?',
-                text: "Semua data history keuangan arus kas akan dihapus.",
+                title: 'Hapus Riwayat Arus Kas?',
+                text: "Ini akan menghapus secara permanen riwayat keuangan.",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#94a3b8',
-                confirmButtonText: 'Ya, Bersihkan!'
+                confirmButtonText: 'Ya, Hapus!'
             }).then((result) => {
-                if (result.isConfirmed) {
+                if(result.isConfirmed) {
                     db.arusKas = [];
                     saveDb();
                     renderModalHistoryKeuangan();
                     renderKeuangan();
                     loadDashboardData();
-                    Swal.fire('Bersih!', 'History keuangan berhasil dibersihkan.', 'success');
+                    Swal.fire('Terhapus', 'Riwayat keuangan telah dihapus', 'success');
                 }
             });
         }
 
-        function renderFinanceChart() {
-            if(currentUser.role !== 'admin') return;
-            const ctx = document.getElementById('financeChart').getContext('2d');
-            if(chartInstanceFinance) chartInstanceFinance.destroy();
-
-            const tMulai = document.getElementById('tgl-mulai-keuangan').value;
-            const tSelesai = document.getElementById('tgl-selesai-keuangan').value;
-            let list = db.arusKas || [];
-            if(tMulai && tSelesai) {
-                list = list.filter(k => k.tgl >= tMulai && k.tgl <= tSelesai);
-            }
-
-            let totalIn = 0;
-            let totalOut = 0;
-            list.forEach(k => {
-                if(k.jenis === 'Pendapatan') totalIn += Number(k.nominal);
-                if(k.jenis === 'Pengeluaran') totalOut += Number(k.nominal);
-            });
-
-            document.getElementById('finance-summary-text').innerHTML = `
-                <div style="display:flex; gap:15px; margin-bottom:15px; font-size:0.9rem;">
-                    <div>Total Masuk: <strong style="color:var(--secondary);">Rp ${totalIn.toLocaleString('id-ID')}</strong></div>
-                    <div>Total Keluar: <strong style="color:var(--danger);">Rp ${totalOut.toLocaleString('id-ID')}</strong></div>
-                </div>`;
-
-            chartInstanceFinance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Pendapatan (Masuk)', 'Pengeluaran (Keluar)'],
-                    datasets: [{
-                        label: 'Arus Kas (Rp)',
-                        data: [totalIn, totalOut],
-                        backgroundColor: ['#10b981', '#ef4444'],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
-                }
-            });
-        }
-
-        function simpanParameterAdmin() {
-            db.settings.jamMasuk = document.getElementById('param-jam-masuk').value || "07:00";
-            db.settings.jamPulang = document.getElementById('param-jam-pulang').value || "15:00";
-            db.settings.potonganTelat = parseFloat(document.getElementById('param-potongan').value) || 5;
-            db.settings.hariKerjaBulan = parseInt(document.getElementById('param-hari-kerja').value) || 24;
-            db.settings.geoLat = parseFloat(document.getElementById('param-lat').value) || 3.5952;
-            db.settings.geoLng = parseFloat(document.getElementById('param-lng').value) || 98.6722;
-            db.settings.geoRadius = parseFloat(document.getElementById('param-radius').value) || 100;
-            
-            saveDb();
-            Swal.fire('Berhasil', 'Ketentuan absensi dan parameter geofencing berhasil disimpan.', 'success');
-        }
     </script>
 </body>
 </html>
