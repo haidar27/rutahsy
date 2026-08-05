@@ -558,9 +558,15 @@
 
                 <!-- Data Arus Kas (Admin) -->
                 <div class="table-container" id="admin-finance-log" style="display:none; margin-bottom:25px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                         <h3>Detail Arus Kas (Pendapatan & Pengeluaran)</h3>
-                        <button class="btn" onclick="openModalKas()">+ Tambah Transaksi</button>
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <label style="font-size:0.85rem; font-weight:600;">Dari:</label>
+                            <input type="date" id="tgl-mulai-arus-kas" class="btn" style="background: white; color: var(--dark); border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 0.85rem;" onchange="renderKeuangan()">
+                            <label style="font-size:0.85rem; font-weight:600;">s/d:</label>
+                            <input type="date" id="tgl-selesai-arus-kas" class="btn" style="background: white; color: var(--dark); border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 0.85rem;" onchange="renderKeuangan()">
+                            <button class="btn" onclick="openModalKas()" style="margin-left: 5px;">+ Tambah Transaksi</button>
+                        </div>
                     </div>
                     <br>
                     <table>
@@ -813,17 +819,17 @@
             <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid #cbd5e1;">
                 <p><strong>Tagihan:</strong> Rp <span id="tagihan-spp-display"></span></p>
                 <p style="margin-top:10px; font-size:0.9rem;"><strong>Metode Pembayaran Tersedia:</strong></p>
-                <ul style="margin-left:20px; font-size:0.9rem; color:var(--gray); margin-top:5px;">
-                    <li>Transfer Bank: <strong style="color:var(--dark);" id="info-bank"></strong></li>
-                    <li>E-Wallet: <strong style="color:var(--dark);" id="info-ewallet"></strong></li>
-                    <li>Tunai: Bayar langsung ke Admin</li>
+                <ul style="margin-left:20px; font-size:0.9rem; color:var(--gray); margin-top:5px; transition: 0.3s;">
+                    <li id="li-metode-bank" style="transition: 0.3s;">Transfer Bank: <strong style="color:var(--dark);" id="info-bank"></strong></li>
+                    <li id="li-metode-ewallet" style="transition: 0.3s;">E-Wallet: <strong style="color:var(--dark);" id="info-ewallet"></strong></li>
+                    <li id="li-metode-tunai" style="transition: 0.3s;">Tunai: Bayar langsung ke Admin</li>
                 </ul>
             </div>
             <form onsubmit="prosesBayarSppOrtu(event)">
                 <input type="hidden" id="bayar-spp-santri-id">
                 <div class="form-group">
                     <label>Pilih Metode Pembayaran Anda</label>
-                    <select id="metode-bayar" required>
+                    <select id="metode-bayar" required onchange="highlightMetodePembayaran()">
                         <option value="">-- Pilih Metode --</option>
                         <option value="Transfer Bank">Transfer Bank</option>
                         <option value="E-Wallet">E-Wallet</option>
@@ -1890,12 +1896,44 @@
             }
         }
 
+        function highlightMetodePembayaran() {
+            const metode = document.getElementById('metode-bayar').value;
+            const liBank = document.getElementById('li-metode-bank');
+            const liEwallet = document.getElementById('li-metode-ewallet');
+            const liTunai = document.getElementById('li-metode-tunai');
+
+            if (!liBank || !liEwallet || !liTunai) return;
+
+            // Reset style
+            liBank.style.opacity = '1'; liBank.style.fontWeight = 'normal'; liBank.style.color = 'var(--gray)';
+            liEwallet.style.opacity = '1'; liEwallet.style.fontWeight = 'normal'; liEwallet.style.color = 'var(--gray)';
+            liTunai.style.opacity = '1'; liTunai.style.fontWeight = 'normal'; liTunai.style.color = 'var(--gray)';
+
+            if (metode === 'Transfer Bank') {
+                liBank.style.fontWeight = 'bold';
+                liBank.style.color = 'var(--dark)';
+                liEwallet.style.opacity = '0.4';
+                liTunai.style.opacity = '0.4';
+            } else if (metode === 'E-Wallet') {
+                liEwallet.style.fontWeight = 'bold';
+                liEwallet.style.color = 'var(--dark)';
+                liBank.style.opacity = '0.4';
+                liTunai.style.opacity = '0.4';
+            } else if (metode === 'Tunai') {
+                liTunai.style.fontWeight = 'bold';
+                liTunai.style.color = 'var(--dark)';
+                liBank.style.opacity = '0.4';
+                liEwallet.style.opacity = '0.4';
+            }
+        }
+
         function openBayarSppOrtu(santriId, nama, tagihan) {
             document.getElementById('bayar-spp-santri-id').value = santriId;
             document.getElementById('tagihan-spp-display').innerText = tagihan.toLocaleString('id-ID');
             document.getElementById('info-bank').innerText = db.settings.rekeningBank || "Belum disetel Admin";
             document.getElementById('info-ewallet').innerText = db.settings.ewallet || "Belum disetel Admin";
             document.getElementById('metode-bayar').value = "";
+            highlightMetodePembayaran(); // Panggil fungsi reset highlight
             document.getElementById('modal-bayar-spp').style.display = 'flex';
         }
 
@@ -1952,10 +1990,15 @@
             const tbody = document.getElementById('table-modal-history-keuangan');
             tbody.innerHTML = "";
             
-            if (!db.arusKas || db.arusKas.length === 0) {
+            const tglMulai = document.getElementById('tgl-mulai-keuangan').value || "2000-01-01";
+            const tglSelesai = document.getElementById('tgl-selesai-keuangan').value || "2999-12-31";
+            
+            const filteredKas = (db.arusKas || []).filter(k => k.tgl >= tglMulai && k.tgl <= tglSelesai);
+            
+            if (!filteredKas || filteredKas.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--gray);">Belum ada riwayat history keuangan</td></tr>`;
             } else {
-                const sortedKas = [...db.arusKas].reverse();
+                const sortedKas = [...filteredKas].reverse();
                 sortedKas.forEach(k => {
                     let color = k.jenis === 'Pendapatan' ? 'color:var(--secondary)' : 'color:var(--danger)';
                     tbody.innerHTML += `
@@ -2038,7 +2081,16 @@
             
             const tbodyKas = document.getElementById('table-arus-kas');
             tbodyKas.innerHTML = "";
-            (db.arusKas || []).forEach(k => {
+            
+            const tglMulaiKas = document.getElementById('tgl-mulai-arus-kas') ? document.getElementById('tgl-mulai-arus-kas').value : "";
+            const tglSelesaiKas = document.getElementById('tgl-selesai-arus-kas') ? document.getElementById('tgl-selesai-arus-kas').value : "";
+            
+            let listKas = db.arusKas || [];
+            if (tglMulaiKas && tglSelesaiKas) {
+                listKas = listKas.filter(k => k.tgl >= tglMulaiKas && k.tgl <= tglSelesaiKas);
+            }
+
+            listKas.forEach(k => {
                 let badge = k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger';
                 tbodyKas.innerHTML += `
                     <tr>
@@ -2156,44 +2208,62 @@
                 initProgressChart();
             } 
             else if (currentUser.role === 'guru') {
-                document.getElementById('dashboard-heading').innerText = `Selamat Datang, ${currentUser.name}`;
+                document.getElementById('dashboard-heading').innerText = "Dashboard Pengajar";
                 
                 let totalSantri = db.santri.filter(s => s.status === 'Aktif').length;
-                let setoranHariIni = db.progress.filter(p => p.tgl === getTodayISO()).length;
+                let kelasIqro = db.santri.filter(s => s.kelas === 'Kelas Iqro' && s.status === 'Aktif').length;
+                let kelasTahsin = db.santri.filter(s => s.kelas === 'Kelas Tahsin' && s.status === 'Aktif').length;
+                let kelasTahfidz = db.santri.filter(s => s.kelas === 'Kelas Tahfidz' && s.status === 'Aktif').length;
 
                 container.innerHTML = `
                     <div class="card card-pastel-1">
-                        <div class="card-title">Total Santri Binaan</div>
+                        <div class="card-title">Total Santri</div>
                         <div class="card-value">${totalSantri}</div>
                     </div>
+                    <div class="card card-pastel-4">
+                        <div class="card-title">Kelas Iqro</div>
+                        <div class="card-value">${kelasIqro}</div>
+                    </div>
                     <div class="card card-pastel-2">
-                        <div class="card-title">Setoran Hari Ini</div>
-                        <div class="card-value">${setoranHariIni}</div>
+                        <div class="card-title">Kelas Tahsin</div>
+                        <div class="card-value">${kelasTahsin}</div>
+                    </div>
+                    <div class="card card-pastel-3">
+                        <div class="card-title">Kelas Tahfidz</div>
+                        <div class="card-value">${kelasTahfidz}</div>
                     </div>
                 `;
-
-                initProgressChart();
-            } 
-            else if (currentUser.role === 'ortu') {
-                const santriObj = db.santri.find(s => s.id === currentUser.santriId);
-                const namaSantri = santriObj ? santriObj.nama : "Santri";
                 
-                document.getElementById('dashboard-heading').innerText = `Dashboard Perkembangan: ${namaSantri}`;
-
-                let lastProg = db.progress.filter(p => p.santriId === currentUser.santriId).pop();
-                let statusSpp = db.spp.some(s => s.santriId === currentUser.santriId && s.status === 'Lunas') ? 'LUNAS' : 'BELUM BAYAR';
+                initProgressChart();
+            }
+            else if (currentUser.role === 'ortu') {
+                document.getElementById('dashboard-heading').innerText = "Dashboard Wali Santri";
+                const mySantri = db.santri.find(s => s.id === currentUser.santriId);
+                const kls = mySantri && mySantri.kelas ? mySantri.kelas : "Belum Ditentukan";
+                
+                const mySpp = db.spp.filter(s => s.santriId === currentUser.santriId && s.status === 'Lunas');
+                const lastSpp = mySpp.length > 0 ? mySpp[mySpp.length - 1].tgl : "Belum Bayar";
+                
+                const absensiData = db.absensiSantri ? db.absensiSantri.filter(a => a.santriId === currentUser.santriId && a.status === 'Hadir').length : 0;
 
                 container.innerHTML = `
                     <div class="card card-pastel-1">
-                        <div class="card-title">Capaian Terakhir</div>
-                        <div class="card-value" style="font-size:1.2rem;">${lastProg ? lastProg.surah : '-'}</div>
+                        <div class="card-title">Nama Santri</div>
+                        <div class="card-value" style="font-size:1.5rem;">${mySantri ? mySantri.nama : '-'}</div>
                     </div>
                     <div class="card card-pastel-2">
-                        <div class="card-title">Status Pembayaran SPP</div>
-                        <div class="card-value" style="font-size:1.5rem;">${statusSpp}</div>
+                        <div class="card-title">Kategori Kelas</div>
+                        <div class="card-value" style="font-size:1.5rem;">${kls}</div>
+                    </div>
+                    <div class="card card-pastel-3">
+                        <div class="card-title">Total Kehadiran</div>
+                        <div class="card-value">${absensiData} Hari</div>
+                    </div>
+                    <div class="card card-pastel-4">
+                        <div class="card-title">Terakhir Bayar SPP</div>
+                        <div class="card-value" style="font-size:1.2rem;">${lastSpp}</div>
                     </div>
                 `;
-
                 initProgressChart();
             }
         }
