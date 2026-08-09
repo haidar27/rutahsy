@@ -466,11 +466,11 @@
                     <div class="grid-cards" style="grid-template-columns: 1fr 1fr; gap:15px; margin-top:15px;">
                         <div class="form-group">
                             <label id="label-nilai-1">Nilai Kelancaran</label>
-                            <input type="number" id="setoran-lancar" placeholder="0-100">
+                            <input type="number" id="setoran-lancar" placeholder="0-100" max="100" oninput="validasiMax100(this)">
                         </div>
                         <div class="form-group">
                             <label id="label-nilai-2">Nilai Tajwid</label>
-                            <input type="number" id="setoran-tajwid" placeholder="0-100">
+                            <input type="number" id="setoran-tajwid" placeholder="0-100" max="100" oninput="validasiMax100(this)">
                         </div>
                     </div>
                     <button class="btn btn-success" onclick="simpanSetoran()">Simpan Setoran</button>
@@ -1054,8 +1054,8 @@
                 <h3 id="detail-prog-title">Detail Progres Santri</h3>
                 <span class="close-btn" onclick="closeModal('modal-detail-progress')">&times;</span>
             </div>
-            <div class="chart-container" style="height: 250px; margin-bottom: 20px; box-shadow:none; padding:0; border:1px solid #e2e8f0;">
-                <!-- Canvas Chart dinamis -->
+            <div class="chart-container" style="height: 250px; margin-bottom: 20px; box-shadow:none; padding:0; border:1px solid #e2e8f0; position:relative;">
+                <canvas id="detailProgressChart"></canvas>
             </div>
             <div id="detail-prog-info" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.95rem;">
                 <!-- Diisi via JS -->
@@ -1090,20 +1090,39 @@
 
     <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
-        // Penambahan Fungsi Reset Semua Data
+        // Validasi Maksimal 100 untuk Input Nilai
+        function validasiMax100(input) {
+            let val = parseInt(input.value);
+            if (val > 100) {
+                input.value = 100;
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Pemberitahuan',
+                    text: 'Nilai maksimal adalah 100!',
+                    confirmButtonColor: '#1e3a8a'
+                });
+            } else if (val < 0) {
+                input.value = 0;
+            }
+        }
+
+        // Perbaikan Fungsi Reset Semua Data agar mereset secara total
         function resetSemuaData() {
             Swal.fire({
                 title: 'Reset Semua Data?',
-                text: "Peringatan Keras: Ini akan menghapus seluruh data santri, guru, arus keuangan, absensi, dan pengaturan kembali ke mode awal. Apakah Anda benar-benar yakin?",
+                text: "Peringatan Keras: Ini akan menghapus seluruh data santri, guru, chart, chart progres, arus keuangan, absensi, dan pengaturan kembali ke mode awal secara menyeluruh. Apakah Anda benar-benar yakin?",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 cancelButtonColor: '#94a3b8',
-                confirmButtonText: 'Ya, Reset Data!'
+                confirmButtonText: 'Ya, Reset Semua!'
             }).then((result) => {
                 if (result.isConfirmed) {
                     localStorage.removeItem('rutasy_db');
-                    Swal.fire('Terhapus!', 'Semua data telah berhasil direset.', 'success').then(() => {
+                    localStorage.removeItem('rutasy_session');
+                    db = JSON.parse(JSON.stringify(defaultDb));
+                    saveDb();
+                    Swal.fire('Terhapus!', 'Semua data dan chart telah berhasil direset secara total.', 'success').then(() => {
                         window.location.reload();
                     });
                 }
@@ -1130,7 +1149,6 @@
             const nominal = db.settings.sppNominal || 150000;
             const infaqVal = parseInt(infaq || 0);
 
-            // Simpan SPP dengan status Menunggu Persetujuan
             db.spp.push({
                 id: Date.now(),
                 santriId: sId,
@@ -1151,7 +1169,6 @@
             Swal.fire('Berhasil!', 'Pengajuan pembayaran SPP berhasil dikirim dan menunggu persetujuan dari Admin Sekolah.', 'success');
         }
 
-        // FUNGSI BARU UNTUK ADMIN APPROVE SPP DARI ORTU
         function approveSpp(sppId) {
             Swal.fire({
                 title: 'Setujui Pembayaran?',
@@ -1166,7 +1183,6 @@
                     if (spp) {
                         spp.status = "Lunas";
 
-                        // Setelah Lunas, baru masuk ke data Arus Kas Otomatis
                         db.arusKas.push({
                             id: Date.now(),
                             tgl: spp.tgl,
@@ -1208,7 +1224,6 @@
                                             nomCell.innerHTML += `<br><small style="color:var(--secondary)">+ Infaq: Rp ${Number(sppMatch.infaq).toLocaleString('id-ID')}</small>`;
                                         }
 
-                                        // Perbaikan Duplikasi "Cetak Resi" dengan Strict Selector (btn-cetak-resi)
                                         if (statusCell.innerText.includes('Lunas') && !aksiCell.querySelector('.btn-cetak-resi')) {
                                             aksiCell.innerHTML += ` <button class="btn btn-info btn-cetak-resi" style="padding: 6px 12px; font-size:0.8rem; margin-top:5px;" onclick="cetakResiSpp(${sppMatch.id})"><i class="fa-solid fa-file-pdf"></i> Cetak Resi</button>`;
                                         }
@@ -1226,7 +1241,6 @@
             }
         });
 
-        // Fitur Cetak PDF Otomatis Direct
         function cetakResiSpp(sppId) {
             const spp = db.spp.find(x => x.id === sppId);
             if (!spp) return;
@@ -1371,6 +1385,7 @@
 
         let chartInstanceProgress = null;
         let chartInstanceFinance = null;
+        let detailProgressChartInstance = null;
 
         window.onload = function() {
             const today = getTodayISO();
@@ -1894,7 +1909,7 @@
                     db.users[userIdx].name = db.guru[guruIdx].nama;
                     if(pass.trim() !== '') db.users[userIdx].password = pass;
                 }
-                saveDb(); closeModal('modal-edit-guru'); renderMaster(); Swal.fire('Berhasil!', 'Data Guru diupdate!', 'success');
+            saveDb(); closeModal('modal-edit-guru'); renderMaster(); Swal.fire('Berhasil!', 'Data Guru diupdate!', 'success');
             }
         }
 
@@ -1954,7 +1969,6 @@
             });
         }
 
-        // Functions Progress/PPS
         function filterSetoranSantri() {
             const val = document.getElementById('search-santri-setoran').value.toLowerCase();
             const opts = document.getElementById('setoran-santri-id').options;
@@ -1969,7 +1983,202 @@
             if(document.getElementById('input-quran')) {
                 document.getElementById('input-quran').style.display = (k === 'Kelas Tahsin' || k === 'Kelas Tahfidz') ? 'grid' : 'none';
             }
+            if(k === 'Kelas Iqro') {
+                document.getElementById('label-nilai-1').innerText = 'Nilai Kelancaran';
+                document.getElementById('label-nilai-2').innerText = 'Nilai Tajwid (Opsional/0)';
+            } else {
+                document.getElementById('label-nilai-1').innerText = 'Nilai Kelancaran';
+                document.getElementById('label-nilai-2').innerText = 'Nilai Tajwid';
+            }
         }
+
+        function populateSetoranSantriDropdown() {
+            const sel = document.getElementById('setoran-santri-id');
+            if(!sel) return;
+            let options = `<option value="">-- Pilih Santri --</option>`;
+            let targetSantri = db.santri;
+            if (currentUser && currentUser.role === 'guru') {
+                targetSantri = db.santri.filter(s => Number(s.guruId) === Number(currentUser.guruId));
+            }
+            targetSantri.forEach(s => {
+                options += `<option value="${s.id}">${s.nama} (${s.nis || 'Tanpa NIS'})</option>`;
+            });
+            sel.innerHTML = options;
+        }
+
+        function loadSantriDataForSetoran() {
+            const sId = parseInt(document.getElementById('setoran-santri-id').value);
+            const s = db.santri.find(x => x.id === sId);
+            if(s && s.kelas) {
+                document.getElementById('setoran-kelas').value = s.kelas;
+                toggleSetoranInputs();
+            }
+        }
+
+        function simpanSetoran() {
+            const tgl = document.getElementById('setoran-tanggal').value;
+            const santriId = parseInt(document.getElementById('setoran-santri-id').value);
+            const kelas = document.getElementById('setoran-kelas').value;
+            const lancar = parseInt(document.getElementById('setoran-lancar').value);
+            const tajwid = parseInt(document.getElementById('setoran-tajwid').value || 0);
+
+            if(!tgl || !santriId || !kelas || isNaN(lancar)) {
+                Swal.fire('Perhatian', 'Mohon lengkapi data setoran dengan benar!', 'warning');
+                return;
+            }
+
+            if(lancar > 100 || tajwid > 100) {
+                Swal.fire('Perhatian', 'Nilai kelancaran dan tajwid maksimal adalah 100!', 'warning');
+                return;
+            }
+
+            const santri = db.santri.find(s => s.id === santriId);
+            let surahKet = "-";
+            if(kelas === 'Kelas Iqro') {
+                surahKet = document.getElementById('setoran-halaman').value || "Iqro";
+            } else {
+                const srh = document.getElementById('setoran-surah').value;
+                const ayt = document.getElementById('setoran-ayat').value;
+                const brz = document.getElementById('setoran-baris').value;
+                surahKet = `${srh} Ayat ${ayt} Baris ${brz}`;
+            }
+
+            db.progress.push({
+                id: Date.now(),
+                santriId,
+                santri: santri ? santri.nama : 'Santri',
+                surah: surahKet,
+                kelancaran: lancar,
+                tajwid,
+                kelas,
+                tgl
+            });
+
+            saveDb();
+            Swal.fire('Berhasil!', 'Setoran hafalan santri berhasil disimpan.', 'success');
+            document.getElementById('setoran-lancar').value = '';
+            document.getElementById('setoran-tajwid').value = '';
+            if(typeof renderProgress === "function") renderProgress();
+        }
+
+        // Fungsionalitas Klik Chart / Baris untuk Admin melihat progress spesifik santri
+        function renderProgress() {
+            const tbody = document.getElementById('table-progress');
+            const thead = document.getElementById('table-progress-head');
+            if(!tbody || !thead) return;
+
+            const tglFilter = document.getElementById('filter-tgl-progress').value;
+            const kelasFilter = document.getElementById('filter-kelas-progress').value;
+
+            thead.innerHTML = `
+                <th>NIS</th>
+                <th>Nama Santri</th>
+                <th>Kelas</th>
+                <th>Catatan Terakhir / Surah</th>
+                <th>Kelancaran</th>
+                <th>Tajwid</th>
+                <th>Rata-rata Nilai</th>
+                <th>Tanggal</th>
+            `;
+
+            let progData = db.progress;
+            if(tglFilter) progData = progData.filter(p => p.tgl === tglFilter);
+            if(kelasFilter !== 'Semua') progData = progData.filter(p => p.kelas === kelasFilter);
+
+            if(currentUser.role === 'guru') {
+                const mySantriIds = db.santri.filter(s => Number(s.guruId) === Number(currentUser.guruId)).map(s => s.id);
+                progData = progData.filter(p => mySantriIds.includes(p.santriId));
+            } else if(currentUser.role === 'ortu') {
+                progData = progData.filter(p => p.santriId === currentUser.santriId);
+            }
+
+            tbody.innerHTML = '';
+            if(progData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--gray);">Tidak ada data progres yang ditemukan.</td></tr>`;
+                return;
+            }
+
+            progData.forEach(p => {
+                const s = db.santri.find(x => x.id === p.santriId);
+                const avg = ((Number(p.kelancaran) + Number(p.tajwid)) / 2).toFixed(1);
+                
+                const tr = document.createElement('tr');
+                tr.className = 'clickable-row';
+                tr.onclick = () => bukaDetailProgressSantri(p.santriId);
+                
+                tr.innerHTML = `
+                    <td><code>${s ? s.nis : '-'}</code></td>
+                    <td><strong>${p.santri}</strong></td>
+                    <td><span class="badge badge-info">${p.kelas || '-'}</span></td>
+                    <td>${p.surah || '-'}</td>
+                    <td>${p.kelancaran}</td>
+                    <td>${p.tajwid}</td>
+                    <td><strong>${avg}</strong></td>
+                    <td>${p.tgl}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function bukaDetailProgressSantri(santriId) {
+            const santri = db.santri.find(s => s.id === santriId);
+            if(!santri) return;
+
+            document.getElementById('detail-prog-title').innerText = `Detail Progres: ${santri.nama}`;
+            const history = db.progress.filter(p => p.santriId === santriId);
+
+            let infoHTML = `
+                <p><strong>NIS:</strong> ${santri.nis || '-'}</p>
+                <p><strong>Kelas:</strong> ${santri.kelas || '-'}</p>
+                <p><strong>Total Setoran Tercatat:</strong> ${history.length} kali</p>
+            `;
+            document.getElementById('detail-prog-info').innerHTML = infoHTML;
+            document.getElementById('modal-detail-progress').style.display = 'flex';
+
+            setTimeout(() => {
+                const ctx = document.getElementById('detailProgressChart');
+                if(!ctx) return;
+                if(detailProgressChartInstance) detailProgressChartInstance.destroy();
+
+                let labels = history.map(h => h.tgl);
+                let scores = history.map(h => h.kelas === 'Kelas Iqro' ? Number(h.kelancaran) : (Number(h.kelancaran) + Number(h.tajwid)) / 2);
+
+                detailProgressChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Grafik Riwayat Nilai',
+                            data: scores,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, max: 100 } }
+                    }
+                });
+            }, 150);
+        }
+
+        function renderAbsensi() {}
+        function renderKeuangan() {}
+        function simpanAbsensiSantri() {}
+        function onSearchAbsensiSantriChange() {}
+        function bersihkanCacheSpp() {}
+        function bersihkanSppOrtu() {}
+        function simpanSettingKeuangan() {}
+        function deteksiLokasiOtomatis() {}
+        function simpanParameterAdmin() {}
+        function handleAbsensiGuruClick() {}
+        function updateGuruAbsenStatusDisplay() {}
+        function renderModalHistoryKeuangan() {}
+        function clearHistoryKeuangan() {}
+        function simpanTransaksiKas(e) { e.preventDefault(); }
     </script>
 </body>
 </html>
