@@ -998,7 +998,6 @@
                 <p><strong>Tagihan untuk:</strong> <span id="tagihan-spp-display"></span></p>
                 <p style="font-size:0.85rem; color:var(--danger); margin-top:5px;">Silakan isi metode pembayaran dan transfer ke rekening yang tersedia di sekolah.</p>
             </div>
-            <!-- Diubah agar hanya submit persetujuan -->
             <form onsubmit="prosesBayarSppAdmin(event)">
                 <input type="hidden" id="bayar-spp-santri-id">
                 <div class="form-group">
@@ -1121,8 +1120,6 @@
                     localStorage.removeItem('rutasy_db');
                     localStorage.removeItem('rutasy_session');
                     
-                    // Kita set semua table/array menjadi kosong secara total[span_3](start_span)[span_3](end_span)
-                    // namun kita tetap menyisakan akun admin inti agar aplikasi bisa digunakan login kembali[span_4](start_span)[span_4](end_span)
                     db = {
                         settings: defaultDb.settings,
                         users: [
@@ -1151,7 +1148,7 @@
         function bukaModalOrtuBayarSPP(santriId) {
             document.getElementById('bayar-spp-santri-id').value = santriId;
             const s = db.santri.find(x => x.id === santriId);
-            document.getElementById('tagihan-spp-display').innerText = `Rp ${(db.settings.sppNominal || 150000).toLocaleString('id-ID')} (${s.nama})`;
+            document.getElementById('tagihan-spp-display').innerText = `Rp ${(db.settings.sppNominal || 150000).toLocaleString('id-ID')} (${s ? s.nama : ''})`;
             document.getElementById('bayar-infaq').value = "0";
             document.getElementById('modal-bayar-spp').style.display = 'flex';
         }
@@ -1171,7 +1168,7 @@
             db.spp.push({
                 id: Date.now(),
                 santriId: sId,
-                santri: santri.nama,
+                santri: santri ? santri.nama : '',
                 nominal: nominal,
                 infaq: infaqVal,
                 tgl: getTodayISO(),
@@ -1923,7 +1920,6 @@
                 db.guru[guruIdx].alamat = document.getElementById('edit-guru-alamat').value;
                 db.guru[guruIdx].norek = document.getElementById('edit-guru-norek').value;
                 db.guru[guruIdx].wa = document.getElementById('edit-guru-wa').value;
-                // Perbaikan tag yang terpotong di akhir input:
                 db.guru[guruIdx].gajiHarian = parseFloat(document.getElementById('edit-guru-gaji').value);
                 
                 if (pass) {
@@ -1935,6 +1931,108 @@
                 if (typeof renderMaster === "function") renderMaster();
                 Swal.fire('Berhasil!', 'Data Guru berhasil diupdate!', 'success');
             }
+        }
+
+        function simpanSantri(e) {
+            e.preventDefault();
+            const username = document.getElementById('santri-user').value;
+            if (db.users.some(u => u.username === username)) { Swal.fire({icon:'error',title:'Gagal!',text:'Username sudah digunakan!'}); return; }
+            const newId = db.santri.length ? Math.max(...db.santri.map(s => s.id)) + 1 : 1;
+            db.santri.push({
+                id: newId,
+                nis: document.getElementById('santri-nis').value,
+                nama: document.getElementById('santri-nama').value,
+                jk: document.getElementById('santri-jk').value,
+                ttl: document.getElementById('santri-ttl').value,
+                alamat: document.getElementById('santri-alamat').value,
+                wa: document.getElementById('santri-wa').value,
+                guruId: parseInt(document.getElementById('santri-guru-id').value),
+                status: document.getElementById('santri-status').value,
+                username: username
+            });
+            db.users.push({ username, password: document.getElementById('santri-pass').value, role: "ortu", name: "Wali " + document.getElementById('santri-nama').value, santriId: newId });
+            saveDb(); closeModal('modal-santri'); if (typeof renderMaster === "function") renderMaster(); Swal.fire('Berhasil!', 'Data Santri tersimpan!', 'success');
+        }
+
+        function updateSantri(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('edit-santri-id').value);
+            const pass = document.getElementById('edit-santri-pass').value;
+            const santriIdx = db.santri.findIndex(s => s.id === id);
+
+            if(santriIdx > -1) {
+                db.santri[santriIdx].nis = document.getElementById('edit-santri-nis').value;
+                db.santri[santriIdx].nama = document.getElementById('edit-santri-nama').value;
+                db.santri[santriIdx].jk = document.getElementById('edit-santri-jk').value;
+                db.santri[santriIdx].ttl = document.getElementById('edit-santri-ttl').value;
+                db.santri[santriIdx].alamat = document.getElementById('edit-santri-alamat').value;
+                db.santri[santriIdx].wa = document.getElementById('edit-santri-wa').value;
+                db.santri[santriIdx].guruId = parseInt(document.getElementById('edit-santri-guru-id').value);
+                db.santri[santriIdx].status = document.getElementById('edit-santri-status').value;
+
+                if (pass) {
+                    const uIdx = db.users.findIndex(u => u.username === db.santri[santriIdx].username);
+                    if (uIdx > -1) db.users[uIdx].password = pass;
+                }
+                saveDb();
+                closeModal('modal-edit-santri');
+                if (typeof renderMaster === "function") renderMaster();
+                Swal.fire('Berhasil!', 'Data Santri berhasil diupdate!', 'success');
+            }
+        }
+
+        function renderMaster() {
+            const tbSantri = document.getElementById('table-santri');
+            const tbGuru = document.getElementById('table-guru');
+            if(!tbSantri || !tbGuru) return;
+
+            tbSantri.innerHTML = '';
+            db.santri.forEach(s => {
+                const g = db.guru.find(x => x.id === s.guruId);
+                const u = db.users.find(x => x.username === s.username);
+                tbSantri.innerHTML += `
+                    <tr>
+                        <td>${s.nis || '-'}</td>
+                        <td><strong>${s.nama}</strong></td>
+                        <td>${s.jk || '-'}</td>
+                        <td>${s.ttl || '-'}</td>
+                        <td>${s.alamat || '-'}</td>
+                        <td>${s.wa || '-'}</td>
+                        <td>${g ? g.nama : '-'}</td>
+                        <td><span class="badge badge-success">${s.status}</span></td>
+                        <td>${s.username}</td>
+                        <td>${u ? u.password : '-'}</td>
+                        <td>
+                            <button class="btn btn-warning" style="padding: 5px 10px; font-size: 0.8rem;" onclick="openEditSantri(${s.id})"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.8rem;" onclick="hapusSantri(${s.id})"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbGuru.innerHTML = '';
+            db.guru.forEach(g => {
+                const u = db.users.find(x => x.username === g.username);
+                tbGuru.innerHTML += `
+                    <tr>
+                        <td>${g.id}</td>
+                        <td>${g.nik || '-'}</td>
+                        <td><strong>${g.nama}</strong></td>
+                        <td>${g.jk || '-'}</td>
+                        <td>${g.ttl || '-'}</td>
+                        <td>${g.alamat || '-'}</td>
+                        <td>${g.norek || '-'}</td>
+                        <td>${g.wa || '-'}</td>
+                        <td>Rp ${(g.gajiHarian || 0).toLocaleString('id-ID')}</td>
+                        <td>${g.username}</td>
+                        <td>${u ? u.password : '-'}</td>
+                        <td>
+                            <button class="btn btn-warning" style="padding: 5px 10px; font-size: 0.8rem;" onclick="openEditGuru(${g.id})"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.8rem;" onclick="hapusGuru(${g.id})"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
         }
     </script>
 </body>
