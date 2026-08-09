@@ -318,7 +318,14 @@
                 <!-- Charts Layout -->
                 <div class="charts-grid" id="dashboard-charts">
                     <div class="chart-container" id="progress-chart-container">
-                        <div style="margin-bottom: 15px;"><h3 style="font-size:1.1rem; color:var(--primary);"><i class="fa-solid fa-chart-line"></i> Grafik Progres Belajar / Hafalan Santri</h3></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; flex-wrap:wrap; gap:10px;">
+                            <h3 style="font-size:1.1rem; color:var(--primary);"><i class="fa-solid fa-chart-line"></i> Grafik Progres Belajar / Hafalan Santri</h3>
+                            <select id="chart-progress-filter" class="btn" style="background: white; color: var(--dark); border: 1px solid #cbd5e1; padding: 4px 10px; font-size: 0.85rem;" onchange="initProgressChart()">
+                                <option value="bulan">Bulan Ini</option>
+                                <option value="minggu">Minggu Ini</option>
+                                <option value="hari">Hari Ini</option>
+                            </select>
+                        </div>
                         <div style="height:280px; position:relative;"><canvas id="progressChart"></canvas></div>
                     </div>
                     <div class="chart-container" id="finance-chart-container">
@@ -978,7 +985,7 @@
         </div>
     </div>
 
-    <!-- Modal Bayar SPP (Kini Diinput Oleh WALI SANTRI) -->
+    <!-- Modal Bayar SPP -->
     <div id="modal-bayar-spp" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1036,7 +1043,7 @@
         </div>
     </div>
 
-    <!-- Modal Detail Progress Santri (Berlaku Semua Role) -->
+    <!-- Modal Detail Progress Santri -->
     <div id="modal-detail-progress" class="modal">
         <div class="modal-content" style="max-width: 650px;">
             <div class="modal-header">
@@ -1044,7 +1051,7 @@
                 <span class="close-btn" onclick="closeModal('modal-detail-progress')">&times;</span>
             </div>
             <div class="chart-container" style="height: 250px; margin-bottom: 20px; box-shadow:none; padding:0; border:1px solid #e2e8f0;">
-                <!-- Canvas Chart dinamis terisi via JS -->
+                <!-- Canvas Chart dinamis -->
             </div>
             <div id="detail-prog-info" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.95rem;">
                 <!-- Diisi via JS -->
@@ -1079,8 +1086,6 @@
 
     <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
-        // ================= FITUR BARU: INFAQ & CETAK RESI SPP =================
-        
         function bukaModalOrtuBayarSPP(santriId) {
             document.getElementById('bayar-spp-santri-id').value = santriId;
             const s = db.santri.find(x => x.id === santriId);
@@ -1170,6 +1175,7 @@
             }
         });
 
+        // Fitur Cetak PDF Otomatis Direct
         function cetakResiSpp(sppId) {
             const spp = db.spp.find(x => x.id === sppId);
             if (!spp) return;
@@ -1181,8 +1187,8 @@
                 <head>
                     <title>Resi Pembayaran SPP & Infaq</title>
                     <style>
-                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
-                        .content { width: 100%; max-width: 650px; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); line-height: 1.8; }
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: white; margin: 0; padding: 20px; box-sizing: border-box; }
+                        .content { width: 100%; max-width: 650px; margin: 0 auto; line-height: 1.8; }
                         .header { text-align: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; }
                         .header h1 { margin: 0; color: #1e3a8a; font-size: 26px; }
                         .header p { margin: 5px 0 0 0; color: #64748b; font-size: 15px; }
@@ -1190,13 +1196,6 @@
                         .row span { color: #64748b; }
                         .total { font-size: 1.25em; font-weight: bold; color: #1e3a8a; margin-top: 25px; border-top: 2px solid #1e3a8a; border-bottom: none; }
                         .footer { text-align: center; margin-top: 50px; font-size: 0.9em; color: #64748b; font-style: italic; }
-                        .btn-print { display: inline-block; padding: 12px 24px; background: #1e3a8a; color: white; border: none; cursor: pointer; border-radius: 6px; margin-top: 30px; font-size: 16px; font-weight: bold; text-decoration: none; }
-                        .btn-print:hover { background: #3b82f6; }
-                        @media print { 
-                            body { display: block; padding: 0; background: white; } 
-                            .content { box-shadow: none; padding: 20px; max-width: none; margin: 0; width: auto; }
-                            .btn-print { display: none; } 
-                        }
                     </style>
                 </head>
                 <body>
@@ -1220,9 +1219,15 @@
 
                         <div class="footer">
                             <p>Jazakumullah Khairan atas pembayaran SPP & Infaq Anda.<br>Semoga menjadi amal jariyah dan membawa keberkahan bagi ananda tercinta.</p>
-                            <button class="btn-print" id="btn-print" onclick="window.print()">Unduh / Cetak PDF</button>
                         </div>
                     </div>
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                            // Optional: auto close tab after finish print dialog
+                            // window.close(); 
+                        };
+                    <\/script>
                 </body>
                 </html>
             `);
@@ -1308,7 +1313,6 @@
         if (!db.logPengajarAbsensi) db.logPengajarAbsensi = []; 
 
         let currentUser = JSON.parse(localStorage.getItem('rutasy_session')) || null;
-
         let currentAbsensiPage = 1;
         const absensiPageSize = 5;
 
@@ -1327,7 +1331,7 @@
             document.querySelectorAll('input[type="date"]').forEach(el => {
                 if (!el.value) {
                     if (el.id.includes('mulai') || el.id.includes('awal') || el.id === 'tgl-spp-mulai' || el.id === 'dash-tgl-mulai') {
-                        el.value = firstDayOfMonth; // Default dari tanggal 1 sesuai request
+                        el.value = firstDayOfMonth; 
                     } else {
                         el.value = today;
                     }
@@ -1380,12 +1384,6 @@
             const remIn = document.getElementById('remember-me').checked;
             
             db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
-
-            defaultDb.users.forEach(defUser => {
-                if (!db.users.some(u => u.username === defUser.username)) {
-                    db.users.push(defUser);
-                }
-            });
 
             const validUser = db.users.find(u => u.username === userIn && u.password === passIn);
 
@@ -1461,18 +1459,6 @@
                 document.getElementById('hint-absensi-read').style.display = 'inline';
                 document.getElementById('btn-simpan-abs-santri').style.display = 'none'; 
                 document.getElementById('btn-clear-spp-admin').style.display = 'inline-block';
-                
-                document.getElementById('param-jam-masuk').value = db.settings.jamMasuk || "07:00";
-                document.getElementById('param-jam-pulang').value = db.settings.jamPulang || "15:00";
-                document.getElementById('param-potongan').value = db.settings.potonganTelat || 5;
-                document.getElementById('param-hari-kerja').value = db.settings.hariKerjaBulan || 24;
-                document.getElementById('param-lat').value = db.settings.geoLat !== undefined ? db.settings.geoLat : 3.5952;
-                document.getElementById('param-lng').value = db.settings.geoLng !== undefined ? db.settings.geoLng : 98.6722;
-                document.getElementById('param-radius').value = db.settings.geoRadius !== undefined ? db.settings.geoRadius : 100;
-                
-                document.getElementById('setting-spp-nominal').value = db.settings.sppNominal || 150000;
-                document.getElementById('setting-bank').value = db.settings.rekeningBank || "";
-                document.getElementById('setting-ewallet').value = db.settings.ewallet || "";
             } 
             else if (user.role === 'admin_data') {
                 badge.textContent = 'Admin Pendataan';
@@ -1498,11 +1484,9 @@
             else if (user.role === 'guru') {
                 badge.textContent = 'Guru / Pengajar';
                 document.getElementById('btn-unduh-pdf').style.display = 'inline-block';
-                
                 document.getElementById('menu-master').style.display = 'none';
                 document.getElementById('master-action-buttons').style.display = 'none'; 
                 document.getElementById('guru-setoran-box').style.display = 'block'; 
-                
                 chartsGrid.style.gridTemplateColumns = '1fr';
                 document.getElementById('finance-chart-container').style.display = 'none';
                 document.getElementById('guru-absen-box').style.display = 'block';
@@ -1520,6 +1504,7 @@
             }
         }
 
+        // Logic Baru Progress Chart dengan Filter Hari/Minggu/Bulan
         function initProgressChart() {
             const ctx = document.getElementById('progressChart');
             if(!ctx) return;
@@ -1532,20 +1517,33 @@
             const now = new Date();
             const y = now.getFullYear();
             const m = String(now.getMonth() + 1).padStart(2, '0');
-            const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+            const todayDate = now.getDate();
+            
+            const filterEl = document.getElementById('chart-progress-filter');
+            const filterVal = filterEl ? filterEl.value : 'bulan';
+
+            let startDay = 1;
+            let endDay = todayDate; // Realtime Constraint
+
+            if (filterVal === 'hari') {
+                startDay = todayDate;
+            } else if (filterVal === 'minggu') {
+                const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay();
+                startDay = Math.max(1, todayDate - dayOfWeek + 1);
+            }
 
             if (currentUser.role === 'ortu') {
                 const myChildProgress = db.progress.filter(p => p.santriId === currentUser.santriId);
-                labelText = 'Progres Belajar Anak Saya (Dari Tgl 1)';
+                labelText = 'Progres Belajar Anak Saya';
                 
-                for(let i = 1; i <= lastDay; i++) {
+                for(let i = startDay; i <= endDay; i++) {
                     const dStr = `${y}-${m}-${String(i).padStart(2, '0')}`;
-                    labels.push(dStr);
+                    labels.push(String(i).padStart(2, '0')); // Constraint format tanggal: 01, 02
                     const p = myChildProgress.find(x => x.tgl === dStr);
                     if(p) {
                         dataScores.push(p.kelas === 'Kelas Iqro' ? Number(p.kelancaran) : (Number(p.kelancaran) + Number(p.tajwid))/2);
                     } else {
-                        dataScores.push(0); // Kosong
+                        dataScores.push(0);
                     }
                 }
             } 
@@ -1554,9 +1552,9 @@
                 if (currentUser.role === 'guru') {
                     const assignedIds = db.santri.filter(s => Number(s.guruId) === Number(currentUser.guruId)).map(s => s.id);
                     targetProgress = targetProgress.filter(p => assignedIds.includes(p.santriId));
-                    labelText = 'Kinerja Progres Santri (Kelas Saya, Dari Tgl 1)';
+                    labelText = 'Kinerja Progres Santri (Kelas Saya)';
                 } else {
-                    labelText = 'Kinerja Progres Santri (Global, Dari Tgl 1)';
+                    labelText = 'Kinerja Progres Santri (Global)';
                 }
 
                 const grouped = {};
@@ -1567,13 +1565,13 @@
                     grouped[p.tgl].count++;
                 });
                 
-                for(let i = 1; i <= lastDay; i++) {
+                for(let i = startDay; i <= endDay; i++) {
                     const dStr = `${y}-${m}-${String(i).padStart(2, '0')}`;
-                    labels.push(dStr);
+                    labels.push(String(i).padStart(2, '0')); // Constraint format tanggal: 01, 02
                     if(grouped[dStr]) {
                         dataScores.push((grouped[dStr].total / grouped[dStr].count).toFixed(2));
                     } else {
-                        dataScores.push(0); // Kosong
+                        dataScores.push(0); 
                     }
                 }
             }
@@ -1601,6 +1599,7 @@
             });
         }
 
+        // Logic Baru Finance Chart (Line Chart)
         function renderFinanceChart() {
             const ctx = document.getElementById('financeChart');
             if(!ctx) return;
@@ -1627,13 +1626,20 @@
                 </div>
             `;
 
+            // Setup Data Line berdasarkan kelompok tanggal
+            let dates = [...new Set(dataKas.map(k => k.tgl))].sort();
+            if (dates.length === 0) dates = [tglMulai]; // Tampilkan 1 titik awal kalau kosong
+            
+            let masukData = dates.map(d => dataKas.filter(k => k.tgl === d && k.jenis === 'Pendapatan').reduce((sum, k) => sum + Number(k.nominal), 0));
+            let keluarData = dates.map(d => dataKas.filter(k => k.tgl === d && k.jenis === 'Pengeluaran').reduce((sum, k) => sum + Number(k.nominal), 0));
+
             chartInstanceFinance = new Chart(ctx, {
-                type: 'bar',
+                type: 'line', // Constraint Type: Line Chart
                 data: {
-                    labels: ['Arus Kas (Sesuai Tanggal Filter)'],
+                    labels: dates, // Tampil format group date line chart yang proper
                     datasets: [
-                        { label: 'Pendapatan', data: [totalMasuk], backgroundColor: '#10b981' },
-                        { label: 'Pengeluaran', data: [totalKeluar], backgroundColor: '#ef4444' }
+                        { label: 'Pendapatan', data: masukData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 },
+                        { label: 'Pengeluaran', data: keluarData, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3 }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
@@ -1700,24 +1706,20 @@
 
         function switchTab(tabId) {
             db = JSON.parse(localStorage.getItem('rutasy_db')) || db;
-
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
             if(document.getElementById(`menu-${tabId}`)) {
                 document.getElementById(`menu-${tabId}`).classList.add('active');
             }
-            
             document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
             if(document.getElementById(`sec-${tabId}`)) {
                 document.getElementById(`sec-${tabId}`).classList.add('active'); 
             }
-
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
             if(sidebar.classList.contains('show')) {
                 sidebar.classList.remove('show');
                 overlay.classList.remove('show');
             }
-
             if(tabId === 'master') renderMaster();
             if(tabId === 'progress') renderProgress();
             if(tabId === 'absensi') {
@@ -1729,29 +1731,18 @@
             if(tabId === 'dashboard') loadDashboardData(); 
         }
 
+        // Functions Master
         function populateGuruDropdowns() {
             let options = `<option value="">-- Pilih Guru Pengajar --</option>`;
-            db.guru.forEach(g => {
-                options += `<option value="${g.id}">${g.nama}</option>`;
-            });
+            db.guru.forEach(g => { options += `<option value="${g.id}">${g.nama}</option>`; });
             if(document.getElementById('santri-guru-id')) document.getElementById('santri-guru-id').innerHTML = options;
             if(document.getElementById('edit-santri-guru-id')) document.getElementById('edit-santri-guru-id').innerHTML = options;
         }
 
         function openModalGuru() { document.getElementById('modal-guru').style.display = 'flex'; }
-        function openModalSantri() { 
-            populateGuruDropdowns();
-            document.getElementById('modal-santri').style.display = 'flex'; 
-        }
-        function openModalKas() { 
-            document.getElementById('kas-ket').value = "";
-            document.getElementById('kas-nominal').value = "";
-            document.getElementById('modal-kas').style.display = 'flex'; 
-        }
-        function openModalHistoryKeuangan() {
-            renderModalHistoryKeuangan();
-            document.getElementById('modal-history-keuangan').style.display = 'flex';
-        }
+        function openModalSantri() { populateGuruDropdowns(); document.getElementById('modal-santri').style.display = 'flex'; }
+        function openModalKas() { document.getElementById('kas-ket').value = ""; document.getElementById('kas-nominal').value = ""; document.getElementById('modal-kas').style.display = 'flex'; }
+        function openModalHistoryKeuangan() { renderModalHistoryKeuangan(); document.getElementById('modal-history-keuangan').style.display = 'flex'; }
         
         function openEditGuru(id) {
             const g = db.guru.find(g => g.id === id);
@@ -1792,201 +1783,91 @@
 
         function hapusSantri(id) {
             Swal.fire({
-                title: 'Hapus Santri?',
-                text: "Apakah Anda yakin ingin menghapus data Santri ini?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#94a3b8',
-                confirmButtonText: 'Ya, Hapus!'
-            }).then((result) => {
-                if (result.isConfirmed) {
+                title: 'Hapus Santri?', text: "Yakin hapus?", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Hapus'
+            }).then((res) => {
+                if (res.isConfirmed) {
                     const s = db.santri.find(x => x.id === id);
-                    if(s) {
-                        db.users = db.users.filter(u => u.username !== s.username);
-                        db.santri = db.santri.filter(x => x.id !== id);
-                        saveDb();
-                        renderMaster();
-                        Swal.fire('Terhapus!', 'Data Santri berhasil dihapus.', 'success');
-                    }
+                    if(s) { db.users = db.users.filter(u => u.username !== s.username); db.santri = db.santri.filter(x => x.id !== id); saveDb(); renderMaster(); }
                 }
             });
         }
 
         function hapusGuru(id) {
             Swal.fire({
-                title: 'Hapus Guru?',
-                text: "Apakah Anda yakin ingin menghapus data Guru ini?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#94a3b8',
-                confirmButtonText: 'Ya, Hapus!'
-            }).then((result) => {
-                if (result.isConfirmed) {
+                title: 'Hapus Guru?', text: "Yakin hapus?", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Hapus'
+            }).then((res) => {
+                if (res.isConfirmed) {
                     const g = db.guru.find(x => x.id === id);
-                    if(g) {
-                        db.users = db.users.filter(u => u.username !== g.username);
-                        db.guru = db.guru.filter(x => x.id !== id);
-                        saveDb();
-                        renderMaster();
-                        Swal.fire('Terhapus!', 'Data Guru berhasil dihapus.', 'success');
-                    }
+                    if(g) { db.users = db.users.filter(u => u.username !== g.username); db.guru = db.guru.filter(x => x.id !== id); saveDb(); renderMaster(); }
                 }
             });
         }
-
-        function hapusAbsensiGuru(id) {
-            Swal.fire({
-                title: 'Hapus Absensi?',
-                text: "Apakah Anda yakin ingin menghapus log absensi guru ini?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#94a3b8',
-                confirmButtonText: 'Ya, Hapus!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    db.absensiGuru = db.absensiGuru.filter(g => g.id !== id);
-                    saveDb();
-                    renderAbsensi();
-                    if(currentUser.role === 'admin') { loadDashboardData(); }
-                    Swal.fire('Terhapus!', 'Log absensi guru berhasil dihapus.', 'success');
-                }
-            });
-        }
-
         function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
 
-        // --- LOGIC MASTER DATA ---
         function simpanGuru(e) {
             e.preventDefault();
-            const nik = document.getElementById('guru-nik').value;
-            const nama = document.getElementById('guru-nama').value;
-            const jk = document.getElementById('guru-jk').value;
-            const ttl = document.getElementById('guru-ttl').value;
-            const alamat = document.getElementById('guru-alamat').value;
-            const norek = document.getElementById('guru-norek').value;
-            const wa = document.getElementById('guru-wa').value;
-            const gaji = parseFloat(document.getElementById('guru-gaji').value);
             const username = document.getElementById('guru-user').value;
-            const password = document.getElementById('guru-pass').value;
-
-            if (db.users.some(u => u.username === username)) { 
-                Swal.fire({icon: 'error', title: 'Gagal!', text: 'Username sudah digunakan!'}); return; 
-            }
-
+            if (db.users.some(u => u.username === username)) { Swal.fire({icon:'error',title:'Gagal!',text:'Username sudah digunakan!'}); return; }
             const newId = db.guru.length ? Math.max(...db.guru.map(g => g.id)) + 1 : 1;
-            db.guru.push({ id: newId, nik, nama, jk, ttl, alamat, norek, wa, username, gajiHarian: gaji });
-            db.users.push({ username, password, role: "guru", name: nama, guruId: newId });
-
-            saveDb();
-            closeModal('modal-guru');
-            renderMaster();
-            Swal.fire({icon: 'success', title: 'Berhasil!', text: 'Data Guru & Payroll berhasil ditambahkan!'});
+            db.guru.push({ id: newId, nik: document.getElementById('guru-nik').value, nama: document.getElementById('guru-nama').value, jk: document.getElementById('guru-jk').value, ttl: document.getElementById('guru-ttl').value, alamat: document.getElementById('guru-alamat').value, norek: document.getElementById('guru-norek').value, wa: document.getElementById('guru-wa').value, username, gajiHarian: parseFloat(document.getElementById('guru-gaji').value) });
+            db.users.push({ username, password: document.getElementById('guru-pass').value, role: "guru", name: document.getElementById('guru-nama').value, guruId: newId });
+            saveDb(); closeModal('modal-guru'); renderMaster(); Swal.fire('Berhasil!', 'Data Guru tersimpan!', 'success');
         }
 
         function updateGuru(e) {
             e.preventDefault();
             const id = parseInt(document.getElementById('edit-guru-id').value);
-            const nik = document.getElementById('edit-guru-nik').value;
-            const nama = document.getElementById('edit-guru-nama').value;
-            const jk = document.getElementById('edit-guru-jk').value;
-            const ttl = document.getElementById('edit-guru-ttl').value;
-            const alamat = document.getElementById('edit-guru-alamat').value;
-            const norek = document.getElementById('edit-guru-norek').value;
-            const wa = document.getElementById('edit-guru-wa').value;
-            const gaji = parseFloat(document.getElementById('edit-guru-gaji').value);
             const pass = document.getElementById('edit-guru-pass').value;
-
-            const guruIndex = db.guru.findIndex(g => g.id === id);
-            if(guruIndex > -1) {
-                db.guru[guruIndex].nik = nik;
-                db.guru[guruIndex].nama = nama;
-                db.guru[guruIndex].jk = jk;
-                db.guru[guruIndex].ttl = ttl;
-                db.guru[guruIndex].alamat = alamat;
-                db.guru[guruIndex].norek = norek;
-                db.guru[guruIndex].wa = wa;
-                db.guru[guruIndex].gajiHarian = gaji;
-
-                const username = db.guru[guruIndex].username;
-                const userIndex = db.users.findIndex(u => u.username === username);
-                if(userIndex > -1) {
-                    db.users[userIndex].name = nama;
-                    if(pass.trim() !== '') db.users[userIndex].password = pass;
+            const guruIdx = db.guru.findIndex(g => g.id === id);
+            if(guruIdx > -1) {
+                db.guru[guruIdx].nik = document.getElementById('edit-guru-nik').value;
+                db.guru[guruIdx].nama = document.getElementById('edit-guru-nama').value;
+                db.guru[guruIdx].jk = document.getElementById('edit-guru-jk').value;
+                db.guru[guruIdx].ttl = document.getElementById('edit-guru-ttl').value;
+                db.guru[guruIdx].alamat = document.getElementById('edit-guru-alamat').value;
+                db.guru[guruIdx].norek = document.getElementById('edit-guru-norek').value;
+                db.guru[guruIdx].wa = document.getElementById('edit-guru-wa').value;
+                db.guru[guruIdx].gajiHarian = parseFloat(document.getElementById('edit-guru-gaji').value);
+                const userIdx = db.users.findIndex(u => u.username === db.guru[guruIdx].username);
+                if(userIdx > -1) {
+                    db.users[userIdx].name = db.guru[guruIdx].nama;
+                    if(pass.trim() !== '') db.users[userIdx].password = pass;
                 }
-
-                saveDb();
-                closeModal('modal-edit-guru');
-                renderMaster();
-                Swal.fire({icon: 'success', title: 'Berhasil!', text: 'Data Guru berhasil diperbarui!'});
+                saveDb(); closeModal('modal-edit-guru'); renderMaster(); Swal.fire('Berhasil!', 'Data Guru diupdate!', 'success');
             }
         }
 
         function simpanSantri(e) {
             e.preventDefault();
-            const nis = document.getElementById('santri-nis').value;
-            const nama = document.getElementById('santri-nama').value;
-            const jk = document.getElementById('santri-jk').value;
-            const ttl = document.getElementById('santri-ttl').value;
-            const alamat = document.getElementById('santri-alamat').value;
-            const wa = document.getElementById('santri-wa').value;
-            const guruId = parseInt(document.getElementById('santri-guru-id').value);
-            const status = document.getElementById('santri-status').value;
             const username = document.getElementById('santri-user').value;
-            const password = document.getElementById('santri-pass').value;
-
-            if (db.users.some(u => u.username === username)) { 
-                Swal.fire({icon: 'error', title: 'Gagal!', text: 'Username sudah digunakan!'}); return; 
-            }
-
+            const nama = document.getElementById('santri-nama').value;
+            if (db.users.some(u => u.username === username)) { Swal.fire({icon: 'error', title: 'Gagal!', text: 'Username sudah digunakan!'}); return; }
             const newId = db.santri.length ? Math.max(...db.santri.map(s => s.id)) + 1 : 1;
-            db.santri.push({ id: newId, nis, nama, jk, ttl, alamat, wa, guruId, status, wali: `Wali ${nama}`, kelas: "", username });
-            db.users.push({ username, password, role: "ortu", name: `Wali ${nama} (Wali ${nama})`, santriId: newId });
-
-            saveDb();
-            closeModal('modal-santri');
-            renderMaster();
-            populateSetoranSantriDropdown();
-            Swal.fire({icon: 'success', title: 'Berhasil!', text: 'Data Santri baru berhasil ditambahkan!'});
+            db.santri.push({ id: newId, nis: document.getElementById('santri-nis').value, nama, jk: document.getElementById('santri-jk').value, ttl: document.getElementById('santri-ttl').value, alamat: document.getElementById('santri-alamat').value, wa: document.getElementById('santri-wa').value, guruId: parseInt(document.getElementById('santri-guru-id').value), status: document.getElementById('santri-status').value, wali: `Wali ${nama}`, kelas: "", username });
+            db.users.push({ username, password: document.getElementById('santri-pass').value, role: "ortu", name: `Wali ${nama}`, santriId: newId });
+            saveDb(); closeModal('modal-santri'); renderMaster(); populateSetoranSantriDropdown(); Swal.fire('Berhasil!', 'Data Santri ditambahkan!', 'success');
         }
 
         function updateSantri(e) {
             e.preventDefault();
             const id = parseInt(document.getElementById('edit-santri-id').value);
-            const nis = document.getElementById('edit-santri-nis').value;
-            const nama = document.getElementById('edit-santri-nama').value;
-            const jk = document.getElementById('edit-santri-jk').value;
-            const ttl = document.getElementById('edit-santri-ttl').value;
-            const alamat = document.getElementById('edit-santri-alamat').value;
-            const wa = document.getElementById('edit-santri-wa').value;
-            const guruId = parseInt(document.getElementById('edit-santri-guru-id').value);
-            const status = document.getElementById('edit-santri-status').value;
             const pass = document.getElementById('edit-santri-pass').value;
-
             const santriIdx = db.santri.findIndex(s => s.id === id);
             if(santriIdx > -1) {
-                db.santri[santriIdx].nis = nis;
-                db.santri[santriIdx].nama = nama;
-                db.santri[santriIdx].jk = jk;
-                db.santri[santriIdx].ttl = ttl;
-                db.santri[santriIdx].alamat = alamat;
-                db.santri[santriIdx].wa = wa;
-                db.santri[santriIdx].guruId = guruId;
-                db.santri[santriIdx].status = status;
-
-                const username = db.santri[santriIdx].username;
-                const userIndex = db.users.findIndex(u => u.username === username);
-                if(userIndex > -1) {
-                    db.users[userIndex].name = `Wali ${nama} (Wali ${nama})`;
-                    if(pass.trim() !== '') db.users[userIndex].password = pass;
+                db.santri[santriIdx].nis = document.getElementById('edit-santri-nis').value;
+                db.santri[santriIdx].nama = document.getElementById('edit-santri-nama').value;
+                db.santri[santriIdx].jk = document.getElementById('edit-santri-jk').value;
+                db.santri[santriIdx].ttl = document.getElementById('edit-santri-ttl').value;
+                db.santri[santriIdx].alamat = document.getElementById('edit-santri-alamat').value;
+                db.santri[santriIdx].wa = document.getElementById('edit-santri-wa').value;
+                db.santri[santriIdx].guruId = parseInt(document.getElementById('edit-santri-guru-id').value);
+                db.santri[santriIdx].status = document.getElementById('edit-santri-status').value;
+                const userIdx = db.users.findIndex(u => u.username === db.santri[santriIdx].username);
+                if(userIdx > -1) {
+                    db.users[userIdx].name = `Wali ${db.santri[santriIdx].nama}`;
+                    if(pass.trim() !== '') db.users[userIdx].password = pass;
                 }
-
-                saveDb();
-                closeModal('modal-edit-santri');
-                renderMaster();
-                Swal.fire({icon: 'success', title: 'Berhasil!', text: 'Data Santri berhasil diperbarui!'});
+                saveDb(); closeModal('modal-edit-santri'); renderMaster(); Swal.fire('Berhasil!', 'Data Santri diupdate!', 'success');
             }
         }
 
@@ -1997,72 +1878,76 @@
             db.santri.forEach(s => {
                 let badgeClass = s.status === 'Aktif' ? 'badge-success' : (s.status === 'Alumni' ? 'badge-info' : 'badge-warning');
                 let uObj = db.users.find(u => u.username === s.username);
-                let pwd = uObj ? uObj.password : '-';
                 let gObj = db.guru.find(g => g.id === s.guruId);
-                let namaGuru = gObj ? gObj.nama : '-';
-                let aksi = isMasterAdmin ? `<td>
-                    <button class="btn btn-warning" style="padding: 6px 12px; font-size:0.8rem;" onclick="openEditSantri(${s.id})"><i class="fa-solid fa-pen"></i> Edit</button>
-                    <button class="btn btn-danger" style="padding: 6px 12px; font-size:0.8rem; margin-left:5px;" onclick="hapusSantri(${s.id})"><i class="fa-solid fa-trash"></i> Hapus</button>
-                </td>` : '<td>-</td>';
-                
-                tbodySantri.innerHTML += `
-                    <tr>
-                        <td><code>${s.nis || '-'}</code></td>
-                        <td><strong>${s.nama}</strong></td>
-                        <td>${s.jk || '-'}</td>
-                        <td>${s.ttl || '-'}</td>
-                        <td>${s.alamat || '-'}</td>
-                        <td>${s.wa || '-'}</td>
-                        <td><span class="badge badge-info">${namaGuru}</span></td>
-                        <td><span class="badge ${badgeClass}">${s.status}</span></td>
-                        <td><code>${s.username || '-'}</code></td>
-                        <td><code>${pwd}</code></td>
-                        ${aksi}
-                    </tr>`;
+                let aksi = isMasterAdmin ? `<td><button class="btn btn-warning" style="padding:6px 12px; font-size:0.8rem;" onclick="openEditSantri(${s.id})"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="hapusSantri(${s.id})"><i class="fa-solid fa-trash"></i></button></td>` : '<td>-</td>';
+                tbodySantri.innerHTML += `<tr><td><code>${s.nis || '-'}</code></td><td><strong>${s.nama}</strong></td><td>${s.jk || '-'}</td><td>${s.ttl || '-'}</td><td>${s.alamat || '-'}</td><td>${s.wa || '-'}</td><td><span class="badge badge-info">${gObj ? gObj.nama : '-'}</span></td><td><span class="badge ${badgeClass}">${s.status}</span></td><td><code>${s.username || '-'}</code></td><td><code>${uObj ? uObj.password : '-'}</code></td>${aksi}</tr>`;
             });
-
             const tbodyGuru = document.getElementById('table-guru');
             tbodyGuru.innerHTML = "";
             db.guru.forEach(g => {
                 let uObj = db.users.find(u => u.username === g.username);
-                let pwd = uObj ? uObj.password : '-';
-                let aksi = isMasterAdmin ? `<td>
-                    <button class="btn btn-warning" style="padding: 6px 12px; font-size:0.8rem;" onclick="openEditGuru(${g.id})"><i class="fa-solid fa-pen"></i> Edit</button>
-                    <button class="btn btn-danger" style="padding: 6px 12px; font-size:0.8rem; margin-left:5px;" onclick="hapusGuru(${g.id})"><i class="fa-solid fa-trash"></i> Hapus</button>
-                </td>` : '<td>-</td>';
-                
-                tbodyGuru.innerHTML += `
-                    <tr>
-                        <td>${g.id}</td>
-                        <td>${g.nik}</td>
-                        <td><strong>${g.nama}</strong></td>
-                        <td>${g.jk}</td>
-                        <td>${g.ttl}</td>
-                        <td>${g.alamat}</td>
-                        <td>${g.norek}</td>
-                        <td>${g.wa}</td>
-                        <td>Rp ${g.gajiHarian.toLocaleString('id-ID')}</td>
-                        <td><code>${g.username}</code></td>
-                        <td><code>${pwd}</code></td>
-                        ${aksi}
-                    </tr>`;
+                let aksi = isMasterAdmin ? `<td><button class="btn btn-warning" style="padding:6px 12px; font-size:0.8rem;" onclick="openEditGuru(${g.id})"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="hapusGuru(${g.id})"><i class="fa-solid fa-trash"></i></button></td>` : '<td>-</td>';
+                tbodyGuru.innerHTML += `<tr><td>${g.id}</td><td>${g.nik}</td><td><strong>${g.nama}</strong></td><td>${g.jk}</td><td>${g.ttl}</td><td>${g.alamat}</td><td>${g.norek}</td><td>${g.wa}</td><td>Rp ${g.gajiHarian.toLocaleString('id-ID')}</td><td><code>${g.username}</code></td><td><code>${uObj ? uObj.password : '-'}</code></td>${aksi}</tr>`;
             });
         }
 
-        // --- LOGIC PROGRES & SETORAN ---
+        // Functions Progress/PPS
+        function filterSetoranSantri() {
+            const val = document.getElementById('search-santri-setoran').value.toLowerCase();
+            const opts = document.getElementById('setoran-santri-id').options;
+            for(let i=1; i<opts.length; i++){ opts[i].style.display = opts[i].text.toLowerCase().includes(val) ? 'block' : 'none'; }
+        }
+        function toggleSetoranInputs() {
+            const k = document.getElementById('setoran-kelas').value;
+            document.getElementById('input-iqro').style.display = (k === 'Kelas Iqro') ? 'grid' : 'none';
+            document.getElementById('input-quran').style.display = (k === 'Kelas Tahsin' || k === 'Kelas Tahfidz') ? 'grid' : 'none';
+            if(k === 'Kelas Iqro') { document.getElementById('setoran-tajwid').disabled = true; document.getElementById('setoran-tajwid').value = 0; } 
+            else { document.getElementById('setoran-tajwid').disabled = false; }
+        }
+        function populateSetoranSantriDropdown() {
+            if (currentUser.role !== 'guru') return;
+            let options = `<option value="">-- Pilih Santri --</option>`;
+            db.santri.filter(s => Number(s.guruId) === Number(currentUser.guruId) && s.status === 'Aktif').forEach(s => {
+                options += `<option value="${s.id}">${s.nama}</option>`;
+            });
+            const d = document.getElementById('setoran-santri-id'); if(d) d.innerHTML = options;
+        }
+        function loadSantriDataForSetoran() {
+            const sId = parseInt(document.getElementById('setoran-santri-id').value);
+            const s = db.santri.find(x => x.id === sId);
+            if(s && s.kelas) document.getElementById('setoran-kelas').value = s.kelas;
+            toggleSetoranInputs();
+        }
+        function simpanSetoran() {
+            const santriId = parseInt(document.getElementById('setoran-santri-id').value);
+            if (!santriId) return Swal.fire('Error', 'Pilih santri!', 'error');
+            const kelas = document.getElementById('setoran-kelas').value;
+            const santri = db.santri.find(s => s.id === santriId);
+            santri.kelas = kelas;
+            let surah = "";
+            if (kelas === 'Kelas Iqro') surah = document.getElementById('setoran-halaman').value;
+            else surah = `${document.getElementById('setoran-surah').value} Ayat ${document.getElementById('setoran-ayat').value} Baris ${document.getElementById('setoran-baris').value}`;
+            
+            db.progress.push({
+                id: Date.now(), santriId, santri: santri.nama, kelas, surah, 
+                kelancaran: document.getElementById('setoran-lancar').value, 
+                tajwid: document.getElementById('setoran-tajwid').value,
+                tgl: document.getElementById('setoran-tanggal').value || getTodayISO()
+            });
+            saveDb(); renderProgress();
+            document.getElementById('setoran-halaman').value = ""; document.getElementById('setoran-surah').value = "";
+            document.getElementById('setoran-ayat').value = ""; document.getElementById('setoran-baris').value = "";
+            Swal.fire('Berhasil', 'Setoran tersimpan!', 'success');
+        }
+
         function renderProgress() {
             const filterTgl = document.getElementById('filter-tgl-progress').value;
             const filterKelas = document.getElementById('filter-kelas-progress').value;
-            
             let dataProg = db.progress;
-            
-            if(filterTgl) {
-                dataProg = dataProg.filter(p => p.tgl === filterTgl);
-            }
-            if(filterKelas !== 'Semua') {
-                dataProg = dataProg.filter(p => p.kelas === filterKelas);
-            }
-            
+            if(filterTgl) dataProg = dataProg.filter(p => p.tgl === filterTgl);
+            if(filterKelas !== 'Semua') dataProg = dataProg.filter(p => p.kelas === filterKelas);
             if(currentUser.role === 'guru') {
                 const assignedIds = db.santri.filter(s => Number(s.guruId) === Number(currentUser.guruId)).map(s => s.id);
                 dataProg = dataProg.filter(p => assignedIds.includes(p.santriId));
@@ -2070,526 +1955,214 @@
                 dataProg = dataProg.filter(p => p.santriId === currentUser.santriId);
             }
 
-            const thead = document.getElementById('table-progress-head');
-            const tbody = document.getElementById('table-progress');
+            const thProg = document.getElementById('table-progress-head');
+            thProg.innerHTML = `<th>Tanggal</th><th>Nama Santri</th><th>Kategori</th><th>Setoran</th><th>Nilai Kelancaran</th><th>Nilai Tajwid</th>`;
+            const tbodyProg = document.getElementById('table-progress');
+            tbodyProg.innerHTML = "";
             
-            thead.innerHTML = `
-                <th>Tanggal</th>
-                <th>Nama Santri</th>
-                <th>Kelas</th>
-                <th>Surah/Halaman</th>
-                <th>Kelancaran</th>
-                <th>Tajwid</th>
-                <th>Rata-rata</th>
-            `;
-            
-            tbody.innerHTML = "";
-            if (dataProg.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--gray);">Data kosong (Belum ada inputan dari guru pada tanggal ini).</td></tr>`;
-                return;
-            }
-
             dataProg.forEach(p => {
-                let avg = p.kelas === 'Kelas Iqro' ? p.kelancaran : (Number(p.kelancaran) + Number(p.tajwid))/2;
-                tbody.innerHTML += `
-                    <tr class="clickable-row" onclick="lihatDetailProgress(${p.santriId})">
-                        <td>${p.tgl}</td>
-                        <td><strong>${p.santri}</strong></td>
-                        <td>${p.kelas}</td>
-                        <td>${p.surah}</td>
-                        <td>${p.kelancaran}</td>
-                        <td>${p.kelas === 'Kelas Iqro' ? '-' : p.tajwid}</td>
-                        <td><strong>${avg}</strong></td>
-                    </tr>`;
+                tbodyProg.innerHTML += `<tr>
+                    <td>${p.tgl}</td><td><strong>${p.santri}</strong></td><td><span class="badge badge-info">${p.kelas}</span></td>
+                    <td>${p.surah || '-'}</td><td>${p.kelancaran}</td><td>${p.kelas === 'Kelas Iqro' ? '-' : p.tajwid}</td>
+                </tr>`;
             });
         }
 
-        function lihatDetailProgress(santriId) {
-            const s = db.santri.find(x => x.id === santriId);
-            if(!s) return;
-            
-            document.getElementById('detail-prog-title').innerText = `Detail Progres: ${s.nama}`;
-            
-            let pHistory = db.progress.filter(x => x.santriId === santriId);
-            pHistory.sort((a,b) => new Date(a.tgl) - new Date(b.tgl));
-            
-            let infoHtml = `<strong>Wali:</strong> ${s.wali} <br> <strong>Kelas Saat Ini:</strong> ${s.kelas || '-'} <br><br>`;
-            if(pHistory.length > 0) {
-                let lastP = pHistory[pHistory.length-1];
-                infoHtml += `<strong>Setoran Terakhir:</strong> ${lastP.tgl} <br> <strong>Surah/Halaman:</strong> ${lastP.surah} <br> <strong>Nilai Rata-rata:</strong> ${lastP.kelas === 'Kelas Iqro' ? lastP.kelancaran : (Number(lastP.kelancaran) + Number(lastP.tajwid))/2}`;
-            } else {
-                infoHtml += `Belum ada riwayat setoran.`;
-            }
-            document.getElementById('detail-prog-info').innerHTML = infoHtml;
-            document.getElementById('modal-detail-progress').style.display = 'flex';
-        }
-
-        function populateSetoranSantriDropdown() {
-            if(currentUser.role !== 'guru') return;
-            const sel = document.getElementById('setoran-santri-id');
-            if(!sel) return;
-            
-            let mySantris = db.santri.filter(s => s.status === 'Aktif' && Number(s.guruId) === Number(currentUser.guruId));
-            
-            const keyword = (document.getElementById('search-santri-setoran')?.value || "").toLowerCase();
-            if(keyword) {
-                mySantris = mySantris.filter(s => s.nama.toLowerCase().includes(keyword));
-            }
-            
-            sel.innerHTML = `<option value="">-- Pilih Santri --</option>`;
-            mySantris.forEach(s => {
-                sel.innerHTML += `<option value="${s.id}">${s.nama} (${s.kelas || 'Belum ada kelas'})</option>`;
-            });
-        }
-
-        function filterSetoranSantri() {
-            populateSetoranSantriDropdown();
-        }
-
-        function loadSantriDataForSetoran() {
-            const sId = document.getElementById('setoran-santri-id').value;
-            if(sId) {
-                const s = db.santri.find(x => x.id == sId);
-                if(s && s.kelas) {
-                    document.getElementById('setoran-kelas').value = s.kelas;
-                    toggleSetoranInputs();
-                }
-            }
-        }
-
-        function toggleSetoranInputs() {
-            const kelas = document.getElementById('setoran-kelas').value;
-            const boxIqro = document.getElementById('input-iqro');
-            const boxQuran = document.getElementById('input-quran');
-            const label1 = document.getElementById('label-nilai-1');
-            const label2 = document.getElementById('label-nilai-2');
-            const inputTajwid = document.getElementById('setoran-tajwid');
-            
-            if (kelas === 'Kelas Iqro') {
-                boxIqro.style.display = 'grid';
-                boxQuran.style.display = 'none';
-                label1.innerText = "Nilai Kelancaran Membaca (0-100)";
-                label2.innerText = "- (Tidak Berlaku)";
-                inputTajwid.value = 0;
-                inputTajwid.disabled = true;
-            } else if (kelas === 'Kelas Tahsin' || kelas === 'Kelas Tahfidz') {
-                boxIqro.style.display = 'none';
-                boxQuran.style.display = 'grid';
-                label1.innerText = "Nilai Kelancaran (0-100)";
-                label2.innerText = "Nilai Tajwid (0-100)";
-                inputTajwid.disabled = false;
-            } else {
-                boxIqro.style.display = 'none';
-                boxQuran.style.display = 'none';
-            }
-        }
-
-        function simpanSetoran() {
-            const tgl = document.getElementById('setoran-tanggal').value;
-            const sId = document.getElementById('setoran-santri-id').value;
-            const kelas = document.getElementById('setoran-kelas').value;
-            const lcr = document.getElementById('setoran-lancar').value;
-            const tjwd = document.getElementById('setoran-tajwid').value;
-            
-            if(!tgl || !sId || !kelas || !lcr) {
-                Swal.fire('Error', 'Harap isi tanggal, santri, kelas, dan nilai!', 'error');
-                return;
-            }
-
-            let surah = "";
-            if (kelas === 'Kelas Iqro') {
-                surah = document.getElementById('setoran-halaman').value;
-            } else {
-                let s = document.getElementById('setoran-surah').value;
-                let a = document.getElementById('setoran-ayat').value;
-                let b = document.getElementById('setoran-baris').value;
-                surah = `${s} Ayat ${a} Baris ${b}`;
-            }
-
-            const santri = db.santri.find(x => x.id == sId);
-            if(santri) santri.kelas = kelas;
-
-            db.progress.push({
-                id: Date.now(),
-                santriId: parseInt(sId),
-                santri: santri.nama,
-                surah: surah,
-                kelancaran: lcr,
-                tajwid: tjwd || 0,
-                kelas: kelas,
-                tgl: tgl
-            });
-
-            saveDb();
-            document.getElementById('setoran-halaman').value = "";
-            document.getElementById('setoran-surah').value = "";
-            document.getElementById('setoran-ayat').value = "";
-            document.getElementById('setoran-baris').value = "";
-            document.getElementById('setoran-lancar').value = "";
-            document.getElementById('setoran-tajwid').value = "";
-            
-            renderProgress();
-            populateSetoranSantriDropdown();
-            Swal.fire('Berhasil', 'Setoran santri berhasil disimpan', 'success');
-        }
-
-
-        // --- LOGIC ABSENSI ---
-        function renderAbsensi() {
-            // Logs Pengajar yang mengabsenkan santri
-            const tbodyLog = document.getElementById('table-log-pengajar-absensi');
-            if(tbodyLog) {
-                tbodyLog.innerHTML = "";
-                db.logPengajarAbsensi.forEach(l => {
-                    tbodyLog.innerHTML += `<tr><td>${l.tgl}</td><td>${l.pengajar}</td></tr>`;
-                });
-            }
-
-            // Santri Absensi
-            const tglAbs = document.getElementById('tgl-absensi-santri').value;
-            let tbodySantri = document.getElementById('table-absensi-santri');
-            tbodySantri.innerHTML = "";
-            
-            let mySantris = db.santri.filter(s => s.status === 'Aktif');
-            if(currentUser.role === 'guru') {
-                mySantris = mySantris.filter(s => Number(s.guruId) === Number(currentUser.guruId));
-            }
-            
-            const searchKeyword = document.getElementById('search-santri-absensi')?.value.toLowerCase() || "";
-            if(searchKeyword) {
-                mySantris = mySantris.filter(s => s.nama.toLowerCase().includes(searchKeyword));
-            }
-            
-            const totalRows = mySantris.length;
-            const totalPages = Math.ceil(totalRows / absensiPageSize);
-            if(currentAbsensiPage > totalPages && totalPages > 0) currentAbsensiPage = totalPages;
-            
-            const startIdx = (currentAbsensiPage - 1) * absensiPageSize;
-            const endIdx = startIdx + absensiPageSize;
-            const paginatedSantri = mySantris.slice(startIdx, endIdx);
-
-            paginatedSantri.forEach(s => {
-                let ex = db.absensiSantri.find(a => a.santriId === s.id && a.tgl === tglAbs);
-                // Default status: Belum Absen
-                let statusVal = ex ? ex.status : "Belum Absen"; 
-                let pengabsen = ex ? ex.diabsenOleh : "-";
-                
-                let selectHtml = "";
-                if(currentUser.role === 'admin' || currentUser.role === 'admin_data') {
-                    let badgeClass = 'badge-warning';
-                    if(statusVal === 'Hadir') badgeClass = 'badge-success';
-                    else if(statusVal === 'Belum Absen') badgeClass = 'badge-info';
-                    else if(statusVal === 'Alpa') badgeClass = 'badge-danger';
-                    
-                    selectHtml = `<span class="badge ${badgeClass}">${statusVal}</span>`;
-                } else {
-                    selectHtml = `
-                        <select class="status-absensi-santri" data-id="${s.id}" style="padding:5px; border-radius:4px; border:1px solid #ccc;">
-                            <option value="Belum Absen" ${statusVal === 'Belum Absen' ? 'selected' : ''}>Belum Absen</option>
-                            <option value="Hadir" ${statusVal === 'Hadir' ? 'selected' : ''}>Hadir</option>
-                            <option value="Izin" ${statusVal === 'Izin' ? 'selected' : ''}>Izin</option>
-                            <option value="Sakit" ${statusVal === 'Sakit' ? 'selected' : ''}>Sakit</option>
-                            <option value="Alpa" ${statusVal === 'Alpa' ? 'selected' : ''}>Alpa</option>
-                        </select>
-                    `;
-                }
-                
-                tbodySantri.innerHTML += `
-                    <tr>
-                        <td>${s.nama}</td>
-                        <td>${s.kelas || '-'}</td>
-                        <td>${selectHtml}</td>
-                        <td>${pengabsen}</td>
-                    </tr>
-                `;
-            });
-            
-            renderPaginationAbsensi(totalPages);
-            
-            // Guru Absensi Log
-            const tbodyGuru = document.getElementById('table-absensi-guru-log');
-            if(tbodyGuru) {
-                tbodyGuru.innerHTML = "";
-                let logGuru = db.absensiGuru;
-                const filterTglGuru = document.getElementById('filter-tgl-absen-guru').value;
-                if(filterTglGuru) logGuru = logGuru.filter(g => g.tgl === filterTglGuru);
-                
-                logGuru.forEach(g => {
-                    let aksi = "-";
-                    if(currentUser.role === 'admin') {
-                        aksi = `<button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="hapusAbsensiGuru(${g.id})"><i class="fa-solid fa-trash"></i> Hapus</button>`;
-                        document.getElementById('th-aksi-guru-log').style.display = 'table-cell';
-                    } else {
-                        document.getElementById('th-aksi-guru-log').style.display = 'none';
-                    }
-
-                    tbodyGuru.innerHTML += `
-                        <tr>
-                            <td>${g.tgl}</td>
-                            <td>${g.guru}</td>
-                            <td>${g.jamMasuk}</td>
-                            <td>${g.jamPulang || '-'}</td>
-                            <td><span class="badge ${g.status === 'Hadir' ? 'badge-success' : 'badge-warning'}">${g.status}</span></td>
-                            <td>Rp ${Number(g.potongan).toLocaleString('id-ID')}</td>
-                            ${currentUser.role === 'admin' ? `<td>${aksi}</td>` : ''}
-                        </tr>
-                    `;
-                });
-            }
-        }
-
-        function onSearchAbsensiSantriChange() {
-            currentAbsensiPage = 1;
-            renderAbsensi();
-        }
-
-        function renderPaginationAbsensi(totalPages) {
-            const container = document.getElementById('pagination-absensi-santri');
-            if(!container) return;
-            
-            let html = `<div>Halaman ${currentAbsensiPage} dari ${totalPages || 1}</div><div class="pagination-buttons">`;
-            
-            for(let i=1; i<=totalPages; i++) {
-                html += `<button class="page-btn ${i === currentAbsensiPage ? 'active' : ''}" onclick="goToAbsensiPage(${i})">${i}</button>`;
-            }
-            html += `</div>`;
-            container.innerHTML = html;
-        }
-
-        function goToAbsensiPage(page) {
-            currentAbsensiPage = page;
-            renderAbsensi();
-        }
-
-        function simpanAbsensiSantri() {
-            const tglAbs = document.getElementById('tgl-absensi-santri').value;
-            const selects = document.querySelectorAll('.status-absensi-santri');
-            
-            selects.forEach(sel => {
-                let sId = parseInt(sel.getAttribute('data-id'));
-                let st = sel.value;
-                
-                let idx = db.absensiSantri.findIndex(a => a.santriId === sId && a.tgl === tglAbs);
-                if(idx > -1) {
-                    db.absensiSantri[idx].status = st;
-                    db.absensiSantri[idx].diabsenOleh = currentUser.name;
-                } else {
-                    db.absensiSantri.push({
-                        santriId: sId, tgl: tglAbs, status: st, diabsenOleh: currentUser.name
-                    });
-                }
-            });
-            
-            let logIdx = db.logPengajarAbsensi.findIndex(l => l.tgl === tglAbs && l.pengajar === currentUser.name);
-            if(logIdx === -1) {
-                db.logPengajarAbsensi.push({ tgl: tglAbs, pengajar: currentUser.name });
-            }
-
-            saveDb();
-            renderAbsensi();
-            Swal.fire({icon: 'success', title: 'Tersimpan!', text: 'Absensi santri berhasil diperbarui!'});
-        }
-
+        // Functions Absensi Santri & Guru
         function handleAbsensiGuruClick() {
-            const today = getTodayISO();
-            const nowTime = new Date().toTimeString().slice(0,5);
-            let ex = db.absensiGuru.find(a => a.tgl === today && a.guruId === currentUser.guruId);
+            const g = db.guru.find(x => x.id === currentUser.guruId);
+            const now = new Date();
+            const jam = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const jamMasukRules = db.settings.jamMasuk || "07:00";
+            let telat = jam > jamMasukRules;
             
-            if(!ex) {
-                db.absensiGuru.push({
-                    id: Date.now(),
-                    guruId: currentUser.guruId,
-                    guru: currentUser.name,
-                    tgl: today,
-                    jamMasuk: nowTime,
-                    jamPulang: null,
-                    status: "Hadir",
-                    potongan: 0 
-                });
-                Swal.fire('Berhasil', 'Absen Masuk berhasil dicatat.', 'success');
-            } else if (!ex.jamPulang) {
-                ex.jamPulang = nowTime;
-                Swal.fire('Berhasil', 'Absen Pulang berhasil dicatat.', 'success');
+            let absRecord = db.absensiGuru.find(a => a.guruId === g.id && a.tgl === getTodayISO());
+            if (!absRecord) {
+                db.absensiGuru.push({ id: Date.now(), guruId: g.id, nama: g.nama, tgl: getTodayISO(), jamMasuk: jam, jamPulang: "-", status: telat ? "Terlambat" : "Hadir", denda: telat ? (db.settings.potonganTelat || 5) : 0 });
+                Swal.fire('Absen Masuk Berhasil', `Jam Masuk: ${jam}`, 'success');
+            } else if (absRecord.jamPulang === "-") {
+                absRecord.jamPulang = jam;
+                Swal.fire('Absen Pulang Berhasil', `Jam Pulang: ${jam}`, 'success');
             } else {
-                Swal.fire('Info', 'Anda sudah menyelesaikan absensi hari ini.', 'info');
+                Swal.fire('Info', 'Anda sudah absen masuk & pulang hari ini.', 'info');
             }
-            saveDb();
-            updateGuruAbsenStatusDisplay();
+            saveDb(); updateGuruAbsenStatusDisplay(); renderAbsensi();
         }
-
         function updateGuruAbsenStatusDisplay() {
             if(currentUser.role !== 'guru') return;
-            const today = getTodayISO();
-            let ex = db.absensiGuru.find(a => a.tgl === today && a.guruId === currentUser.guruId);
             const btn = document.getElementById('btn-guru-absen-action');
-            const statusText = document.getElementById('guru-absen-status');
-            
-            if(!ex) {
-                btn.innerHTML = '<i class="fa-solid fa-sign-in-alt"></i> Absen Masuk';
-                btn.className = 'btn btn-success';
-                statusText.innerText = 'Status Hari Ini: Belum Absen';
-            } else if (!ex.jamPulang) {
-                btn.innerHTML = '<i class="fa-solid fa-sign-out-alt"></i> Absen Pulang';
-                btn.className = 'btn btn-warning';
-                statusText.innerText = `Status Hari Ini: Hadir (Masuk ${ex.jamMasuk})`;
-            } else {
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> Selesai';
-                btn.className = 'btn btn-disabled';
-                btn.disabled = true;
-                statusText.innerText = `Status Hari Ini: Selesai (Pulang ${ex.jamPulang})`;
-            }
+            const st = document.getElementById('guru-absen-status');
+            const rec = db.absensiGuru.find(a => a.guruId === currentUser.guruId && a.tgl === getTodayISO());
+            if(!rec) { btn.innerHTML = '<i class="fa-solid fa-sign-in-alt"></i> Absen Masuk'; st.innerText = 'Status Hari Ini: Belum Absen'; btn.classList.replace('btn-warning', 'btn-success'); btn.disabled = false; }
+            else if(rec.jamPulang === "-") { btn.innerHTML = '<i class="fa-solid fa-sign-out-alt"></i> Absen Pulang'; st.innerText = `Status: Masuk (${rec.jamMasuk})`; btn.classList.replace('btn-success', 'btn-warning'); btn.disabled = false; }
+            else { btn.innerHTML = '<i class="fa-solid fa-check"></i> Selesai'; st.innerText = `Status: Hadir (${rec.jamMasuk} - ${rec.jamPulang})`; btn.classList.replace('btn-warning', 'btn-success'); btn.disabled = true; }
         }
 
-        // --- LOGIC KEUANGAN & SPP ---
-        function renderKeuangan() {
-            const tglMulaiKas = document.getElementById('tgl-mulai-arus-kas').value;
-            const tglSelesaiKas = document.getElementById('tgl-selesai-arus-kas').value;
-            let dataKas = db.arusKas || [];
-            if(tglMulaiKas && tglSelesaiKas) {
-                dataKas = dataKas.filter(k => k.tgl >= tglMulaiKas && k.tgl <= tglSelesaiKas);
+        function renderAbsensi() {
+            const tglFilter = document.getElementById('tgl-absensi-santri').value;
+            const tbodyLogPengajar = document.getElementById('table-log-pengajar-absensi');
+            tbodyLogPengajar.innerHTML = "";
+            let logData = db.logPengajarAbsensi.filter(l => l.tgl === tglFilter);
+            if(logData.length === 0) tbodyLogPengajar.innerHTML = `<tr><td colspan="2" style="text-align:center; color:var(--gray);">Belum ada pengajar yang mengabsen pada tanggal ini.</td></tr>`;
+            logData.forEach(l => { tbodyLogPengajar.innerHTML += `<tr><td>${l.tgl}</td><td><strong>${l.pengajar}</strong></td></tr>`; });
+
+            const santriTbody = document.getElementById('table-absensi-santri');
+            santriTbody.innerHTML = "";
+            let targetSantri = db.santri.filter(s => s.status === 'Aktif');
+            const search = document.getElementById('search-santri-absensi') ? document.getElementById('search-santri-absensi').value.toLowerCase() : "";
+            if (currentUser.role === 'guru') targetSantri = targetSantri.filter(s => Number(s.guruId) === Number(currentUser.guruId));
+            if (search) targetSantri = targetSantri.filter(s => s.nama.toLowerCase().includes(search));
+
+            const startIndex = (currentAbsensiPage - 1) * absensiPageSize;
+            const paginatedSantri = targetSantri.slice(startIndex, startIndex + absensiPageSize);
+
+            paginatedSantri.forEach(s => {
+                let rec = db.absensiSantri.find(a => a.santriId === s.id && a.tgl === tglFilter);
+                let st = rec ? rec.status : 'Hadir';
+                let by = rec ? rec.absenOleh : (currentUser.role === 'admin' ? '-' : currentUser.name);
+                
+                let selectHtml = `<select class="abs-status-select" data-id="${s.id}" data-nama="${s.nama}" ${currentUser.role === 'admin' ? 'disabled' : ''}>
+                    <option value="Hadir" ${st === 'Hadir' ? 'selected' : ''}>Hadir</option>
+                    <option value="Izin" ${st === 'Izin' ? 'selected' : ''}>Izin</option>
+                    <option value="Sakit" ${st === 'Sakit' ? 'selected' : ''}>Sakit</option>
+                    <option value="Alpa" ${st === 'Alpa' ? 'selected' : ''}>Alpa</option>
+                </select>`;
+                santriTbody.innerHTML += `<tr><td><strong>${s.nama}</strong></td><td><span class="badge badge-info">${s.kelas || '-'}</span></td><td>${selectHtml}</td><td>${by}</td></tr>`;
+            });
+
+            // Pagination Controls
+            const totalPages = Math.ceil(targetSantri.length / absensiPageSize);
+            const pagContainer = document.getElementById('pagination-absensi-santri');
+            pagContainer.innerHTML = `<span style="font-size:0.85rem; color:var(--gray);">Menampilkan ${startIndex + 1}-${Math.min(startIndex + absensiPageSize, targetSantri.length)} dari ${targetSantri.length} santri</span>
+                <div class="pagination-buttons">
+                    <button class="page-btn ${currentAbsensiPage === 1 ? 'btn-disabled' : ''}" onclick="gantiPageAbsensi(${currentAbsensiPage - 1})" ${currentAbsensiPage === 1 ? 'disabled' : ''}>Prev</button>
+                    <button class="page-btn ${currentAbsensiPage === totalPages || totalPages === 0 ? 'btn-disabled' : ''}" onclick="gantiPageAbsensi(${currentAbsensiPage + 1})" ${currentAbsensiPage === totalPages || totalPages === 0 ? 'disabled' : ''}>Next</button>
+                </div>`;
+
+            // Absensi Guru
+            const filterTglGuru = document.getElementById('filter-tgl-absen-guru').value;
+            const tbguru = document.getElementById('table-absensi-guru-log');
+            tbguru.innerHTML = "";
+            let guruData = db.absensiGuru;
+            if(filterTglGuru) guruData = guruData.filter(a => a.tgl === filterTglGuru);
+            if(currentUser.role === 'guru') guruData = guruData.filter(a => a.guruId === currentUser.guruId);
+            
+            guruData.forEach(a => {
+                let dendaTxt = a.denda > 0 ? `<span style="color:var(--danger)">-${a.denda}%</span>` : "-";
+                let aksiHtml = currentUser.role === 'admin' ? `<td><button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="hapusAbsensiGuru(${a.id})"><i class="fa-solid fa-trash"></i></button></td>` : `<td>-</td>`;
+                tbguru.innerHTML += `<tr><td>${a.tgl}</td><td><strong>${a.nama}</strong></td><td>${a.jamMasuk}</td><td>${a.jamPulang}</td><td>${a.status}</td><td>${dendaTxt}</td>${aksiHtml}</tr>`;
+            });
+        }
+        function gantiPageAbsensi(page) { currentAbsensiPage = page; renderAbsensi(); }
+        function onSearchAbsensiSantriChange() { currentAbsensiPage = 1; renderAbsensi(); }
+        
+        function simpanAbsensiSantri() {
+            if(currentUser.role === 'admin') return Swal.fire('Akses Ditolak', 'Hanya Pengajar yang dapat mengabsen murid.', 'error');
+            const tgl = document.getElementById('tgl-absensi-santri').value;
+            document.querySelectorAll('.abs-status-select').forEach(sel => {
+                const sId = parseInt(sel.dataset.id); const status = sel.value; const sNama = sel.dataset.nama;
+                let existing = db.absensiSantri.find(a => a.santriId === sId && a.tgl === tgl);
+                if (existing) { existing.status = status; existing.absenOleh = currentUser.name; } 
+                else { db.absensiSantri.push({ santriId: sId, nama: sNama, tgl, status, absenOleh: currentUser.name }); }
+            });
+            if(!db.logPengajarAbsensi.find(l => l.tgl === tgl && l.pengajar === currentUser.name)){
+                db.logPengajarAbsensi.push({ tgl, pengajar: currentUser.name });
             }
+            saveDb(); Swal.fire('Tersimpan', 'Absensi Santri berhasil disimpan.', 'success'); renderAbsensi();
+        }
+
+        // Functions Keuangan & SPP
+        function renderKeuangan() {
+            // Arus Kas
+            const tglMulai = document.getElementById('tgl-mulai-arus-kas') ? document.getElementById('tgl-mulai-arus-kas').value : getTodayISO();
+            const tglSelesai = document.getElementById('tgl-selesai-arus-kas') ? document.getElementById('tgl-selesai-arus-kas').value : getTodayISO();
+            
             const tbodyKas = document.getElementById('table-arus-kas');
             if (tbodyKas) {
                 tbodyKas.innerHTML = "";
-                dataKas.forEach(k => {
-                    let color = k.jenis === 'Pendapatan' ? 'color:var(--secondary)' : 'color:var(--danger)';
+                let filteredKas = db.arusKas.filter(k => k.tgl >= tglMulai && k.tgl <= tglSelesai);
+                filteredKas.forEach(k => {
+                    let color = k.jenis === 'Pendapatan' ? 'color: var(--secondary);' : 'color: var(--danger);';
                     tbodyKas.innerHTML += `<tr>
                         <td>${k.tgl}</td>
-                        <td><span style="${color}; font-weight:bold;">${k.jenis}</span></td>
+                        <td style="${color} font-weight:bold;">${k.jenis}</td>
                         <td>${k.ket}</td>
                         <td>Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
                     </tr>`;
                 });
             }
 
-            const tglSppMulai = document.getElementById('tgl-spp-mulai').value;
-            const tglSppSelesai = document.getElementById('tgl-spp-selesai').value;
+            // SPP (Background Constraint diterapkan)
+            const tglSppMulai = document.getElementById('tgl-spp-mulai') ? document.getElementById('tgl-spp-mulai').value : getTodayISO();
+            const tglSppSelesai = document.getElementById('tgl-spp-selesai') ? document.getElementById('tgl-spp-selesai').value : getTodayISO();
             
-            const tbodyBelum = document.getElementById('table-spp-belum');
-            if (tbodyBelum) {
-                tbodyBelum.innerHTML = "";
-                db.santri.filter(s => s.status === 'Aktif').forEach(s => {
-                    let hasPaid = db.spp.find(x => x.santriId === s.id && x.tgl >= tglSppMulai && x.tgl <= tglSppSelesai);
-                    if(!hasPaid) {
-                        let aksi = "";
-                        if(currentUser.role === 'ortu' && s.id === currentUser.santriId) {
-                            aksi = `<button class="btn btn-success" style="padding:4px 8px; font-size:0.8rem;" onclick="bukaModalOrtuBayarSPP(${s.id})">Bayar Sekarang</button>`;
-                        } else if (currentUser.role === 'admin' || currentUser.role === 'admin_keuangan') {
-                            aksi = "Belum Lunas";
-                        }
-                        
-                        if(currentUser.role !== 'ortu' || (currentUser.role === 'ortu' && s.id === currentUser.santriId)) {
-                            tbodyBelum.innerHTML += `<tr>
-                                <td>${s.nama}</td>
-                                <td>${s.wali}</td>
-                                <td>Rp ${(db.settings.sppNominal || 150000).toLocaleString('id-ID')}</td>
-                                <td>${aksi}</td>
-                            </tr>`;
-                        }
-                    }
-                });
-            }
-
+            const tbodySppBelum = document.getElementById('table-spp-belum');
             const tbodySpp = document.getElementById('table-spp');
-            if (tbodySpp) {
+            
+            if (tbodySppBelum && tbodySpp) {
+                tbodySppBelum.innerHTML = "";
                 tbodySpp.innerHTML = "";
-                let dataSpp = db.spp.filter(x => x.tgl >= tglSppMulai && x.tgl <= tglSppSelesai);
                 
-                if (currentUser.role === 'ortu') {
-                    dataSpp = dataSpp.filter(x => x.santriId === currentUser.santriId && !x.hiddenByOrtu);
-                } else if (currentUser.role === 'admin' || currentUser.role === 'admin_keuangan') {
-                    dataSpp = dataSpp.filter(x => !x.hiddenByAdmin);
-                }
+                let targetSantri = db.santri.filter(s => s.status === 'Aktif');
+                if (currentUser.role === 'ortu') targetSantri = targetSantri.filter(s => s.id === currentUser.santriId);
+                
+                const currentMonthStr = tglSppMulai.substring(0, 7); 
+                
+                targetSantri.forEach(s => {
+                    const sppRecord = db.spp.find(x => x.santriId === s.id && x.tgl.startsWith(currentMonthStr) && 
+                                                  !(currentUser.role === 'admin' && x.hiddenByAdmin) && 
+                                                  !(currentUser.role === 'ortu' && x.hiddenByOrtu));
+                    
+                    if (sppRecord) {
+                        let aksi = "";
+                        if (currentUser.role === 'admin') aksi = `<button class="btn btn-info" style="padding: 6px 12px; font-size:0.8rem;" onclick="cetakResiSpp(${sppRecord.id})"><i class="fa-solid fa-file-pdf"></i> Cetak Resi</button>`;
+                        
+                        tbodySpp.innerHTML += `<tr>
+                            <td>${s.nama}</td>
+                            <td>Rp ${Number(sppRecord.nominal).toLocaleString('id-ID')} ${sppRecord.infaq ? `<br><small style="color:var(--secondary)">+ Infaq: Rp ${Number(sppRecord.infaq).toLocaleString('id-ID')}</small>` : ''}</td>
+                            <td>${sppRecord.tgl}</td>
+                            <td><span class="badge badge-success">${sppRecord.status}</span></td>
+                            <td>${aksi}</td>
+                        </tr>`;
+                    } else {
+                        let aksi = "";
+                        if (currentUser.role === 'ortu') {
+                            aksi = `<button class="btn btn-success" style="padding: 6px 12px; font-size:0.8rem;" onclick="bukaModalOrtuBayarSPP(${s.id})"><i class="fa-solid fa-money-bill-wave"></i> Bayar Sekarang</button>`;
+                        } else if (currentUser.role === 'admin') {
+                            aksi = `<button class="btn btn-success" style="padding: 6px 12px; font-size:0.8rem;" onclick="bukaModalOrtuBayarSPP(${s.id})"><i class="fa-solid fa-check"></i> Konfirmasi Bayar</button>`;
+                        }
 
-                dataSpp.forEach(x => {
-                    tbodySpp.innerHTML += `<tr>
-                        <td>${x.santri}</td>
-                        <td>Rp ${Number(x.nominal).toLocaleString('id-ID')}</td>
-                        <td>${x.tgl}</td>
-                        <td><span class="badge badge-success">${x.status}</span></td>
-                        <td></td>
-                    </tr>`;
+                        // Constraint: Background Merah pada yang belum lunas
+                        tbodySppBelum.innerHTML += `<tr style="background-color: #fee2e2;">
+                            <td><strong>${s.nama}</strong></td>
+                            <td>${s.wali}</td>
+                            <td style="color: #dc2626; font-weight: bold;">Rp ${Number(db.settings.sppNominal).toLocaleString('id-ID')}</td>
+                            <td><span class="badge badge-danger">Belum Lunas</span> <div style="margin-top: 5px;">${aksi}</div></td>
+                        </tr>`;
+                    }
                 });
             }
         }
 
         function simpanTransaksiKas(e) {
             e.preventDefault();
-            db.arusKas.push({
-                id: Date.now(),
-                tgl: getTodayISO(),
-                jenis: document.getElementById('kas-jenis').value,
-                ket: document.getElementById('kas-ket').value,
-                nominal: parseFloat(document.getElementById('kas-nominal').value)
-            });
-            saveDb();
-            closeModal('modal-kas');
-            renderKeuangan();
-            if(currentUser.role === 'admin') loadDashboardData();
-            Swal.fire('Berhasil', 'Transaksi ditambahkan', 'success');
+            db.arusKas.push({ id: Date.now(), tgl: getTodayISO(), jenis: document.getElementById('kas-jenis').value, ket: document.getElementById('kas-ket').value, nominal: parseFloat(document.getElementById('kas-nominal').value) });
+            saveDb(); closeModal('modal-kas'); renderKeuangan(); loadDashboardData(); Swal.fire('Berhasil!', 'Transaksi kas berhasil dicatat.', 'success');
         }
 
-        function clearHistoryKeuangan() {
-            Swal.fire({
-                title: 'Bersihkan History?', text: "Semua riwayat keuangan akan dihapus permanen!",
-                icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Bersihkan!'
-            }).then((res) => {
-                if(res.isConfirmed) {
-                    db.arusKas = [];
-                    saveDb();
-                    renderModalHistoryKeuangan();
-                    renderKeuangan();
-                    if(currentUser.role === 'admin') loadDashboardData();
-                    Swal.fire('Berhasil', 'History dibersihkan.', 'success');
-                }
-            });
+        function bersihkanCacheSpp() { db.spp.forEach(s => s.hiddenByAdmin = true); saveDb(); renderKeuangan(); Swal.fire('Dibersihkan!', 'History SPP disembunyikan dari Admin.', 'success'); }
+        function bersihkanSppOrtu() { db.spp.forEach(s => s.hiddenByOrtu = true); saveDb(); renderKeuangan(); Swal.fire('Dibersihkan!', 'History SPP Anda telah dibersihkan.', 'success'); }
+
+        // Settings Parameter Admin
+        function deteksiLokasiOtomatis() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => { document.getElementById('param-lat').value = position.coords.latitude; document.getElementById('param-lng').value = position.coords.longitude; Swal.fire('Sukses', 'Lokasi otomatis terdeteksi.', 'success'); },
+                    (error) => { Swal.fire('Error', 'Gagal mendapatkan lokasi. Izinkan akses lokasi di browser.', 'error'); }
+                );
+            } else { Swal.fire('Error', 'Browser tidak mendukung geolokasi.', 'error'); }
         }
 
-        function renderModalHistoryKeuangan() {
-            const tbody = document.getElementById('table-modal-history-keuangan');
-            tbody.innerHTML = "";
-            (db.arusKas || []).forEach(k => {
-                let color = k.jenis === 'Pendapatan' ? 'color:var(--secondary)' : 'color:var(--danger)';
-                tbody.innerHTML += `<tr>
-                    <td>${k.tgl}</td>
-                    <td><span style="${color}; font-weight:bold;">${k.jenis}</span></td>
-                    <td>${k.ket}</td>
-                    <td>Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
-                </tr>`;
-            });
-        }
-
-        function bersihkanCacheSpp() {
-            Swal.fire({
-                title: 'Sembunyikan History?',
-                text: "Ini akan menyembunyikan riwayat SPP dari tampilan Admin.",
-                icon: 'question', showCancelButton: true, confirmButtonText: 'Ya'
-            }).then((res) => {
-                if(res.isConfirmed) {
-                    db.spp.forEach(s => s.hiddenByAdmin = true);
-                    saveDb();
-                    renderKeuangan();
-                    Swal.fire('Berhasil', 'History disembunyikan.', 'success');
-                }
-            });
-        }
-
-        function bersihkanSppOrtu() {
-            Swal.fire({
-                title: 'Sembunyikan History?',
-                text: "Ini akan menyembunyikan riwayat pembayaran di akun Anda.",
-                icon: 'question', showCancelButton: true, confirmButtonText: 'Ya'
-            }).then((res) => {
-                if(res.isConfirmed) {
-                    db.spp.forEach(s => { if(s.santriId === currentUser.santriId) s.hiddenByOrtu = true; });
-                    saveDb();
-                    renderKeuangan();
-                    Swal.fire('Berhasil', 'History disembunyikan.', 'success');
-                }
-            });
-        }
-
-        // --- PENGATURAN ADMIN ---
         function simpanParameterAdmin() {
             db.settings.jamMasuk = document.getElementById('param-jam-masuk').value;
             db.settings.jamPulang = document.getElementById('param-jam-pulang').value;
@@ -2598,33 +2171,31 @@
             db.settings.geoLat = parseFloat(document.getElementById('param-lat').value);
             db.settings.geoLng = parseFloat(document.getElementById('param-lng').value);
             db.settings.geoRadius = parseInt(document.getElementById('param-radius').value);
-            saveDb();
-            Swal.fire('Tersimpan', 'Parameter berhasil disimpan', 'success');
+            saveDb(); Swal.fire('Berhasil', 'Parameter Absensi & Lokasi berhasil disimpan!', 'success');
         }
 
         function simpanSettingKeuangan() {
-            db.settings.sppNominal = parseInt(document.getElementById('setting-spp-nominal').value);
+            db.settings.sppNominal = parseFloat(document.getElementById('setting-spp-nominal').value);
             db.settings.rekeningBank = document.getElementById('setting-bank').value;
             db.settings.ewallet = document.getElementById('setting-ewallet').value;
-            saveDb();
-            Swal.fire('Tersimpan', 'Pengaturan keuangan disimpan', 'success');
+            saveDb(); Swal.fire('Berhasil', 'Pengaturan Rekening & SPP berhasil disimpan!', 'success');
         }
 
-        function deteksiLokasiOtomatis() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        document.getElementById('param-lat').value = position.coords.latitude;
-                        document.getElementById('param-lng').value = position.coords.longitude;
-                        Swal.fire('Berhasil', 'Lokasi Anda saat ini berhasil dideteksi', 'success');
-                    },
-                    (error) => {
-                        Swal.fire('Gagal', 'Tidak dapat mendeteksi lokasi. Pastikan izin akses lokasi aktif.', 'error');
-                    }
-                );
-            } else {
-                Swal.fire('Error', 'Browser tidak mendukung geolokasi', 'error');
-            }
+        function renderModalHistoryKeuangan() {
+            const tbody = document.getElementById('table-modal-history-keuangan');
+            tbody.innerHTML = "";
+            db.arusKas.slice().reverse().forEach(k => {
+                let color = k.jenis === 'Pendapatan' ? 'color: var(--secondary);' : 'color: var(--danger);';
+                tbody.innerHTML += `<tr><td>${k.tgl}</td><td style="${color} font-weight:bold;">${k.jenis}</td><td>${k.ket}</td><td>Rp ${Number(k.nominal).toLocaleString('id-ID')}</td></tr>`;
+            });
+        }
+
+        function clearHistoryKeuangan() {
+            Swal.fire({
+                title: 'Bersihkan Semua Data Kas?', text: "Semua riwayat kas akan hilang dari sistem!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Ya, Bersihkan!'
+            }).then((result) => {
+                if(result.isConfirmed) { db.arusKas = []; saveDb(); renderModalHistoryKeuangan(); renderKeuangan(); loadDashboardData(); Swal.fire('Dibersihkan!', 'History Kas telah kosong.', 'success'); }
+            });
         }
     </script>
 </body>
