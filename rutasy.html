@@ -1187,19 +1187,31 @@
             const nominal = db.settings.sppNominal || 150000;
             const infaqVal = parseInt(infaq || 0);
 
-            db.spp.push({
-                id: Date.now(),
-                santriId: sId,
-                santri: santri ? santri.nama : '',
-                nominal: nominal,
-                infaq: infaqVal,
-                tgl: getTodayISO(),
-                status: "Menunggu Persetujuan", 
-                metode: metode,
-                hiddenByAdmin: false,
-                hiddenByOrtu: false,
-                hiddenByGuru: false // FIX: Data tidak disembunyikan bagi guru saat pertama kali dibuat
-            });
+            let sppExist = db.spp.find(s => s.santriId === sId && (s.status === "Belum Bayar" || s.status === "Menunggu Persetujuan"));
+            if (sppExist) {
+                sppExist.nominal = nominal;
+                sppExist.infaq = infaqVal;
+                sppExist.tgl = getTodayISO();
+                sppExist.status = "Menunggu Persetujuan";
+                sppExist.metode = metode;
+                sppExist.hiddenByAdmin = false;
+                sppExist.hiddenByOrtu = false;
+                sppExist.hiddenByGuru = false;
+            } else {
+                db.spp.push({
+                    id: Date.now(),
+                    santriId: sId,
+                    santri: santri ? santri.nama : '',
+                    nominal: nominal,
+                    infaq: infaqVal,
+                    tgl: getTodayISO(),
+                    status: "Menunggu Persetujuan", 
+                    metode: metode,
+                    hiddenByAdmin: false,
+                    hiddenByOrtu: false,
+                    hiddenByGuru: false
+                });
+            }
             
             saveDb();
             closeModal('modal-bayar-spp');
@@ -2071,7 +2083,7 @@
                     });
                     saveDb();
                     renderKeuangan();
-                    Swal.fire('Berhasil!', 'History SPP telah dihapus/clear.', 'success');
+                    Swal.fire('Berhasil!', 'History SPP Anda telah dibersihkan.', 'success');
                 }
             });
         }
@@ -2079,68 +2091,125 @@
         function hapusHistorySppGuru() {
             Swal.fire({
                 title: 'Hapus/Clear History SPP?',
-                text: "Anda yakin ingin menghapus history tampilan SPP ini?",
+                text: "Menghapus history SPP santri di kelas Anda. Lanjutkan?",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 confirmButtonText: 'Ya, Hapus/Clear'
-            }).then((res) => {
-                if(res.isConfirmed) {
-                    // FIX BUG 3: Hanya disembunyikan untuk tampilan guru, jangan mereset/menghapus array secara utuh yang membuat data tertarik kembali ke tagihan
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const guruSantriIds = db.santri.filter(s => Number(s.guruId) === Number(currentUser.guruId)).map(s => s.id);
                     db.spp.forEach(s => {
-                        s.hiddenByGuru = true;
+                        if (guruSantriIds.includes(s.santriId)) s.hiddenByGuru = true;
                     });
                     saveDb();
-                    if (typeof renderKeuangan === "function") renderKeuangan();
-                    Swal.fire('Dihapus!', 'History SPP berhasil dihapus/clear dari tampilan Anda.', 'success');
+                    renderKeuangan();
+                    Swal.fire('Berhasil!', 'History SPP kelas telah dibersihkan.', 'success');
                 }
             });
         }
 
-        // ================= TAMBAHAN FIX BUG 1 & 2 =================
-
-        // FIX BUG 1: Fungsi untuk guru melakukan absen mandiri
-        function handleAbsensiGuruClick() {
-            const today = getTodayISO();
-            const now = new Date();
-            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        // Modal Helpers
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if(el) el.style.display = 'flex';
         }
 
-        // ================= PENYELESAIAN POIN 1: INPUT GURU & SANTRI =================
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if(el) el.style.display = 'none';
+        }
+
         function openModalGuru() {
-            document.getElementById('guru-nik').value = '';
-            document.getElementById('guru-nama').value = '';
-            document.getElementById('guru-jk').value = '';
-            document.getElementById('guru-ttl').value = '';
-            document.getElementById('guru-alamat').value = '';
-            document.getElementById('guru-norek').value = '';
-            document.getElementById('guru-wa').value = '';
-            document.getElementById('guru-gaji').value = '';
-            document.getElementById('guru-user').value = '';
-            document.getElementById('guru-pass').value = '';
-            document.getElementById('modal-guru').style.display = 'flex';
+            openModal('modal-guru');
         }
 
         function openModalSantri() {
             populateGuruDropdowns();
-            document.getElementById('santri-nis').value = '';
-            document.getElementById('santri-nama').value = '';
-            document.getElementById('santri-jk').value = '';
-            document.getElementById('santri-ttl').value = '';
-            document.getElementById('santri-alamat').value = '';
-            document.getElementById('santri-wa').value = '';
-            document.getElementById('santri-status').value = 'Aktif';
-            document.getElementById('santri-user').value = '';
-            document.getElementById('santri-pass').value = '';
-            document.getElementById('modal-santri').style.display = 'flex';
+            openModal('modal-santri');
         }
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
+        function openModalKas() {
+            openModal('modal-kas');
         }
 
-        function simpanGuru(event) {
-            event.preventDefault();
+        function openModalHistoryKeuangan() {
+            renderHistoryKeuanganModal();
+            openModal('modal-history-keuangan');
+        }
+
+        // Master Data Management (Guru & Santri Edit / Delete / Add)
+        function renderMaster() {
+            populateGuruDropdowns();
+
+            // Table Santri
+            const tbodySantri = document.getElementById('table-santri');
+            if (tbodySantri) {
+                tbodySantri.innerHTML = '';
+                db.santri.forEach(s => {
+                    const guru = db.guru.find(g => Number(g.id) === Number(s.guruId));
+                    const guruNama = guru ? guru.nama : '-';
+                    
+                    const userAcc = db.users.find(u => u.santriId === s.id || u.username === s.username);
+                    const passText = userAcc ? userAcc.password : (s.password || '123');
+                    const userText = s.username || (userAcc ? userAcc.username : '-');
+
+                    tbodySantri.innerHTML += `
+                        <tr>
+                            <td>${s.nis}</td>
+                            <td><strong>${s.nama}</strong></td>
+                            <td>${s.jk}</td>
+                            <td>${s.ttl}</td>
+                            <td>${s.alamat}</td>
+                            <td>${s.wa}</td>
+                            <td>${guruNama}</td>
+                            <td><span class="badge ${s.status === 'Aktif' ? 'badge-success' : 'badge-danger'}">${s.status}</span></td>
+                            <td>${userText}</td>
+                            <td>${passText}</td>
+                            <td>
+                                <button class="btn btn-warning" style="padding:4px 8px; font-size:0.8rem; margin-right:4px;" onclick="editSantri(${s.id})"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                                <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="hapusSantri(${s.id})"><i class="fa-solid fa-trash"></i> Hapus</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // Table Guru
+            const tbodyGuru = document.getElementById('table-guru');
+            if (tbodyGuru) {
+                tbodyGuru.innerHTML = '';
+                db.guru.forEach(g => {
+                    const userAcc = db.users.find(u => u.guruId === g.id || u.username === g.username);
+                    const passText = userAcc ? userAcc.password : (g.password || '123');
+                    const userText = g.username || (userAcc ? userAcc.username : '-');
+
+                    tbodyGuru.innerHTML += `
+                        <tr>
+                            <td>${g.id}</td>
+                            <td>${g.nik}</td>
+                            <td><strong>${g.nama}</strong></td>
+                            <td>${g.jk}</td>
+                            <td>${g.ttl}</td>
+                            <td>${g.alamat}</td>
+                            <td>${g.norek}</td>
+                            <td>${g.wa}</td>
+                            <td>Rp ${Number(g.gajiHarian || 0).toLocaleString('id-ID')}</td>
+                            <td>${userText}</td>
+                            <td>${passText}</td>
+                            <td>
+                                <button class="btn btn-warning" style="padding:4px 8px; font-size:0.8rem; margin-right:4px;" onclick="editGuru(${g.id})"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                                <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="hapusGuru(${g.id})"><i class="fa-solid fa-trash"></i> Hapus</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        // Tambah Guru
+        function simpanGuru(e) {
+            e.preventDefault();
             const nik = document.getElementById('guru-nik').value;
             const nama = document.getElementById('guru-nama').value;
             const jk = document.getElementById('guru-jk').value;
@@ -2148,114 +2217,769 @@
             const alamat = document.getElementById('guru-alamat').value;
             const norek = document.getElementById('guru-norek').value;
             const wa = document.getElementById('guru-wa').value;
-            const gaji = document.getElementById('guru-gaji').value;
+            const gaji = Number(document.getElementById('guru-gaji').value);
             const user = document.getElementById('guru-user').value;
             const pass = document.getElementById('guru-pass').value;
 
             if (db.users.some(u => u.username === user)) {
-                Swal.fire('Gagal', 'Username sudah terdaftar!', 'error');
+                Swal.fire('Gagal', 'Username sudah digunakan!', 'error');
                 return;
             }
 
-            const newId = db.guru.length > 0 ? Math.max(...db.guru.map(g => g.id)) + 1 : 1;
-            
-            db.guru.push({
-                id: newId, nik, nama, jk, ttl, alamat, norek, wa, gajiHarian: parseInt(gaji), username: user
-            });
-            
+            const newId = Date.now();
+            const newGuru = {
+                id: newId,
+                nik: nik,
+                nama: nama,
+                jk: jk,
+                ttl: ttl,
+                alamat: alamat,
+                norek: norek,
+                wa: wa,
+                gajiHarian: gaji,
+                username: user,
+                password: pass
+            };
+
+            db.guru.push(newGuru);
             db.users.push({
-                username: user, password: pass, role: "guru", name: nama, guruId: newId
+                username: user,
+                password: pass,
+                role: 'guru',
+                name: nama,
+                guruId: newId
             });
 
             saveDb();
             closeModal('modal-guru');
-            event.target.reset(); 
-            if (typeof renderMaster === 'function') renderMaster();
-            Swal.fire('Berhasil', 'Data Guru berhasil ditambahkan!', 'success');
+            e.target.reset();
+            renderMaster();
+            Swal.fire('Berhasil', 'Data Guru berhasil ditambahkan', 'success');
         }
 
-        function simpanSantri(event) {
-            event.preventDefault();
+        // Edit Guru
+        function editGuru(id) {
+            const g = db.guru.find(x => x.id === id);
+            if (!g) return;
+
+            const u = db.users.find(usr => usr.guruId === id || usr.username === g.username);
+
+            document.getElementById('edit-guru-id').value = g.id;
+            document.getElementById('edit-guru-nik').value = g.nik || '';
+            document.getElementById('edit-guru-nama').value = g.nama || '';
+            document.getElementById('edit-guru-jk').value = g.jk || 'Laki-laki';
+            document.getElementById('edit-guru-ttl').value = g.ttl || '';
+            document.getElementById('edit-guru-alamat').value = g.alamat || '';
+            document.getElementById('edit-guru-norek').value = g.norek || '';
+            document.getElementById('edit-guru-wa').value = g.wa || '';
+            document.getElementById('edit-guru-gaji').value = g.gajiHarian || 0;
+            document.getElementById('edit-guru-user').value = g.username || (u ? u.username : '');
+            document.getElementById('edit-guru-pass').value = '';
+
+            openModal('modal-edit-guru');
+        }
+
+        // Update Guru
+        function updateGuru(e) {
+            e.preventDefault();
+            const id = Number(document.getElementById('edit-guru-id').value);
+            const g = db.guru.find(x => x.id === id);
+            if (!g) return;
+
+            g.nik = document.getElementById('edit-guru-nik').value;
+            g.nama = document.getElementById('edit-guru-nama').value;
+            g.jk = document.getElementById('edit-guru-jk').value;
+            g.ttl = document.getElementById('edit-guru-ttl').value;
+            g.alamat = document.getElementById('edit-guru-alamat').value;
+            g.norek = document.getElementById('edit-guru-norek').value;
+            g.wa = document.getElementById('edit-guru-wa').value;
+            g.gajiHarian = Number(document.getElementById('edit-guru-gaji').value);
+
+            const newPass = document.getElementById('edit-guru-pass').value;
+            const u = db.users.find(usr => usr.guruId === id || usr.username === g.username);
+            if (u) {
+                u.name = g.nama;
+                if (newPass) {
+                    u.password = newPass;
+                    g.password = newPass;
+                }
+            }
+
+            saveDb();
+            closeModal('modal-edit-guru');
+            renderMaster();
+            Swal.fire('Berhasil', 'Data Guru berhasil diperbarui', 'success');
+        }
+
+        // Hapus Guru
+        function hapusGuru(id) {
+            Swal.fire({
+                title: 'Hapus Data Guru?',
+                text: "Data guru dan akun login terkait akan dihapus permanen.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Ya, Hapus'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const g = db.guru.find(x => x.id === id);
+                    if (g) {
+                        db.users = db.users.filter(u => u.guruId !== id && u.username !== g.username);
+                    }
+                    db.guru = db.guru.filter(x => x.id !== id);
+                    saveDb();
+                    renderMaster();
+                    Swal.fire('Terhapus!', 'Data Guru telah berhasil dihapus.', 'success');
+                }
+            });
+        }
+
+        // Tambah Santri
+        function simpanSantri(e) {
+            e.preventDefault();
             const nis = document.getElementById('santri-nis').value;
             const nama = document.getElementById('santri-nama').value;
             const jk = document.getElementById('santri-jk').value;
             const ttl = document.getElementById('santri-ttl').value;
             const alamat = document.getElementById('santri-alamat').value;
             const wa = document.getElementById('santri-wa').value;
-            const guruId = document.getElementById('santri-guru-id').value;
+            const guruId = Number(document.getElementById('santri-guru-id').value);
             const status = document.getElementById('santri-status').value;
             const user = document.getElementById('santri-user').value;
             const pass = document.getElementById('santri-pass').value;
 
             if (db.users.some(u => u.username === user)) {
-                Swal.fire('Gagal', 'Username sudah terdaftar!', 'error');
+                Swal.fire('Gagal', 'Username santri/ortu sudah digunakan!', 'error');
                 return;
             }
 
-            const newId = db.santri.length > 0 ? Math.max(...db.santri.map(s => s.id)) + 1 : 1;
-            
-            db.santri.push({
-                id: newId, nis, nama, jk, ttl, alamat, wa, guruId: parseInt(guruId), status, username: user, wali: "Wali " + nama, kelas: "Kelas Iqro"
-            });
-            
+            const newId = Date.now();
+            const newSantri = {
+                id: newId,
+                nis: nis,
+                nama: nama,
+                jk: jk,
+                ttl: ttl,
+                alamat: alamat,
+                wa: wa,
+                guruId: guruId,
+                status: status,
+                username: user,
+                password: pass
+            };
+
+            db.santri.push(newSantri);
             db.users.push({
-                username: user, password: pass, role: "ortu", name: "Wali " + nama, santriId: newId
+                username: user,
+                password: pass,
+                role: 'ortu',
+                name: `Wali ${nama}`,
+                santriId: newId
+            });
+
+            // POIN 1 FIX: Otomatis buat tagihan SPP untuk santri baru agar langsung muncul
+            db.spp.push({
+                id: Date.now() + 1,
+                santriId: newId,
+                santri: nama,
+                nominal: Number(db.settings.sppNominal || 150000),
+                infaq: 0,
+                tgl: getTodayISO(),
+                status: "Belum Bayar",
+                metode: "-",
+                hiddenByAdmin: false,
+                hiddenByOrtu: false,
+                hiddenByGuru: false
             });
 
             saveDb();
             closeModal('modal-santri');
-            event.target.reset(); 
-            if (typeof renderMaster === 'function') renderMaster();
-            Swal.fire('Berhasil', 'Data Santri berhasil ditambahkan!', 'success');
+            e.target.reset();
+            renderMaster();
+            Swal.fire('Berhasil', 'Data Santri berhasil ditambahkan dan Tagihan SPP telah diterbitkan!', 'success');
         }
 
-        function renderMaster() {
-            const tableSantri = document.getElementById('table-santri');
-            const tableGuru = document.getElementById('table-guru');
+        // Edit Santri
+        function editSantri(id) {
+            populateGuruDropdowns();
+            const s = db.santri.find(x => x.id === id);
+            if (!s) return;
+
+            const u = db.users.find(usr => usr.santriId === id || usr.username === s.username);
+
+            document.getElementById('edit-santri-id').value = s.id;
+            document.getElementById('edit-santri-nis').value = s.nis || '';
+            document.getElementById('edit-santri-nama').value = s.nama || '';
+            document.getElementById('edit-santri-jk').value = s.jk || 'Laki-laki';
+            document.getElementById('edit-santri-ttl').value = s.ttl || '';
+            document.getElementById('edit-santri-alamat').value = s.alamat || '';
+            document.getElementById('edit-santri-wa').value = s.wa || '';
+            document.getElementById('edit-santri-guru-id').value = s.guruId || '';
+            document.getElementById('edit-santri-status').value = s.status || 'Aktif';
+            document.getElementById('edit-santri-user').value = s.username || (u ? u.username : '');
+            document.getElementById('edit-santri-pass').value = '';
+
+            openModal('modal-edit-santri');
+        }
+
+        // Update Santri
+        function updateSantri(e) {
+            e.preventDefault();
+            const id = Number(document.getElementById('edit-santri-id').value);
+            const s = db.santri.find(x => x.id === id);
+            if (!s) return;
+
+            s.nis = document.getElementById('edit-santri-nis').value;
+            s.nama = document.getElementById('edit-santri-nama').value;
+            s.jk = document.getElementById('edit-santri-jk').value;
+            s.ttl = document.getElementById('edit-santri-ttl').value;
+            s.alamat = document.getElementById('edit-santri-alamat').value;
+            s.wa = document.getElementById('edit-santri-wa').value;
+            s.guruId = Number(document.getElementById('edit-santri-guru-id').value);
+            s.status = document.getElementById('edit-santri-status').value;
+
+            const newPass = document.getElementById('edit-santri-pass').value;
+            const u = db.users.find(usr => usr.santriId === id || usr.username === s.username);
+            if (u) {
+                u.name = `Wali ${s.nama}`;
+                if (newPass) {
+                    u.password = newPass;
+                    s.password = newPass;
+                }
+            }
+
+            // Perbarui nama di riwayat jika berubah
+            db.spp.filter(item => item.santriId === id).forEach(item => item.santri = s.nama);
+            db.progress.filter(item => item.santriId === id).forEach(item => item.santri = s.nama);
+
+            saveDb();
+            closeModal('modal-edit-santri');
+            renderMaster();
+            Swal.fire('Berhasil', 'Data Santri berhasil diperbarui', 'success');
+        }
+
+        // Hapus Santri
+        function hapusSantri(id) {
+            Swal.fire({
+                title: 'Hapus Data Santri?',
+                text: "Data santri, tagihan, dan akun login terkait akan dihapus permanen.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Ya, Hapus'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const s = db.santri.find(x => x.id === id);
+                    if (s) {
+                        db.users = db.users.filter(u => u.santriId !== id && u.username !== s.username);
+                    }
+                    db.santri = db.santri.filter(x => x.id !== id);
+                    saveDb();
+                    renderMaster();
+                    Swal.fire('Terhapus!', 'Data Santri telah berhasil dihapus.', 'success');
+                }
+            });
+        }
+
+        // Render Progres (PPS)
+        function renderProgress() {
+            const head = document.getElementById('table-progress-head');
+            const body = document.getElementById('table-progress');
+            if(!head || !body) return;
+
+            head.innerHTML = `
+                <th>Tanggal</th>
+                <th>Nama Santri</th>
+                <th>Kategori Kelas</th>
+                <th>Surah / Halaman</th>
+                <th>Kelancaran</th>
+                <th>Tajwid</th>
+                <th>Rata-Rata / Skor</th>
+            `;
+
+            let filterTgl = document.getElementById('filter-tgl-progress')?.value;
+            let filterKelas = document.getElementById('filter-kelas-progress')?.value;
+
+            let dataList = db.progress || [];
+
+            if (currentUser.role === 'ortu') {
+                dataList = dataList.filter(p => p.santriId === currentUser.santriId);
+            } else if (currentUser.role === 'guru') {
+                const assignedIds = db.santri.filter(s => Number(s.guruId) === Number(currentUser.guruId)).map(s => s.id);
+                dataList = dataList.filter(p => assignedIds.includes(p.santriId));
+            }
+
+            if (filterTgl) {
+                dataList = dataList.filter(p => p.tgl === filterTgl);
+            }
+            if (filterKelas && filterKelas !== 'Semua') {
+                dataList = dataList.filter(p => p.kelas === filterKelas);
+            }
+
+            body.innerHTML = '';
+            if (dataList.length === 0) {
+                body.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--gray);">Belum ada data progres setoran.</td></tr>`;
+                return;
+            }
+
+            dataList.sort((a, b) => new Date(b.tgl) - new Date(a.tgl));
+            dataList.forEach(p => {
+                let score = p.kelas === 'Kelas Iqro' ? Number(p.kelancaran) : ((Number(p.kelancaran) + Number(p.tajwid)) / 2).toFixed(1);
+                body.innerHTML += `
+                    <tr class="clickable-row" onclick="bukaDetailProgress(${p.santriId})">
+                        <td>${p.tgl}</td>
+                        <td><strong>${p.santri}</strong></td>
+                        <td><span class="badge badge-info">${p.kelas || '-'}</span></td>
+                        <td>${p.surah}</td>
+                        <td>${p.kelancaran}</td>
+                        <td>${p.kelas === 'Kelas Iqro' ? '-' : p.tajwid}</td>
+                        <td><strong>${score}</strong></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Render Absensi
+        function renderAbsensi() {
+            const tglSantri = document.getElementById('tgl-absensi-santri')?.value || getTodayISO();
+            const bodyAbsSantri = document.getElementById('table-absensi-santri');
+            const bodyLogPengajar = document.getElementById('table-log-pengajar-absensi');
             
-            if (tableSantri) {
-                tableSantri.innerHTML = '';
-                db.santri.forEach(s => {
-                    const guru = db.guru.find(g => g.id === s.guruId);
-                    const namaGuru = guru ? guru.nama : '-';
-                    tableSantri.innerHTML += `
+            if (bodyLogPengajar) {
+                bodyLogPengajar.innerHTML = '';
+                const logs = db.logPengajarAbsensi.filter(l => l.tgl === tglSantri);
+                if (logs.length === 0) {
+                    bodyLogPengajar.innerHTML = `<tr><td colspan="2" style="text-align:center; color:var(--gray);">Belum ada log pengajar untuk tanggal ini.</td></tr>`;
+                } else {
+                    logs.forEach(l => {
+                        bodyLogPengajar.innerHTML += `<tr><td>${l.tgl}</td><td>${l.pengajar}</td></tr>`;
+                    });
+                }
+            }
+
+            if (bodyAbsSantri) {
+                bodyAbsSantri.innerHTML = '';
+                let query = document.getElementById('search-santri-absensi')?.value.toLowerCase() || '';
+                let santriList = db.santri.filter(s => s.status === 'Aktif');
+
+                if (currentUser.role === 'guru') {
+                    santriList = santriList.filter(s => Number(s.guruId) === Number(currentUser.guruId));
+                }
+
+                if (query) {
+                    santriList = santriList.filter(s => s.nama.toLowerCase().includes(query));
+                }
+
+                const totalPages = Math.ceil(santriList.length / absensiPageSize) || 1;
+                if (currentAbsensiPage > totalPages) currentAbsensiPage = totalPages;
+
+                const startIdx = (currentAbsensiPage - 1) * absensiPageSize;
+                const pageSantri = santriList.slice(startIdx, startIdx + absensiPageSize);
+
+                pageSantri.forEach(s => {
+                    const abs = db.absensiSantri.find(a => a.santriId === s.id && a.tgl === tglSantri) || { st: 'Hadir', pengajar: '-' };
+                    const isReadOnly = currentUser.role === 'admin' ? 'disabled' : '';
+
+                    bodyAbsSantri.innerHTML += `
                         <tr>
-                            <td>${s.nis}</td>
-                            <td>${s.nama}</td>
-                            <td>${s.jk}</td>
-                            <td>${s.ttl}</td>
-                            <td>${s.alamat}</td>
-                            <td>${s.wa}</td>
-                            <td>${namaGuru}</td>
-                            <td><span class="badge ${s.status === 'Aktif' ? 'badge-success' : 'badge-danger'}">${s.status}</span></td>
-                            <td>${s.username}</td>
-                            <td>***</td>
-                            <td><button class="btn btn-warning" style="padding:4px 8px;font-size:0.8rem;" onclick="Swal.fire('Info', 'Fitur Edit segera hadir', 'info')">Edit</button></td>
+                            <td><strong>${s.nama}</strong></td>
+                            <td>${s.kelas || 'Kelas Tahfidz'}</td>
+                            <td>
+                                <select id="abs-status-${s.id}" class="btn" style="background:white; color:var(--dark); border:1px solid #cbd5e1; padding:4px 8px; font-size:0.85rem;" ${isReadOnly}>
+                                    <option value="Hadir" ${abs.st === 'Hadir' ? 'selected' : ''}>Hadir</option>
+                                    <option value="Izin" ${abs.st === 'Izin' ? 'selected' : ''}>Izin</option>
+                                    <option value="Sakit" ${abs.st === 'Sakit' ? 'selected' : ''}>Sakit</option>
+                                    <option value="Alpa" ${abs.st === 'Alpa' ? 'selected' : ''}>Alpa</option>
+                                </select>
+                            </td>
+                            <td>${abs.pengajar || '-'}</td>
+                        </tr>
+                    `;
+                });
+
+                // Pagination
+                const pagContainer = document.getElementById('pagination-absensi-santri');
+                if (pagContainer) {
+                    let pagHtml = `<span>Menampilkan ${santriList.length > 0 ? startIdx + 1 : 0}-${Math.min(startIdx + absensiPageSize, santriList.length)} dari ${santriList.length} Santri</span>`;
+                    pagHtml += `<div class="pagination-buttons">`;
+                    for (let i = 1; i <= totalPages; i++) {
+                        pagHtml += `<button class="page-btn ${i === currentAbsensiPage ? 'active' : ''}" onclick="gotoAbsensiPage(${i})">${i}</button>`;
+                    }
+                    pagHtml += `</div>`;
+                    pagContainer.innerHTML = pagHtml;
+                }
+            }
+
+            // Log Kehadiran Guru
+            const bodyAbsGuru = document.getElementById('table-absensi-guru-log');
+            if (bodyAbsGuru) {
+                bodyAbsGuru.innerHTML = '';
+                const filterTglGuru = document.getElementById('filter-tgl-absen-guru')?.value;
+                let listGuruAbs = db.absensiGuru || [];
+                if (filterTglGuru) listGuruAbs = listGuruAbs.filter(g => g.tgl === filterTglGuru);
+
+                if (listGuruAbs.length === 0) {
+                    bodyAbsGuru.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--gray);">Belum ada log kehadiran guru.</td></tr>`;
+                } else {
+                    listGuruAbs.forEach(g => {
+                        bodyAbsGuru.innerHTML += `
+                            <tr>
+                                <td>${g.tgl}</td>
+                                <td><strong>${g.nama}</strong></td>
+                                <td>${g.jamMasuk || '-'}</td>
+                                <td>${g.jamPulang || '-'}</td>
+                                <td><span class="badge ${g.status === 'Tepat Waktu' ? 'badge-success' : 'badge-danger'}">${g.status}</span></td>
+                                <td>Rp ${Number(g.potongan || 0).toLocaleString('id-ID')}</td>
+                                <td>-</td>
+                            </tr>
+                        `;
+                    });
+                }
+            }
+        }
+
+        function gotoAbsensiPage(page) {
+            currentAbsensiPage = page;
+            renderAbsensi();
+        }
+
+        function onSearchAbsensiSantriChange() {
+            currentAbsensiPage = 1;
+            renderAbsensi();
+        }
+
+        function simpanAbsensiSantri() {
+            const tgl = document.getElementById('tgl-absensi-santri').value;
+            let santriList = db.santri.filter(s => s.status === 'Aktif');
+
+            if (currentUser.role === 'guru') {
+                santriList = santriList.filter(s => Number(s.guruId) === Number(currentUser.guruId));
+            }
+
+            santriList.forEach(s => {
+                const selectEl = document.getElementById(`abs-status-${s.id}`);
+                if (selectEl) {
+                    const stVal = selectEl.value;
+                    const idx = db.absensiSantri.findIndex(a => a.santriId === s.id && a.tgl === tgl);
+                    if (idx >= 0) {
+                        db.absensiSantri[idx].st = stVal;
+                        db.absensiSantri[idx].pengajar = currentUser.name;
+                    } else {
+                        db.absensiSantri.push({
+                            santriId: s.id,
+                            tgl: tgl,
+                            st: stVal,
+                            pengajar: currentUser.name
+                        });
+                    }
+                }
+            });
+
+            if (!db.logPengajarAbsensi.some(l => l.tgl === tgl && l.pengajar === currentUser.name)) {
+                db.logPengajarAbsensi.push({ tgl: tgl, pengajar: currentUser.name });
+            }
+
+            saveDb();
+            renderAbsensi();
+            Swal.fire('Berhasil', 'Absensi Santri telah disimpan', 'success');
+        }
+
+        function handleAbsensiGuruClick() {
+            const today = getTodayISO();
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            let record = db.absensiGuru.find(a => a.guruId === currentUser.guruId && a.tgl === today);
+
+            if (!record) {
+                // Absen Masuk
+                const targetMasuk = db.settings.jamMasuk || "07:00";
+                let isTelat = timeStr > targetMasuk;
+                let potongan = isTelat ? (db.settings.potonganTelat || 5) * 1000 : 0;
+
+                db.absensiGuru.push({
+                    id: Date.now(),
+                    guruId: currentUser.guruId,
+                    nama: currentUser.name,
+                    tgl: today,
+                    jamMasuk: timeStr,
+                    jamPulang: '-',
+                    status: isTelat ? 'Terlambat' : 'Tepat Waktu',
+                    potongan: potongan
+                });
+                saveDb();
+                Swal.fire('Berhasil Absen Masuk', `Jam Masuk: ${timeStr}`, 'success');
+            } else if (record.jamPulang === '-') {
+                // Absen Pulang
+                record.jamPulang = timeStr;
+                saveDb();
+                Swal.fire('Berhasil Absen Pulang', `Jam Pulang: ${timeStr}`, 'success');
+            } else {
+                Swal.fire('Info', 'Anda sudah menyelesaikan absensi masuk dan pulang hari ini.', 'info');
+            }
+
+            updateGuruAbsenStatusDisplay();
+            renderAbsensi();
+        }
+
+        function updateGuruAbsenStatusDisplay() {
+            const today = getTodayISO();
+            const record = db.absensiGuru.find(a => a.guruId === currentUser.guruId && a.tgl === today);
+            const statusSpan = document.getElementById('guru-absen-status');
+            const btnAction = document.getElementById('btn-guru-absen-action');
+
+            if (!statusSpan || !btnAction) return;
+
+            if (!record) {
+                statusSpan.innerHTML = `Status Hari Ini: <span style="color:var(--danger)">Belum Absen</span>`;
+                btnAction.innerHTML = `<i class="fa-solid fa-sign-in-alt"></i> Absen Masuk`;
+                btnAction.disabled = false;
+                btnAction.className = "btn btn-success";
+            } else if (record.jamPulang === '-') {
+                statusSpan.innerHTML = `Status Hari Ini: <span style="color:var(--secondary)">Sudah Masuk (${record.jamMasuk})</span>`;
+                btnAction.innerHTML = `<i class="fa-solid fa-sign-out-alt"></i> Absen Pulang`;
+                btnAction.disabled = false;
+                btnAction.className = "btn btn-warning";
+            } else {
+                statusSpan.innerHTML = `Status Hari Ini: <span style="color:var(--primary)">Lengkap (Masuk: ${record.jamMasuk} | Pulang: ${record.jamPulang})</span>`;
+                btnAction.innerHTML = `<i class="fa-solid fa-check-circle"></i> Selesai Absen`;
+                btnAction.disabled = true;
+                btnAction.className = "btn btn-disabled";
+            }
+        }
+
+        // Keuangan & SPP Render
+        function renderKeuangan() {
+            // Arus Kas Log (Admin)
+            const tbodyArusKas = document.getElementById('table-arus-kas');
+            if (tbodyArusKas) {
+                tbodyArusKas.innerHTML = '';
+                const tglMulai = document.getElementById('tgl-mulai-arus-kas')?.value;
+                const tglSelesai = document.getElementById('tgl-selesai-arus-kas')?.value;
+
+                let listKas = db.arusKas || [];
+                if (tglMulai && tglSelesai) {
+                    listKas = listKas.filter(k => k.tgl >= tglMulai && k.tgl <= tglSelesai);
+                }
+
+                listKas.sort((a, b) => new Date(b.tgl) - new Date(a.tgl));
+                listKas.forEach(k => {
+                    tbodyArusKas.innerHTML += `
+                        <tr>
+                            <td>${k.tgl}</td>
+                            <td><span class="badge ${k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger'}">${k.jenis}</span></td>
+                            <td>${k.ket}</td>
+                            <td>Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
                         </tr>
                     `;
                 });
             }
 
-            if (tableGuru) {
-                tableGuru.innerHTML = '';
-                db.guru.forEach(g => {
-                    tableGuru.innerHTML += `
-                        <tr>
-                            <td>${g.id}</td>
-                            <td>${g.nik}</td>
-                            <td>${g.nama}</td>
-                            <td>${g.jk}</td>
-                            <td>${g.ttl}</td>
-                            <td>${g.alamat}</td>
-                            <td>${g.norek}</td>
-                            <td>${g.wa}</td>
-                            <td>Rp ${g.gajiHarian.toLocaleString('id-ID')}</td>
-                            <td>${g.username}</td>
-                            <td>***</td>
-                            <td><button class="btn btn-warning" style="padding:4px 8px;font-size:0.8rem;" onclick="Swal.fire('Info', 'Fitur Edit segera hadir', 'info')">Edit</button></td>
-                        </tr>
-                    `;
+            // SPP Filter Dates
+            const sppMulai = document.getElementById('tgl-spp-mulai')?.value;
+            const sppSelesai = document.getElementById('tgl-spp-selesai')?.value;
+
+            // BAGIAN 1: TAGIHAN SPP BELUM BAYAR
+            const tbodyBelum = document.getElementById('table-spp-belum');
+            if (tbodyBelum) {
+                tbodyBelum.innerHTML = '';
+                let activeSantri = db.santri.filter(s => s.status === 'Aktif');
+
+                if (currentUser.role === 'ortu') {
+                    activeSantri = activeSantri.filter(s => s.id === currentUser.santriId);
+                } else if (currentUser.role === 'guru') {
+                    activeSantri = activeSantri.filter(s => Number(s.guruId) === Number(currentUser.guruId));
+                }
+
+                let countUnpaid = 0;
+                activeSantri.forEach(s => {
+                    const unpaidSpp = db.spp.find(item => item.santriId === s.id && (item.status === "Belum Bayar" || item.status === "Menunggu Persetujuan"));
+                    if (unpaidSpp) {
+                        countUnpaid++;
+                        const isPending = unpaidSpp.status === "Menunggu Persetujuan";
+                        let btnAction = '';
+
+                        if (isPending) {
+                            if (currentUser.role === 'admin' || currentUser.role === 'admin_keuangan') {
+                                btnAction = `<button class="btn btn-success" style="padding: 6px 12px; font-size:0.8rem;" onclick="approveSpp(${unpaidSpp.id})"><i class="fa-solid fa-check"></i> Approve Pembayaran</button>`;
+                            } else {
+                                btnAction = `<span class="badge badge-warning">Menunggu Persetujuan</span>`;
+                            }
+                        } else {
+                            btnAction = `<button class="btn btn-success" style="padding: 6px 12px; font-size:0.8rem;" onclick="bukaModalOrtuBayarSPP(${s.id})"><i class="fa-solid fa-wallet"></i> Bayar SPP</button>`;
+                        }
+
+                        tbodyBelum.innerHTML += `
+                            <tr>
+                                <td><strong>${s.nama}</strong></td>
+                                <td>${s.wali || 'Bpk/Ibu ' + s.nama}</td>
+                                <td>Rp ${Number(unpaidSpp.nominal || db.settings.sppNominal || 150000).toLocaleString('id-ID')}</td>
+                                <td>${btnAction}</td>
+                            </tr>
+                        `;
+                    }
                 });
+
+                if (countUnpaid === 0) {
+                    tbodyBelum.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--secondary);">Semua tagihan SPP untuk santri aktif telah lunas.</td></tr>`;
+                }
+            }
+
+            // BAGIAN 2: RIWAYAT SUDAH BAYAR SPP
+            const tbodySudah = document.getElementById('table-spp');
+            if (tbodySudah) {
+                tbodySudah.innerHTML = '';
+                let listSpp = db.spp.filter(s => s.status !== "Belum Bayar");
+
+                if (currentUser.role === 'admin') {
+                    listSpp = listSpp.filter(s => !s.hiddenByAdmin);
+                } else if (currentUser.role === 'ortu') {
+                    listSpp = listSpp.filter(s => s.santriId === currentUser.santriId && !s.hiddenByOrtu);
+                } else if (currentUser.role === 'guru') {
+                    const guruSantriIds = db.santri.filter(s => Number(s.guruId) === Number(currentUser.guruId)).map(s => s.id);
+                    listSpp = listSpp.filter(s => guruSantriIds.includes(s.santriId) && !s.hiddenByGuru);
+                }
+
+                if (sppMulai && sppSelesai) {
+                    listSpp = listSpp.filter(s => s.tgl >= sppMulai && s.tgl <= sppSelesai);
+                }
+
+                if (listSpp.length === 0) {
+                    tbodySudah.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--gray);">Belum ada riwayat pembayaran SPP.</td></tr>`;
+                } else {
+                    listSpp.sort((a, b) => new Date(b.tgl) - new Date(a.tgl));
+                    listSpp.forEach(s => {
+                        let btnAction = '';
+                        if (s.status === "Menunggu Persetujuan" && (currentUser.role === 'admin' || currentUser.role === 'admin_keuangan')) {
+                            btnAction = `<button class="btn btn-success" style="padding: 4px 8px; font-size:0.8rem;" onclick="approveSpp(${s.id})">Setujui / Approve</button>`;
+                        } else if (s.status === "Lunas") {
+                            btnAction = `<span style="color:var(--secondary); font-size:0.85rem;"><i class="fa-solid fa-circle-check"></i> Terverifikasi</span>`;
+                        } else {
+                            btnAction = `-`;
+                        }
+
+                        tbodySudah.innerHTML += `
+                            <tr>
+                                <td><strong>${s.santri}</strong></td>
+                                <td>Rp ${Number(s.nominal).toLocaleString('id-ID')}</td>
+                                <td>${s.tgl}</td>
+                                <td><span class="badge ${s.status === 'Lunas' ? 'badge-success' : 'badge-warning'}">${s.status}</span></td>
+                                <td>${btnAction}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            }
+        }
+
+        function simpanTransaksiKas(e) {
+            e.preventDefault();
+            const jenis = document.getElementById('kas-jenis').value;
+            const ket = document.getElementById('kas-ket').value;
+            const nominal = Number(document.getElementById('kas-nominal').value);
+
+            db.arusKas.push({
+                id: Date.now(),
+                tgl: getTodayISO(),
+                jenis: jenis,
+                ket: ket,
+                nominal: nominal
+            });
+
+            saveDb();
+            closeModal('modal-kas');
+            e.target.reset();
+            renderKeuangan();
+            if (typeof renderFinanceChart === 'function') renderFinanceChart();
+            Swal.fire('Berhasil', 'Transaksi Arus Kas berhasil disimpan', 'success');
+        }
+
+        function renderHistoryKeuanganModal() {
+            const tbody = document.getElementById('table-modal-history-keuangan');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let listKas = db.arusKas || [];
+            if (listKas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--gray);">Belum ada riwayat keuangan.</td></tr>`;
+                return;
+            }
+
+            listKas.sort((a, b) => new Date(b.tgl) - new Date(a.tgl));
+            listKas.forEach(k => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="padding:8px; border-bottom:1px solid #e2e8f0;">${k.tgl}</td>
+                        <td style="padding:8px; border-bottom:1px solid #e2e8f0;"><span class="badge ${k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger'}">${k.jenis}</span></td>
+                        <td style="padding:8px; border-bottom:1px solid #e2e8f0;">${k.ket}</td>
+                        <td style="padding:8px; border-bottom:1px solid #e2e8f0;">Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function clearHistoryKeuangan() {
+            Swal.fire({
+                title: 'Bersihkan History Keuangan?',
+                text: "Seluruh catatan arus kas akan dikosongkan.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Ya, Bersihkan'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    db.arusKas = [];
+                    saveDb();
+                    renderHistoryKeuanganModal();
+                    renderKeuangan();
+                    if (typeof renderFinanceChart === 'function') renderFinanceChart();
+                    Swal.fire('Berhasil', 'History keuangan telah dikosongkan.', 'success');
+                }
+            });
+        }
+
+        // Pengaturan Functions
+        function simpanParameterWaktu() {
+            db.settings.jamMasuk = document.getElementById('param-jam-masuk').value;
+            db.settings.jamPulang = document.getElementById('param-jam-pulang').value;
+            db.settings.potonganTelat = Number(document.getElementById('param-potongan').value);
+            db.settings.hariKerjaBulan = Number(document.getElementById('param-hari-kerja').value);
+
+            saveDb();
+            Swal.fire('Berhasil', 'Pengaturan waktu absensi berhasil disimpan', 'success');
+        }
+
+        function simpanParameterAdmin() {
+            db.settings.geoLat = parseFloat(document.getElementById('param-lat').value);
+            db.settings.geoLng = parseFloat(document.getElementById('param-lng').value);
+            db.settings.geoRadius = Number(document.getElementById('param-radius').value);
+
+            saveDb();
+            Swal.fire('Berhasil', 'Pengaturan lokasi geofencing berhasil disimpan', 'success');
+        }
+
+        function simpanSettingKeuangan() {
+            db.settings.sppNominal = Number(document.getElementById('setting-spp-nominal').value);
+            db.settings.rekeningBank = document.getElementById('setting-bank').value;
+            db.settings.ewallet = document.getElementById('setting-ewallet').value;
+
+            saveDb();
+            Swal.fire('Berhasil', 'Pengaturan keuangan & rekening berhasil disimpan', 'success');
+        }
+
+        function deteksiLokasiOtomatis() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('param-lat').value = position.coords.latitude;
+                        document.getElementById('param-lng').value = position.coords.longitude;
+                        Swal.fire('Berhasil', 'Lokasi presisi berhasil didapatkan!', 'success');
+                    },
+                    (error) => {
+                        Swal.fire('Gagal', 'Tidak dapat mengakses lokasi GPS perangkat.', 'error');
+                    }
+                );
+            } else {
+                Swal.fire('Gagal', 'Fitur Geolocation tidak didukung di browser ini.', 'error');
             }
         }
     </script>
