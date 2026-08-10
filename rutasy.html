@@ -695,6 +695,10 @@
                             <input type="number" id="param-hari-kerja" placeholder="misal: 24">
                         </div>
                     </div>
+                    <!-- POINT 4 FIX: TAMBAHKAN TOMBOL SIMPAN PENGATURAN WAKTU -->
+                    <div style="margin-top:20px; text-align:right;">
+                        <button class="btn" style="padding: 12px 30px;" onclick="simpanParameterWaktu()">Simpan Pengaturan Waktu</button>
+                    </div>
                 </div>
 
                 <!-- Admin Parameters Box: Bagian Geofencing/Lokasi (DIPISAHKAN & AUTO LOKASI) -->
@@ -718,7 +722,7 @@
                         </div>
                     </div>
                     <div style="margin-top:20px; text-align:right;">
-                        <button class="btn" style="padding: 12px 30px;" onclick="simpanParameterAdmin()">Simpan Semua Parameter (Waktu & Lokasi)</button>
+                        <button class="btn" style="padding: 12px 30px;" onclick="simpanParameterAdmin()">Simpan Parameter Lokasi</button>
                     </div>
                 </div>
 
@@ -1254,6 +1258,20 @@
             const sppContainer = document.getElementById('container-sudah-bayar-spp');
             if (sppContainer) {
                 sppObserver.observe(sppContainer, { childList: true, subtree: true });
+            }
+
+            // Inisialisasi param di UI saat halaman selesai diload
+            if(db.settings) {
+                document.getElementById('param-jam-masuk').value = db.settings.jamMasuk || "07:00";
+                document.getElementById('param-jam-pulang').value = db.settings.jamPulang || "15:00";
+                document.getElementById('param-potongan').value = db.settings.potonganTelat || 5;
+                document.getElementById('param-hari-kerja').value = db.settings.hariKerjaBulan || 24;
+                document.getElementById('param-lat').value = db.settings.geoLat || 3.5952;
+                document.getElementById('param-lng').value = db.settings.geoLng || 98.6722;
+                document.getElementById('param-radius').value = db.settings.geoRadius || 100;
+                document.getElementById('setting-spp-nominal').value = db.settings.sppNominal || 150000;
+                document.getElementById('setting-bank').value = db.settings.rekeningBank || "";
+                document.getElementById('setting-ewallet').value = db.settings.ewallet || "";
             }
         });
 
@@ -2034,6 +2052,489 @@
                 `;
             });
         }
+        
+        // ----------------- IMPLEMENTASI FUNGSI YANG TERPOTONG & DIPERBAIKI ----------------- //
+
+        // Point 1: Fungsi Absensi Guru Mandiri
+        function handleAbsensiGuruClick() {
+            if(!currentUser || currentUser.role !== 'guru') return;
+            const today = getTodayISO();
+            let absenRecord = db.absensiGuru.find(a => a.guruId === currentUser.guruId && a.tgl === today);
+            
+            const now = new Date();
+            const timeString = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+            if(!absenRecord) {
+                db.absensiGuru.push({
+                    id: Date.now(),
+                    guruId: currentUser.guruId,
+                    nama: currentUser.name,
+                    tgl: today,
+                    jamMasuk: timeString,
+                    jamPulang: "-",
+                    status: "Hadir",
+                    potongan: 0
+                });
+                Swal.fire('Berhasil', 'Anda berhasil absen masuk pada jam ' + timeString, 'success');
+            } else if(absenRecord.jamPulang === "-") {
+                absenRecord.jamPulang = timeString;
+                Swal.fire('Berhasil', 'Anda berhasil absen pulang pada jam ' + timeString, 'success');
+            } else {
+                Swal.fire('Info', 'Anda sudah menyelesaikan sesi absensi untuk hari ini.', 'info');
+            }
+            saveDb();
+            updateGuruAbsenStatusDisplay();
+        }
+
+        function updateGuruAbsenStatusDisplay() {
+            if(!currentUser || currentUser.role !== 'guru') return;
+            const today = getTodayISO();
+            const absenRecord = db.absensiGuru.find(a => a.guruId === currentUser.guruId && a.tgl === today);
+            
+            const statusEl = document.getElementById('guru-absen-status');
+            const btnEl = document.getElementById('btn-guru-absen-action');
+            if(!statusEl || !btnEl) return;
+
+            if(!absenRecord) {
+                statusEl.innerText = "Status Hari Ini: Belum Absen";
+                btnEl.innerHTML = '<i class="fa-solid fa-sign-in-alt"></i> Absen Masuk';
+                btnEl.className = "btn btn-success";
+                btnEl.disabled = false;
+            } else if(absenRecord.jamPulang === "-") {
+                statusEl.innerText = `Status Hari Ini: Hadir (Masuk: ${absenRecord.jamMasuk})`;
+                btnEl.innerHTML = '<i class="fa-solid fa-sign-out-alt"></i> Absen Pulang';
+                btnEl.className = "btn btn-warning";
+                btnEl.disabled = false;
+            } else {
+                statusEl.innerText = `Status Hari Ini: Selesai (Masuk: ${absenRecord.jamMasuk}, Pulang: ${absenRecord.jamPulang})`;
+                btnEl.innerHTML = '<i class="fa-solid fa-check"></i> Sudah Absen';
+                btnEl.className = "btn btn-disabled";
+                btnEl.disabled = true;
+            }
+        }
+
+        // Point 2: Input Transaksi Arus Kas Admin
+        function simpanTransaksiKas(e) {
+            e.preventDefault();
+            const jenis = document.getElementById('kas-jenis').value;
+            const ket = document.getElementById('kas-ket').value;
+            const nominal = document.getElementById('kas-nominal').value;
+
+            db.arusKas.push({
+                id: Date.now(),
+                tgl: getTodayISO(),
+                jenis: jenis,
+                ket: ket,
+                nominal: parseInt(nominal)
+            });
+            saveDb();
+            closeModal('modal-kas');
+            document.getElementById('kas-ket').value = '';
+            document.getElementById('kas-nominal').value = '';
+            
+            if (typeof renderKeuangan === "function") renderKeuangan();
+            if (typeof renderFinanceChart === "function") renderFinanceChart();
+            if (typeof loadDashboardData === "function") loadDashboardData();
+            
+            Swal.fire('Berhasil!', 'Transaksi kas berhasil ditambahkan', 'success');
+        }
+
+        // Point 4: Tombol Simpan Pengaturan Waktu
+        function simpanParameterWaktu() {
+            if (!db.settings) db.settings = {};
+            db.settings.jamMasuk = document.getElementById('param-jam-masuk').value;
+            db.settings.jamPulang = document.getElementById('param-jam-pulang').value;
+            db.settings.potonganTelat = parseInt(document.getElementById('param-potongan').value) || 0;
+            db.settings.hariKerjaBulan = parseInt(document.getElementById('param-hari-kerja').value) || 0;
+            saveDb();
+            Swal.fire('Berhasil', 'Pengaturan Waktu Absensi berhasil disimpan!', 'success');
+        }
+
+        function simpanParameterAdmin() {
+            if (!db.settings) db.settings = {};
+            db.settings.geoLat = parseFloat(document.getElementById('param-lat').value) || 0;
+            db.settings.geoLng = parseFloat(document.getElementById('param-lng').value) || 0;
+            db.settings.geoRadius = parseInt(document.getElementById('param-radius').value) || 0;
+            saveDb();
+            Swal.fire('Berhasil', 'Parameter Lokasi berhasil disimpan!', 'success');
+        }
+
+        function simpanSettingKeuangan() {
+            db.settings.sppNominal = parseInt(document.getElementById('setting-spp-nominal').value) || 150000;
+            db.settings.rekeningBank = document.getElementById('setting-bank').value;
+            db.settings.ewallet = document.getElementById('setting-ewallet').value;
+            saveDb();
+            Swal.fire('Berhasil', 'Pengaturan Rekening & SPP berhasil disimpan!', 'success');
+        }
+
+        function deteksiLokasiOtomatis() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('param-lat').value = position.coords.latitude;
+                        document.getElementById('param-lng').value = position.coords.longitude;
+                        Swal.fire('Berhasil', 'Lokasi berhasil dideteksi', 'success');
+                    },
+                    (error) => {
+                        Swal.fire('Gagal', 'Tidak dapat mendeteksi lokasi atau izin ditolak', 'error');
+                    }
+                );
+            } else {
+                Swal.fire('Gagal', 'Geolocation tidak didukung pada browser ini', 'error');
+            }
+        }
+
+        // Fungsi Render Keuangan & Point 3 (Tagihan Otomatis)
+        function renderKeuangan() {
+            const tbSpp = document.getElementById('table-spp');
+            if (tbSpp) tbSpp.innerHTML = '';
+            
+            let dataSpp = db.spp;
+            if(currentUser.role === 'ortu') {
+                dataSpp = dataSpp.filter(s => s.santriId === currentUser.santriId && !s.hiddenByOrtu);
+            } else if(currentUser.role === 'admin' || currentUser.role === 'admin_keuangan') {
+                dataSpp = dataSpp.filter(s => !s.hiddenByAdmin);
+            }
+
+            const tglMulai = document.getElementById('tgl-spp-mulai')?.value;
+            const tglSelesai = document.getElementById('tgl-spp-selesai')?.value;
+            if (tglMulai && tglSelesai) {
+                dataSpp = dataSpp.filter(s => s.tgl >= tglMulai && s.tgl <= tglSelesai);
+            }
+
+            dataSpp.forEach(s => {
+                let aksi = '';
+                if (s.status === 'Menunggu Persetujuan' && (currentUser.role === 'admin' || currentUser.role === 'admin_keuangan')) {
+                    aksi = `<button class="btn btn-success" style="padding: 5px 10px; font-size: 0.8rem;" onclick="approveSpp(${s.id})"><i class="fa-solid fa-check"></i> Approve</button>`;
+                } else if (s.status === 'Lunas') {
+                     aksi = `<button class="btn btn-info btn-cetak-resi" style="padding: 6px 12px; font-size:0.8rem;" onclick="cetakResiSpp(${s.id})"><i class="fa-solid fa-file-pdf"></i> Cetak Resi</button>`;
+                }
+                if (tbSpp) {
+                    tbSpp.innerHTML += `
+                        <tr>
+                            <td>${s.santri}</td>
+                            <td>Rp ${Number(s.nominal).toLocaleString('id-ID')} <br><small style="color:var(--secondary)">+ Infaq: Rp ${Number(s.infaq || 0).toLocaleString('id-ID')}</small></td>
+                            <td>${s.tgl}</td>
+                            <td><span class="badge ${s.status === 'Lunas' ? 'badge-success' : 'badge-warning'}">${s.status}</span></td>
+                            <td>${aksi}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            // Point 3: Tabel Tagihan SPP Murid yang belum membayar bulan ini
+            const tbBelum = document.getElementById('table-spp-belum');
+            if (tbBelum) tbBelum.innerHTML = '';
+            
+            const now = new Date();
+            const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+            const currentYear = now.getFullYear();
+
+            let activeSantri = db.santri.filter(s => s.status === 'Aktif');
+            if(currentUser.role === 'ortu') {
+                activeSantri = activeSantri.filter(s => s.id === currentUser.santriId);
+            }
+
+            activeSantri.forEach(santri => {
+                const hasPaid = db.spp.some(s => {
+                    const sppDate = new Date(s.tgl);
+                    return s.santriId === santri.id &&
+                           String(sppDate.getMonth() + 1).padStart(2, '0') === currentMonth &&
+                           sppDate.getFullYear() === currentYear &&
+                           (s.status === 'Lunas' || s.status === 'Menunggu Persetujuan');
+                });
+
+                if (!hasPaid) {
+                    let btnBayar = '';
+                    if (currentUser.role === 'ortu') {
+                        btnBayar = `<button class="btn btn-success" style="padding: 5px 10px; font-size: 0.8rem;" onclick="bukaModalOrtuBayarSPP(${santri.id})"><i class="fa-solid fa-money-bill-wave"></i> Bayar Sekarang</button>`;
+                    } else {
+                        btnBayar = `<span style="font-size:0.8rem; color:var(--danger); font-weight:bold;">Belum Dibayar</span>`;
+                    }
+
+                    if (tbBelum) {
+                        tbBelum.innerHTML += `
+                            <tr>
+                                <td>${santri.nama}</td>
+                                <td>${santri.wali || '-'}</td>
+                                <td>Rp ${Number(db.settings.sppNominal || 150000).toLocaleString('id-ID')}</td>
+                                <td>${btnBayar}</td>
+                            </tr>
+                        `;
+                    }
+                }
+            });
+
+            // Tabel Data Arus Kas (Admin Mode)
+            const tbKas = document.getElementById('table-arus-kas');
+            if (tbKas) {
+                tbKas.innerHTML = '';
+                let kasData = db.arusKas || [];
+                const tKasMulai = document.getElementById('tgl-mulai-arus-kas')?.value;
+                const tKasSelesai = document.getElementById('tgl-selesai-arus-kas')?.value;
+                if (tKasMulai && tKasSelesai) {
+                    kasData = kasData.filter(k => k.tgl >= tKasMulai && k.tgl <= tKasSelesai);
+                }
+                kasData.forEach(k => {
+                    tbKas.innerHTML += `
+                        <tr>
+                            <td>${k.tgl}</td>
+                            <td><span class="badge ${k.jenis === 'Pendapatan' ? 'badge-success' : 'badge-danger'}">${k.jenis}</span></td>
+                            <td>${k.ket}</td>
+                            <td>Rp ${Number(k.nominal).toLocaleString('id-ID')}</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        // Fitur Pembersihan History
+        function bersihkanCacheSpp() {
+            Swal.fire({
+                title: 'Sembunyikan History?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    db.spp.forEach(s => s.hiddenByAdmin = true);
+                    saveDb(); renderKeuangan();
+                }
+            });
+        }
+        
+        function bersihkanSppOrtu() {
+            Swal.fire({
+                title: 'Sembunyikan History?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    db.spp.forEach(s => { if(s.santriId === currentUser.santriId) s.hiddenByOrtu = true; });
+                    saveDb(); renderKeuangan();
+                }
+            });
+        }
+        
+        function renderModalHistoryKeuangan() {
+            const tb = document.getElementById('table-modal-history-keuangan');
+            if(tb) {
+                tb.innerHTML = '';
+                db.arusKas.forEach(k => {
+                    tb.innerHTML += `<tr><td>${k.tgl}</td><td>${k.jenis}</td><td>${k.ket}</td><td>Rp ${Number(k.nominal).toLocaleString('id-ID')}</td></tr>`;
+                });
+            }
+        }
+        
+        function clearHistoryKeuangan() {
+            Swal.fire({
+                title: 'Bersihkan History?', text: "Data arus kas akan dihapus sementara dari tampilan.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    db.arusKas = [];
+                    saveDb(); 
+                    renderModalHistoryKeuangan(); 
+                    renderKeuangan(); 
+                    renderFinanceChart();
+                }
+            });
+        }
+
+        // Fungsi Progres Santri (PPS)
+        function populateSetoranSantriDropdown() {
+            const sel = document.getElementById('setoran-santri-id');
+            if(!sel) return;
+            sel.innerHTML = '<option value="">-- Pilih Santri --</option>';
+            const search = document.getElementById('search-santri-setoran')?.value.toLowerCase() || "";
+            
+            let santriList = db.santri.filter(s => s.status === 'Aktif' && s.nama.toLowerCase().includes(search));
+            if(currentUser.role === 'guru') {
+                santriList = santriList.filter(s => Number(s.guruId) === Number(currentUser.guruId));
+            }
+            santriList.forEach(s => { sel.innerHTML += `<option value="${s.id}">${s.nama}</option>`; });
+        }
+
+        function filterSetoranSantri() { populateSetoranSantriDropdown(); }
+        function loadSantriDataForSetoran() { /* Implementasi jika ingin data auto-fill berdasarkan santri id tertentu */ }
+
+        function toggleSetoranInputs() {
+            const kls = document.getElementById('setoran-kelas').value;
+            document.getElementById('input-iqro').style.display = kls === 'Kelas Iqro' ? 'grid' : 'none';
+            document.getElementById('input-quran').style.display = (kls === 'Kelas Tahsin' || kls === 'Kelas Tahfidz') ? 'grid' : 'none';
+            document.getElementById('label-nilai-2').parentElement.style.display = kls === 'Kelas Iqro' ? 'none' : 'block';
+        }
+
+        function simpanSetoran() {
+            const sId = document.getElementById('setoran-santri-id').value;
+            const kls = document.getElementById('setoran-kelas').value;
+            if(!sId || !kls) { Swal.fire('Error','Harap pilih santri dan kelas','error'); return; }
+
+            const santri = db.santri.find(s => s.id == sId);
+            let surahStr = '';
+            
+            if (kls === 'Kelas Iqro') {
+                surahStr = document.getElementById('setoran-halaman').value;
+            } else {
+                const srh = document.getElementById('setoran-surah').value;
+                const ayt = document.getElementById('setoran-ayat').value;
+                const brs = document.getElementById('setoran-baris').value;
+                surahStr = `${srh} Ayat ${ayt} Baris ${brs}`;
+            }
+
+            db.progress.push({
+                id: Date.now(),
+                santriId: parseInt(sId),
+                santri: santri.nama,
+                kelas: kls,
+                surah: surahStr,
+                kelancaran: document.getElementById('setoran-lancar').value || 0,
+                tajwid: document.getElementById('setoran-tajwid').value || 0,
+                tgl: document.getElementById('setoran-tanggal').value || getTodayISO()
+            });
+            
+            saveDb();
+            Swal.fire('Berhasil','Setoran berhasil disimpan','success');
+            renderProgress();
+        }
+
+        function renderProgress() {
+            const tb = document.getElementById('table-progress');
+            if(!tb) return;
+            tb.innerHTML = '';
+            let data = db.progress;
+            
+            const tgl = document.getElementById('filter-tgl-progress')?.value;
+            const kls = document.getElementById('filter-kelas-progress')?.value;
+
+            if (currentUser.role === 'ortu') {
+                data = data.filter(p => p.santriId === currentUser.santriId);
+            } else if (currentUser.role === 'guru') {
+                const assignedIds = db.santri.filter(s => Number(s.guruId) === Number(currentUser.guruId)).map(s => s.id);
+                data = data.filter(p => assignedIds.includes(p.santriId));
+            }
+
+            if (tgl) data = data.filter(p => p.tgl === tgl);
+            if (kls && kls !== 'Semua') data = data.filter(p => p.kelas === kls);
+
+            data.forEach(p => {
+                let nilai = p.kelas === 'Kelas Iqro' ? p.kelancaran : ((Number(p.kelancaran) + Number(p.tajwid)) / 2).toFixed(2);
+                tb.innerHTML += `
+                    <tr>
+                        <td>${p.tgl}</td>
+                        <td><strong>${p.santri}</strong></td>
+                        <td>${p.kelas}</td>
+                        <td>${p.surah}</td>
+                        <td><span class="badge badge-info">${nilai}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Fungsi Absensi Santri
+        function renderAbsensi() {
+            const tbSantri = document.getElementById('table-absensi-santri');
+            if(!tbSantri) return;
+            tbSantri.innerHTML = '';
+            
+            const search = document.getElementById('search-santri-absensi')?.value.toLowerCase() || "";
+            let santriList = db.santri.filter(s => s.status === 'Aktif' && s.nama.toLowerCase().includes(search));
+            
+            if (currentUser.role === 'guru') {
+                santriList = santriList.filter(s => Number(s.guruId) === Number(currentUser.guruId));
+            } else if (currentUser.role === 'ortu') {
+                santriList = santriList.filter(s => s.id === currentUser.santriId);
+            }
+
+            const tgl = document.getElementById('tgl-absensi-santri')?.value || getTodayISO();
+
+            santriList.forEach(s => {
+                const absen = db.absensiSantri.find(a => a.santriId === s.id && a.tgl === tgl);
+                let selectHtml = '';
+                if (currentUser.role === 'guru') {
+                    selectHtml = `
+                        <select class="absen-select" data-id="${s.id}" style="padding:5px; border-radius:4px;">
+                            <option value="Hadir" ${absen && absen.status === 'Hadir' ? 'selected' : ''}>Hadir</option>
+                            <option value="Sakit" ${absen && absen.status === 'Sakit' ? 'selected' : ''}>Sakit</option>
+                            <option value="Izin" ${absen && absen.status === 'Izin' ? 'selected' : ''}>Izin</option>
+                            <option value="Alpa" ${absen && absen.status === 'Alpa' ? 'selected' : (!absen ? 'selected' : '')}>Alpa</option>
+                        </select>
+                    `;
+                } else {
+                    let badgeClr = 'badge-danger';
+                    if(absen && absen.status === 'Hadir') badgeClr = 'badge-success';
+                    if(absen && (absen.status === 'Izin' || absen.status === 'Sakit')) badgeClr = 'badge-warning';
+                    
+                    selectHtml = `<span class="badge ${badgeClr}">${absen ? absen.status : 'Belum Diabsen'}</span>`;
+                }
+                
+                tbSantri.innerHTML += `
+                    <tr>
+                        <td>${s.nama}</td>
+                        <td>${s.kelas || '-'}</td>
+                        <td>${selectHtml}</td>
+                        <td>${absen ? absen.diabsenOleh : '-'}</td>
+                    </tr>
+                `;
+            });
+
+            // Log kehadiran Guru
+            const tbGuruLog = document.getElementById('table-absensi-guru-log');
+            if(tbGuruLog) {
+                tbGuruLog.innerHTML = '';
+                let gLog = db.absensiGuru || [];
+                const fTgl = document.getElementById('filter-tgl-absen-guru')?.value;
+                if(fTgl) gLog = gLog.filter(g => g.tgl === fTgl);
+
+                if (currentUser.role === 'guru') {
+                    gLog = gLog.filter(g => g.guruId === currentUser.guruId);
+                }
+
+                gLog.forEach(g => {
+                    tbGuruLog.innerHTML += `
+                        <tr>
+                            <td>${g.tgl}</td>
+                            <td>${g.nama}</td>
+                            <td>${g.jamMasuk}</td>
+                            <td>${g.jamPulang}</td>
+                            <td><span class="badge badge-success">${g.status}</span></td>
+                            <td>${g.potongan} %</td>
+                            <td>-</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function simpanAbsensiSantri() {
+            const tgl = document.getElementById('tgl-absensi-santri').value;
+            document.querySelectorAll('.absen-select').forEach(select => {
+                const santriId = parseInt(select.getAttribute('data-id'));
+                const status = select.value;
+                const existingIdx = db.absensiSantri.findIndex(a => a.santriId === santriId && a.tgl === tgl);
+                
+                if (existingIdx > -1) {
+                    db.absensiSantri[existingIdx].status = status;
+                    db.absensiSantri[existingIdx].diabsenOleh = currentUser.name;
+                } else {
+                    db.absensiSantri.push({
+                        id: Date.now() + Math.random(),
+                        santriId: santriId,
+                        tgl: tgl,
+                        status: status,
+                        diabsenOleh: currentUser.name
+                    });
+                }
+            });
+            
+            if (!db.logPengajarAbsensi) db.logPengajarAbsensi = [];
+            if (!db.logPengajarAbsensi.find(l => l.tgl === tgl && l.pengajar === currentUser.name)) {
+                db.logPengajarAbsensi.push({ tgl: tgl, pengajar: currentUser.name });
+            }
+
+            saveDb();
+            Swal.fire('Berhasil', 'Absensi santri berhasil disimpan!', 'success');
+            renderAbsensi();
+        }
+
+        function onSearchAbsensiSantriChange() {
+            renderAbsensi();
+        }
+
     </script>
 </body>
 </html>
