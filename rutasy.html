@@ -2104,157 +2104,160 @@
             const today = getTodayISO();
             const now = new Date();
             const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-            
-            let absenHariIni = db.absensiGuru.find(a => a.guruId === currentUser.guruId && a.tgl === today);
-            
-            if (!absenHariIni) {
-                // Proses Absen Masuk
-                db.absensiGuru.push({
-                    id: Date.now(),
-                    guruId: currentUser.guruId,
-                    nama: currentUser.name,
-                    tgl: today,
-                    jamMasuk: timeStr,
-                    jamPulang: "-",
-                    status: "Hadir",
-                    potongan: 0
-                });
-                Swal.fire('Berhasil', 'Anda berhasil absen masuk!', 'success');
-            } else if (absenHariIni.jamPulang === "-") {
-                // Proses Absen Pulang
-                absenHariIni.jamPulang = timeStr;
-                Swal.fire('Berhasil', 'Anda berhasil absen pulang!', 'success');
-            } else {
-                Swal.fire('Info', 'Anda sudah menyelesaikan absensi hari ini.', 'info');
-            }
-            saveDb();
-            updateGuruAbsenStatusDisplay();
-            if (typeof renderAbsensi === "function") renderAbsensi();
         }
 
-        // Fungsi memperbarui UI kotak status absensi guru
-        function updateGuruAbsenStatusDisplay() {
-            const statusEl = document.getElementById('guru-absen-status');
-            const btnEl = document.getElementById('btn-guru-absen-action');
-            if (!statusEl || !btnEl) return;
-
-            const today = getTodayISO();
-            const absenHariIni = db.absensiGuru.find(a => a.guruId === currentUser.guruId && a.tgl === today);
-
-            if (!absenHariIni) {
-                statusEl.innerText = 'Status Hari Ini: Belum Absen';
-                btnEl.innerHTML = '<i class="fa-solid fa-sign-in-alt"></i> Absen Masuk';
-                btnEl.className = 'btn btn-success';
-                btnEl.disabled = false;
-            } else if (absenHariIni.jamPulang === "-") {
-                statusEl.innerText = `Status Hari Ini: Masuk (${absenHariIni.jamMasuk})`;
-                btnEl.innerHTML = '<i class="fa-solid fa-sign-out-alt"></i> Absen Pulang';
-                btnEl.className = 'btn btn-warning';
-                btnEl.disabled = false;
-            } else {
-                statusEl.innerText = `Status Hari Ini: Selesai (${absenHariIni.jamMasuk} - ${absenHariIni.jamPulang})`;
-                btnEl.innerHTML = '<i class="fa-solid fa-check"></i> Sudah Absen';
-                btnEl.className = 'btn btn-disabled';
-                btnEl.disabled = true;
-            }
-        }
-
-        // FIX BUG 2: Render & Filter spesifik data santri untuk Guru saat membuka menu kehadiran
-        function renderAbsensi() {
-            const tgl = document.getElementById('tgl-absensi-santri').value || getTodayISO();
-            const tbody = document.getElementById('table-absensi-santri');
-            if(!tbody) return;
-            
-            let targetSantri = db.santri.filter(s => s.status === 'Aktif');
-            
-            // Guru hanya melihat santri yang terhubung dengan akunnya agar bisa diabsenkan
-            if (currentUser.role === 'guru') {
-                targetSantri = targetSantri.filter(s => Number(s.guruId) === Number(currentUser.guruId));
-            }
-            
-            const search = document.getElementById('search-santri-absensi');
-            if (search && search.value) {
-                targetSantri = targetSantri.filter(s => s.nama.toLowerCase().includes(search.value.toLowerCase()));
-            }
-
-            tbody.innerHTML = '';
-            
-            if (targetSantri.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Data santri tidak ditemukan.</td></tr>';
-                return;
-            }
-
-            targetSantri.forEach(s => {
-                let absenRecord = db.absensiSantri.find(a => a.santriId === s.id && a.tgl === tgl);
-                let status = absenRecord ? absenRecord.status : '';
-                let diabsenOleh = absenRecord ? absenRecord.diabsenOleh : '-';
-                
-                let selectHtml = `<select id="absen-santri-${s.id}" class="btn" style="background:white; color:var(--dark); border:1px solid #cbd5e1; padding:4px 8px;">
-                    <option value="">-- Pilih --</option>
-                    <option value="Hadir" ${status === 'Hadir' ? 'selected' : ''}>Hadir</option>
-                    <option value="Sakit" ${status === 'Sakit' ? 'selected' : ''}>Sakit</option>
-                    <option value="Izin" ${status === 'Izin' ? 'selected' : ''}>Izin</option>
-                    <option value="Alfa" ${status === 'Alfa' ? 'selected' : ''}>Alfa</option>
-                </select>`;
-
-                if (currentUser.role === 'admin') {
-                    selectHtml = `<span class="badge ${status === 'Hadir' ? 'badge-success' : status === 'Sakit' ? 'badge-warning' : status === 'Izin' ? 'badge-info' : status === 'Alfa' ? 'badge-danger' : ''}">${status || 'Belum Diabsen'}</span>`;
-                }
-
-                tbody.innerHTML += `<tr>
-                    <td>${s.nama}</td>
-                    <td>${s.kelas || '-'}</td>
-                    <td>${selectHtml}</td>
-                    <td>${diabsenOleh}</td>
-                </tr>`;
-            });
-        }
-
-        // Fungsi Simpan Absensi Santri yang menautkan santri berdasarkan guru yang bersangkutan
-        function simpanAbsensiSantri() {
-            const tgl = document.getElementById('tgl-absensi-santri').value || getTodayISO();
-            let targetSantri = db.santri.filter(s => s.status === 'Aktif');
-            
-            if (currentUser.role === 'guru') {
-                targetSantri = targetSantri.filter(s => Number(s.guruId) === Number(currentUser.guruId));
-            }
-
-            let count = 0;
-            targetSantri.forEach(s => {
-                const selectEl = document.getElementById(`absen-santri-${s.id}`);
-                if (selectEl && selectEl.value) {
-                    const existingIndex = db.absensiSantri.findIndex(a => a.santriId === s.id && a.tgl === tgl);
-                    if (existingIndex > -1) {
-                        db.absensiSantri[existingIndex].status = selectEl.value;
-                        db.absensiSantri[existingIndex].diabsenOleh = currentUser.name;
-                    } else {
-                        db.absensiSantri.push({
-                            id: Date.now() + Math.random(),
-                            santriId: s.id,
-                            tgl: tgl,
-                            status: selectEl.value,
-                            diabsenOleh: currentUser.name
-                        });
-                    }
-                    count++;
-                }
-            });
-
-            if (count > 0) {
-                saveDb();
-                Swal.fire('Berhasil', 'Absensi santri berhasil disimpan!', 'success');
-                renderAbsensi();
-            } else {
-                Swal.fire('Info', 'Tidak ada data absensi yang dipilih/diubah.', 'info');
-            }
-        }
-
-        // ==========================================================
-
-        function openModalGuru() { 
+        // ================= PENYELESAIAN POIN 1: INPUT GURU & SANTRI =================
+        function openModalGuru() {
+            document.getElementById('guru-nik').value = '';
+            document.getElementById('guru-nama').value = '';
+            document.getElementById('guru-jk').value = '';
+            document.getElementById('guru-ttl').value = '';
+            document.getElementById('guru-alamat').value = '';
+            document.getElementById('guru-norek').value = '';
+            document.getElementById('guru-wa').value = '';
+            document.getElementById('guru-gaji').value = '';
+            document.getElementById('guru-user').value = '';
+            document.getElementById('guru-pass').value = '';
             document.getElementById('modal-guru').style.display = 'flex';
         }
 
+        function openModalSantri() {
+            populateGuruDropdowns();
+            document.getElementById('santri-nis').value = '';
+            document.getElementById('santri-nama').value = '';
+            document.getElementById('santri-jk').value = '';
+            document.getElementById('santri-ttl').value = '';
+            document.getElementById('santri-alamat').value = '';
+            document.getElementById('santri-wa').value = '';
+            document.getElementById('santri-status').value = 'Aktif';
+            document.getElementById('santri-user').value = '';
+            document.getElementById('santri-pass').value = '';
+            document.getElementById('modal-santri').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function simpanGuru(event) {
+            event.preventDefault();
+            const nik = document.getElementById('guru-nik').value;
+            const nama = document.getElementById('guru-nama').value;
+            const jk = document.getElementById('guru-jk').value;
+            const ttl = document.getElementById('guru-ttl').value;
+            const alamat = document.getElementById('guru-alamat').value;
+            const norek = document.getElementById('guru-norek').value;
+            const wa = document.getElementById('guru-wa').value;
+            const gaji = document.getElementById('guru-gaji').value;
+            const user = document.getElementById('guru-user').value;
+            const pass = document.getElementById('guru-pass').value;
+
+            if (db.users.some(u => u.username === user)) {
+                Swal.fire('Gagal', 'Username sudah terdaftar!', 'error');
+                return;
+            }
+
+            const newId = db.guru.length > 0 ? Math.max(...db.guru.map(g => g.id)) + 1 : 1;
+            
+            db.guru.push({
+                id: newId, nik, nama, jk, ttl, alamat, norek, wa, gajiHarian: parseInt(gaji), username: user
+            });
+            
+            db.users.push({
+                username: user, password: pass, role: "guru", name: nama, guruId: newId
+            });
+
+            saveDb();
+            closeModal('modal-guru');
+            event.target.reset(); 
+            if (typeof renderMaster === 'function') renderMaster();
+            Swal.fire('Berhasil', 'Data Guru berhasil ditambahkan!', 'success');
+        }
+
+        function simpanSantri(event) {
+            event.preventDefault();
+            const nis = document.getElementById('santri-nis').value;
+            const nama = document.getElementById('santri-nama').value;
+            const jk = document.getElementById('santri-jk').value;
+            const ttl = document.getElementById('santri-ttl').value;
+            const alamat = document.getElementById('santri-alamat').value;
+            const wa = document.getElementById('santri-wa').value;
+            const guruId = document.getElementById('santri-guru-id').value;
+            const status = document.getElementById('santri-status').value;
+            const user = document.getElementById('santri-user').value;
+            const pass = document.getElementById('santri-pass').value;
+
+            if (db.users.some(u => u.username === user)) {
+                Swal.fire('Gagal', 'Username sudah terdaftar!', 'error');
+                return;
+            }
+
+            const newId = db.santri.length > 0 ? Math.max(...db.santri.map(s => s.id)) + 1 : 1;
+            
+            db.santri.push({
+                id: newId, nis, nama, jk, ttl, alamat, wa, guruId: parseInt(guruId), status, username: user, wali: "Wali " + nama, kelas: "Kelas Iqro"
+            });
+            
+            db.users.push({
+                username: user, password: pass, role: "ortu", name: "Wali " + nama, santriId: newId
+            });
+
+            saveDb();
+            closeModal('modal-santri');
+            event.target.reset(); 
+            if (typeof renderMaster === 'function') renderMaster();
+            Swal.fire('Berhasil', 'Data Santri berhasil ditambahkan!', 'success');
+        }
+
+        function renderMaster() {
+            const tableSantri = document.getElementById('table-santri');
+            const tableGuru = document.getElementById('table-guru');
+            
+            if (tableSantri) {
+                tableSantri.innerHTML = '';
+                db.santri.forEach(s => {
+                    const guru = db.guru.find(g => g.id === s.guruId);
+                    const namaGuru = guru ? guru.nama : '-';
+                    tableSantri.innerHTML += `
+                        <tr>
+                            <td>${s.nis}</td>
+                            <td>${s.nama}</td>
+                            <td>${s.jk}</td>
+                            <td>${s.ttl}</td>
+                            <td>${s.alamat}</td>
+                            <td>${s.wa}</td>
+                            <td>${namaGuru}</td>
+                            <td><span class="badge ${s.status === 'Aktif' ? 'badge-success' : 'badge-danger'}">${s.status}</span></td>
+                            <td>${s.username}</td>
+                            <td>***</td>
+                            <td><button class="btn btn-warning" style="padding:4px 8px;font-size:0.8rem;" onclick="Swal.fire('Info', 'Fitur Edit segera hadir', 'info')">Edit</button></td>
+                        </tr>
+                    `;
+                });
+            }
+
+            if (tableGuru) {
+                tableGuru.innerHTML = '';
+                db.guru.forEach(g => {
+                    tableGuru.innerHTML += `
+                        <tr>
+                            <td>${g.id}</td>
+                            <td>${g.nik}</td>
+                            <td>${g.nama}</td>
+                            <td>${g.jk}</td>
+                            <td>${g.ttl}</td>
+                            <td>${g.alamat}</td>
+                            <td>${g.norek}</td>
+                            <td>${g.wa}</td>
+                            <td>Rp ${g.gajiHarian.toLocaleString('id-ID')}</td>
+                            <td>${g.username}</td>
+                            <td>***</td>
+                            <td><button class="btn btn-warning" style="padding:4px 8px;font-size:0.8rem;" onclick="Swal.fire('Info', 'Fitur Edit segera hadir', 'info')">Edit</button></td>
+                        </tr>
+                    `;
+                });
+            }
+        }
     </script>
 </body>
 </html>
