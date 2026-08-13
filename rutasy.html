@@ -490,7 +490,7 @@
                             <option value="Kelas Tahsin">Kelas Tahsin</option>
                             <option value="Kelas Iqro">Kelas Iqro</option>
                         </select>
-                        <button class="btn btn-danger" id="btn-clear-progress-guru" style="display:none; padding: 8px 16px; font-size:0.85rem;" onclick="hapusHistoryProgress()"><i class="fa-solid fa-trash-can"></i> Hapus/Clear History Progres</button>
+                        <button class="btn btn-danger" id="btn-clear-progress-guru" style="display:none; padding: 8px 16px; font-size:0.85rem;" onclick="hapusHistoryProgress()"><i class="fa-solid fa-trash-can"></i> Hapus History</button>
                     </div>
                 </div>
                 <div class="table-container">
@@ -627,9 +627,9 @@
                             </div>
                             <!-- Tombol Clear untuk masing-masing Role -->
                             <div>
-                                <button class="btn btn-danger" id="btn-clear-spp-admin" style="display:none; padding: 8px 16px; font-size:0.85rem;" onclick="bersihkanCacheSpp()"><i class="fa-solid fa-trash-can"></i> Hapus/Clear History (Admin)</button>
-                                <button class="btn btn-warning" id="btn-clear-spp-ortu" style="display:none; padding: 8px 16px; font-size:0.85rem;" onclick="bersihkanSppOrtu()"><i class="fa-solid fa-trash-can"></i> Hapus/Clear History Saya</button>
-                                <button class="btn btn-danger" id="btn-clear-spp-guru" style="display:none; padding: 8px 16px; font-size:0.85rem;" onclick="hapusHistorySppGuru()"><i class="fa-solid fa-trash-can"></i> Hapus/Clear History (Guru)</button>
+                                <button class="btn btn-danger" id="btn-clear-spp-admin" style="display:none; padding: 8px 16px; font-size:0.85rem;" onclick="bersihkanCacheSpp()"><i class="fa-solid fa-trash-can"></i> Hapus History (Admin)</button>
+                                <button class="btn btn-warning" id="btn-clear-spp-ortu" style="display:none; padding: 8px 16px; font-size:0.85rem;" onclick="bersihkanSppOrtu()"><i class="fa-solid fa-trash-can"></i> Hapus History Saya</button>
+                                <button class="btn btn-danger" id="btn-clear-spp-guru" style="display:none; padding: 8px 16px; font-size:0.85rem;" onclick="hapusHistorySppGuru()"><i class="fa-solid fa-trash-can"></i> Hapus History (Guru)</button>
                             </div>
                         </div>
                     </div>
@@ -1002,7 +1002,7 @@
             </div>
             <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid #cbd5e1;">
                 <p><strong>Tagihan untuk:</strong> <span id="tagihan-spp-display"></span></p>
-                <p style="font-size:0.85rem; color:var(--danger); margin-top:5px;">Silakan isi metode pembayaran dan transfer ke rekening yang tersedia di sekolah.</p>
+                <p style="font-size:0.85rem; color:var(--danger); margin-top:5px;">Silakan isi metode pembayaran dan transfer ke rekening yang tersedia.</p>
             </div>
             <form onsubmit="prosesBayarSppAdmin(event)">
                 <input type="hidden" id="bayar-spp-santri-id">
@@ -2063,7 +2063,7 @@
 
         function hapusHistoryProgress() {
             Swal.fire({
-                title: 'Hapus/Clear History Progres?',
+                title: 'Hapus History',
                 text: "Anda yakin ingin menghapus history progres santri yang ada dalam tanggungan Anda?",
                 icon: 'warning',
                 showCancelButton: true,
