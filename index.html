@@ -6,29 +6,10 @@
     <title>RUTASY - Sistem Manajemen Rumah Tahfidz</title>
     
     <!-- PWA & Favicon Config -->
-    <link rel="icon" href="logo.png" type="image/png">
-    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" href="logo.jpg" type="image/jpeg">
+    <link rel="apple-touch-icon" href="logo.jpg">
     <meta name="theme-color" content="#047857">
-    
-    <!-- Manifest dinamis untuk mencegah Error 404 WebAPK saat diinstal -->
-    <link rel="manifest" id="pwa-manifest">
-    <script>
-        const currentUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-        const manifestData = {
-            "name": "RUTASY Sistem Manajemen",
-            "short_name": "RUTASY",
-            "start_url": currentUrl,
-            "display": "standalone",
-            "background_color": "#f3f4f6",
-            "theme_color": "#047857",
-            "icons": [
-                { "src": currentUrl + "logo.png", "sizes": "192x192", "type": "image/png" },
-                { "src": currentUrl + "logo.png", "sizes": "512x512", "type": "image/png" }
-            ]
-        };
-        const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/manifest+json' });
-        document.getElementById('pwa-manifest').setAttribute('href', URL.createObjectURL(manifestBlob));
-    </script>
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22RUTASY%20Sistem%20Manajemen%22%2C%22short_name%22%3A%22RUTASY%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f3f4f6%22%2C%22theme_color%22%3A%22%23047857%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22logo.jpg%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%2C%7B%22src%22%3A%22logo.jpg%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%5D%7D'>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -37,6 +18,10 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Firebase SDK (Compat Version untuk CDN Web HTML) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -46,11 +31,6 @@
             }
         }
     </script>
-
-    <!-- Firebase Web SDK (Compat Version) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
@@ -93,8 +73,7 @@
     <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-100">
         <div class="card w-full max-w-md">
             <div class="text-center mb-6">
-                <!-- Logo diperbaiki: Dihapus class border, shadow, dan rounded -->
-                <img src="logo.png" alt="Logo RUTASY" class="w-24 h-24 mx-auto mb-3 object-contain" onerror="this.src='https://via.placeholder.com/150'">
+                <img src="logo.jpg" alt="Logo RUTASY" class="w-24 h-24 mx-auto mb-3 rounded-full object-cover shadow-md border-2 border-primary" onerror="this.src='https://via.placeholder.com/150'">
                 <h1 class="text-2xl font-bold text-gray-800">RUTASY SYSTEM</h1>
                 <p class="text-gray-500 mb-4 text-sm">Masukkan Username & Password akun Anda</p>
             </div>
@@ -124,7 +103,7 @@
         <!-- SIDEBAR -->
         <aside id="sidebar" class="w-64 flex-shrink-0 bg-dark text-white flex flex-col absolute md:relative z-30 h-full transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
             <div class="p-4 flex items-center gap-3 font-bold text-xl border-b border-gray-700">
-                <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-full object-cover border border-secondary bg-white" onerror="this.src='https://via.placeholder.com/150'"> RUTASY
+                <img src="logo.jpg" alt="Logo" class="w-8 h-8 rounded-full object-cover border border-secondary bg-white" onerror="this.src='https://via.placeholder.com/150'"> RUTASY
                 <button onclick="toggleSidebar()" class="md:hidden ml-auto text-gray-300 hover:text-white"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="p-4 text-sm text-gray-300 border-b border-gray-700">
@@ -158,9 +137,7 @@
                         <span id="notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1.5 rounded-full hidden">0</span>
                         <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-72 bg-white border rounded shadow-lg p-3 z-50">
                             <p class="text-sm text-gray-800 font-bold border-b pb-2 mb-2">Notifikasi Akademik</p>
-                            <div id="notif-content" class="text-xs text-gray-600 mt-1 max-h-64 overflow-y-auto">
-                                <!-- Notif di-generate dari js -->
-                            </div>
+                            <div id="notif-content" class="text-xs text-gray-600 mt-1 max-h-64 overflow-y-auto"></div>
                         </div>
                     </div>
                     <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">
@@ -225,9 +202,7 @@
                                         <th class="p-3 border-b">Username</th><th class="p-3 border-b">Password</th><th class="p-3 border-b">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Dinamis dari JS -->
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
@@ -247,9 +222,7 @@
                                         <th class="p-3 border-b">Username</th><th class="p-3 border-b">Password</th><th class="p-3 border-b">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Dinamis dari JS -->
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
@@ -263,7 +236,7 @@
                         <div class="card border-l-4 border-red-500"><p class="text-sm text-gray-500">Pengeluaran</p><h3 class="text-2xl font-bold" id="keu-pengeluaran">Rp 0</h3></div>
                     </div>
                     
-                    <!-- Form Input Manual (Admin Only) -->
+                    <!-- Form Input Manual -->
                     <div class="card mb-6 admin-keuangan-only admin-global-only">
                         <h3 class="font-bold text-primary mb-4">Input Manual Keuangan (Pemasukan / Pengeluaran)</h3>
                         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -289,24 +262,18 @@
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm min-w-[700px]" id="table-riwayat-manual">
                                 <thead><tr class="table-header"><th class="p-3">Tanggal</th><th class="p-3">Jenis</th><th class="p-3">Keterangan</th><th class="p-3">Nominal</th><th class="p-3">Aksi</th></tr></thead>
-                                <tbody>
-                                    <!-- Dinamis dari JS -->
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
 
-                    <!-- Form Pembayaran (Ortu Only) -->
+                    <!-- Form Pembayaran (Ortu) -->
                     <div class="card mb-6 ortu-only">
                         <h3 class="font-bold mb-4">Form Pembayaran SPP & Infaq (Orang Tua)</h3>
-                        
                         <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
                             <p class="font-bold text-blue-800 mb-2"><i class="fa-solid fa-info-circle"></i> Info Rekening & Metode Pembayaran</p>
-                            <ul class="text-gray-700 list-disc ml-4" id="ortu-info-payment">
-                                <!-- Dinamis dari JS Settings -->
-                            </ul>
+                            <ul class="text-gray-700 list-disc ml-4" id="ortu-info-payment"></ul>
                         </div>
-
                         <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
                             <input type="text" id="ortu-nama" placeholder="Nama Santri" class="border p-2 rounded bg-gray-100" readonly>
                             <select id="ortu-bulan" class="border p-2 rounded bg-white">
@@ -333,10 +300,9 @@
                             <input type="number" id="ortu-infaq" placeholder="Nominal Infaq (Rp)" class="border p-2 rounded">
                             <button class="bg-primary text-white p-2 rounded hover:bg-dark transition" onclick="ajukanPembayaranOrtu()"><i class="fa-solid fa-paper-plane"></i> Ajukan</button>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">* Kosongkan kolom infaq jika hanya membayar SPP, begitupun sebaliknya. Setelah diajukan, menunggu Approve Admin Keuangan.</p>
                     </div>
 
-                    <!-- Santri Belum Bayar SPP Bulan Ini -->
+                    <!-- Belum Bayar SPP -->
                     <div class="card mb-6 admin-keuangan-only admin-global-only">
                         <h3 class="font-bold text-red-600 mb-4"><i class="fa-solid fa-circle-exclamation mr-1"></i> Daftar Santri Belum Bayar SPP Bulan Ini</h3>
                         <div class="overflow-x-auto">
@@ -350,9 +316,7 @@
                                         <th class="p-3 border-b">Status Pembayaran</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Dinamis dari JS -->
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
@@ -363,9 +327,7 @@
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm min-w-[700px]" id="table-persetujuan">
                                 <thead><tr class="table-header"><th class="p-3">Tanggal</th><th class="p-3">Nama Santri</th><th class="p-3">Bulan</th><th class="p-3">Metode</th><th class="p-3">SPP</th><th class="p-3">Infaq</th><th class="p-3">Aksi</th></tr></thead>
-                                <tbody>
-                                    <!-- Dinamis dari JS -->
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
@@ -377,7 +339,6 @@
                             <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                                 <select id="filter-spp-guru" class="border p-2 rounded text-sm w-full md:w-auto bg-white" onchange="renderKeuangan()">
                                     <option value="">Semua Kelompok</option>
-                                    <!-- Dinamis dari JS -->
                                 </select>
                                 <input type="text" id="cari-spp-nama" placeholder="Filter Nama Santri..." class="border p-2 rounded text-sm w-full md:w-64" onkeyup="renderKeuangan()">
                             </div>
@@ -385,9 +346,7 @@
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm min-w-[800px]" id="table-riwayat-keuangan">
                                 <thead><tr class="table-header"><th class="p-3">Tanggal</th><th class="p-3">Nama</th><th class="p-3">Kelompok</th><th class="p-3">Bulan</th><th class="p-3">Metode</th><th class="p-3">SPP</th><th class="p-3">Infaq</th><th class="p-3">Status</th><th class="p-3 btn-print">Resi</th></tr></thead>
-                                <tbody>
-                                    <!-- Dinamis dari JS -->
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
@@ -395,8 +354,6 @@
 
                 <!-- VIEW: ABSENSI -->
                 <div id="view-absensi" class="view-section hidden">
-                    
-                    <!-- Absen Diri (Khusus Guru) -->
                     <div class="card mb-6 div-absen-pribadi">
                         <h3 class="font-bold mb-4">Absensi Kehadiran Harian (Khusus Anda)</h3>
                         <p class="text-sm text-gray-600 mb-4"><i class="fa-solid fa-location-dot text-red-500"></i> Jarak Anda dari koordinat: <span class="font-bold text-green-600">3 Meter</span></p>
@@ -414,14 +371,11 @@
                                         <th class="p-2">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Dinamis lewat JS -->
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
 
-                    <!-- Riwayat Absensi Guru Global (Admin Only) -->
                     <div class="card mb-6 btn-admin-only">
                         <h3 class="font-bold mb-4 text-blue-700">Riwayat Kehadiran Guru</h3>
                         <div class="overflow-x-auto">
@@ -436,14 +390,11 @@
                                         <th class="p-2">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Dinamis lewat JS -->
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
 
-                    <!-- Absen Santri (Input Pekanan) -->
                     <div class="card mb-6 form-absen-guru-only">
                         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
                             <h3 class="font-bold w-full md:w-auto">Form Input Absensi Santri (Per Pekan)</h3>
@@ -482,14 +433,12 @@
                         </div>
                     </div>
 
-                    <!-- Riwayat Absensi Pekanan Santri -->
                     <div class="card">
                         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
                             <h3 class="font-bold">Riwayat Absensi Santri</h3>
                             <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                                 <select id="filter-absen-kelompok" class="border p-2 rounded text-sm w-full md:w-auto bg-white" onchange="renderTabelRiwayatAbsen()">
                                     <option value="">Semua Kelompok</option>
-                                    <!-- Dinamis -->
                                 </select>
                                 <input type="text" id="cari-riwayat-absen" placeholder="Cari Nama Santri..." class="border p-2 rounded text-sm w-full md:w-64" onkeyup="renderTabelRiwayatAbsen()">
                             </div>
@@ -503,9 +452,7 @@
                                         <th class="p-3">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Terisi otomatis oleh JS -->
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
@@ -516,7 +463,6 @@
                     <datalist id="list-santri"></datalist>
                     <datalist id="list-surat"></datalist>
 
-                    <!-- Form Input Ujian Santri -->
                     <div class="card mb-6 form-input-hafalan">
                         <h3 class="font-bold mb-4 text-blue-700">Input Hasil Ujian Santri</h3>
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -534,19 +480,16 @@
                         </div>
                     </div>
 
-                    <!-- Form Input Capaian Hafalan -->
                     <div class="card mb-6 form-input-hafalan">
                         <h3 class="font-bold mb-4 text-green-700">Input Capaian Belajar / Hafalan</h3>
                         <div id="container-form-progres" class="grid grid-cols-1 md:grid-cols-9 gap-3">
                             <input type="text" id="prog-nama" list="list-santri" placeholder="Cari Nama Santri..." class="border p-2 rounded md:col-span-2 bg-white">
-                            
                             <select id="prog-pekan" class="border p-2 rounded bg-white">
                                 <option value="Pekan 1">Pekan 1</option>
                                 <option value="Pekan 2">Pekan 2</option>
                                 <option value="Pekan 3">Pekan 3</option>
                                 <option value="Pekan 4">Pekan 4</option>
                             </select>
-
                             <select id="prog-hari" class="border p-2 rounded bg-white">
                                 <option value="Senin">Senin</option>
                                 <option value="Selasa">Selasa</option>
@@ -554,14 +497,11 @@
                                 <option value="Kamis">Kamis</option>
                                 <option value="Jumat">Jumat</option>
                             </select>
-
                             <select id="prog-kategori" class="border p-2 rounded bg-white" onchange="sesuaikanFormProgres()">
                                 <option value="Tahfidz">Tahfidz</option>
                                 <option value="Tahsin">Tahsin</option>
                                 <option value="Iqro">Iqro</option>
                             </select>
-                            
-                            <!-- Input Surat / Select Jilid Iqro -->
                             <input type="text" id="prog-surat" list="list-surat" placeholder="Surat (Ketik)" class="border p-2 rounded md:col-span-2 bg-white">
                             <select id="prog-surat-select" class="hidden border p-2 rounded md:col-span-2 bg-white">
                                 <option value="Jilid 1">Jilid 1</option>
@@ -571,13 +511,11 @@
                                 <option value="Jilid 5">Jilid 5</option>
                                 <option value="Jilid 6">Jilid 6</option>
                             </select>
-
                             <input type="number" id="prog-baris" placeholder="Jml Baris" class="border p-2 rounded bg-white">
                             <button class="bg-primary hover:bg-dark text-white p-2 rounded transition" onclick="simpanProgresSantri()"><i class="fa-solid fa-save"></i> Simpan</button>
                         </div>
                     </div>
 
-                    <!-- Riwayat Progres Belajar Santri -->
                     <div class="card mb-6">
                         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
                             <h3 class="font-bold">Tabel Riwayat Progres Belajar Santri</h3>
@@ -592,9 +530,7 @@
                                         <th class="p-3">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Terisi otomatis oleh JS -->
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
@@ -615,11 +551,8 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="card">
                             <h3 class="font-bold mb-4">Daftar Agenda (Terdekat)</h3>
-                            <ul id="list-kalender" class="border rounded divide-y text-sm bg-white">
-                                <!-- Terisi Otomatis -->
-                            </ul>
+                            <ul id="list-kalender" class="border rounded divide-y text-sm bg-white"></ul>
                         </div>
-                        
                         <div class="card">
                             <h3 class="font-bold mb-4">Kalender Bulan Ini <span id="nama-bulan-ini" class="text-primary"></span></h3>
                             <div class="calendar-grid mb-2">
@@ -628,9 +561,7 @@
                                 <div class="calendar-header-day">Kam</div><div class="calendar-header-day">Jum</div>
                                 <div class="calendar-header-day">Sab</div>
                             </div>
-                            <div class="calendar-grid" id="kalender-grid-bulanan">
-                                <!-- Terisi otomatis -->
-                            </div>
+                            <div class="calendar-grid" id="kalender-grid-bulanan"></div>
                         </div>
                     </div>
                 </div>
@@ -722,7 +653,6 @@
     </div>
 
     <!-- SEMUA MODAL POP UP -->
-    <!-- Modal Detail Kalender Akademik -->
     <div id="modal-detail-kalender" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
         <div class="bg-white p-6 rounded-lg w-11/12 md:w-96 shadow-xl">
             <h3 class="font-bold text-lg mb-2 text-primary" id="modal-kalender-tgl">Detail Agenda Akademik</h3>
@@ -731,7 +661,6 @@
         </div>
     </div>
 
-    <!-- Modal Peringatan SPP Ortu -->
     <div id="modal-peringatan-spp" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
         <div class="bg-white p-6 rounded-lg w-11/12 md:w-1/3 max-w-md text-center shadow-2xl border-t-4 border-red-500">
             <div class="text-red-500 text-6xl mb-4"><i class="fa-solid fa-circle-exclamation"></i></div>
@@ -741,7 +670,6 @@
         </div>
     </div>
 
-    <!-- Modal Santri -->
     <div id="modal-tambah-santri" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg w-11/12 md:w-2/3 max-h-[90vh] overflow-y-auto">
             <h3 class="font-bold text-lg mb-4" id="modal-santri-title">Tambah Data Santri Baru</h3>
@@ -766,7 +694,6 @@
         </div>
     </div>
 
-    <!-- Modal Guru -->
     <div id="modal-tambah-guru" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg w-11/12 md:w-2/3 max-h-[90vh] overflow-y-auto">
             <h3 class="font-bold text-lg mb-4" id="modal-guru-title">Tambah Data Guru Baru</h3>
@@ -791,7 +718,6 @@
         </div>
     </div>
     
-    <!-- Modal Detail Absen -->
     <div id="modal-detail-absen" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg w-11/12 md:w-96 max-h-[80vh] overflow-y-auto">
             <h3 class="font-bold text-lg mb-2">Detail Absensi Santri</h3>
@@ -801,7 +727,6 @@
         </div>
     </div>
 
-    <!-- Modal Detail Progres -->
     <div id="modal-detail-progres" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg w-11/12 md:w-1/2 max-h-[80vh] overflow-y-auto">
             <h3 class="font-bold text-lg mb-2">Detail Progres Belajar Santri</h3>
@@ -816,7 +741,6 @@
         </div>
     </div>
 
-    <!-- Modal Grafik Anak -->
     <div id="modal-grafik-progres" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
         <div class="bg-white p-6 rounded-lg w-11/12 md:w-1/2 max-h-[80vh] overflow-y-auto shadow-2xl">
             <h3 class="font-bold text-lg mb-2 text-primary">Grafik Perkembangan Santri</h3>
@@ -828,7 +752,6 @@
         </div>
     </div>
 
-    <!-- Modal Konfirmasi Custom Sistem -->
     <div id="modal-konfirmasi" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
         <div class="bg-white p-6 rounded-lg w-11/12 md:w-1/3 max-w-sm text-center shadow-xl">
             <div class="text-red-500 text-5xl mb-4"><i class="fa-solid fa-triangle-exclamation"></i></div>
@@ -843,12 +766,69 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
+        // --- FIREBASE CONFIGURATION & INITIALIZATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyANSHjQs5YuwgPj8Lawt2u8OE-iwCrCJ74",
+            authDomain: "rutahsy.firebaseapp.com",
+            projectId: "rutahsy",
+            storageBucket: "rutahsy.firebasestorage.app",
+            messagingSenderId: "297111437625",
+            appId: "1:297111437625:web:8e5fe9787357009727e8e8",
+            measurementId: "G-DTWYCGRTZ7"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // --- FIREBASE REAL-TIME SYNC HELPER FUNCTIONS ---
+        function saveFirebase(docName, data) {
+            const payload = Array.isArray(data) ? { list: data } : { data: data };
+            db.collection("rutasy_app").doc(docName).set(payload, { merge: true })
+              .catch(err => console.error("Firebase save error:", err));
+        }
+
+        function initFirebaseListeners() {
+            const docs = [
+                { doc: 'santri', key: 'dataSantri' },
+                { doc: 'guru', key: 'dataGuru' },
+                { doc: 'keu_pengajuan', key: 'dataKeuanganPengajuan' },
+                { doc: 'keu_riwayat', key: 'dataKeuanganRiwayat' },
+                { doc: 'keu_manual', key: 'dataKeuanganManual' },
+                { doc: 'settings', key: 'dataSettings' },
+                { doc: 'absen', key: 'riwayatAbsensi' },
+                { doc: 'absen_guru', key: 'absenGuruRecord' },
+                { doc: 'progres', key: 'riwayatProgres' },
+                { doc: 'kalender', key: 'eventsKalender' },
+                { doc: 'haflah', key: 'dataHaflah' }
+            ];
+
+            docs.forEach(item => {
+                db.collection("rutasy_app").doc(item.doc).onSnapshot(doc => {
+                    if (doc.exists) {
+                        const val = doc.data().list !== undefined ? doc.data().list : doc.data().data;
+                        if (val !== undefined) {
+                            window[item.key] = val;
+                            localStorage.setItem('rutasy_' + item.doc, JSON.stringify(val));
+                            renderSemuaData();
+                        }
+                    }
+                }, err => console.log("Firebase sync error:", err));
+            });
+        }
+
         // --- PWA SETUP & INSTALL PROMPT LOGIC ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Diganti agar tidak memanggil file SW berbentuk blob yang akan di block server webapk
-                navigator.serviceWorker.register('sw.js').catch((err) => {
-                    console.log('SW belum ada atau gagal terdaftar, PWA tetap berjalan.');
+                const swCode = `
+                    self.addEventListener('install', (e) => { self.skipWaiting(); });
+                    self.addEventListener('fetch', (e) => { });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).catch((err) => {
+                    console.log('PWA SW Status Registered');
                 });
             });
         }
@@ -930,85 +910,23 @@
             tutupKonfirmasi();
         }
 
-// --- INISIALISASI FIREBASE ---
-const firebaseConfig = {
-  apiKey: "AIzaSyANSHjQs5YuwgPj8Lawt2u8OE-iwCrCJ74",
-  authDomain: "rutahsy.firebaseapp.com",
-  projectId: "rutahsy",
-  storageBucket: "rutahsy.firebasestorage.app",
-  messagingSenderId: "297111437625",
-  appId: "1:297111437625:web:8e5fe9787357009727e8e8",
-  measurementId: "G-DTWYCGRTZ7"
-};
+        // --- DATA STATE MANAGEMENT ---
+        let dataSantri = JSON.parse(localStorage.getItem('rutasy_santri')) || [];
+        let dataGuru = JSON.parse(localStorage.getItem('rutasy_guru')) || [];
+        let dataKeuanganPengajuan = JSON.parse(localStorage.getItem('rutasy_keu_pengajuan')) || [];
+        let dataKeuanganRiwayat = JSON.parse(localStorage.getItem('rutasy_keu_riwayat')) || [];
+        let dataKeuanganManual = JSON.parse(localStorage.getItem('rutasy_keu_manual')) || [];
 
-// Jalankan Firebase & Database Firestore
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+        let dataSettings = JSON.parse(localStorage.getItem('rutasy_settings')) || {
+            jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
+            payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
+        };
 
-// --- DATA STATE MANAGEMENT (DEFAULT) ---
-let dataSantri = [];
-let dataGuru = [];
-let dataKeuanganPengajuan = [];
-let dataKeuanganRiwayat = [];
-let dataKeuanganManual = [];
-
-let dataSettings = {
-    jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
-    payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
-};
-
-let riwayatAbsensi = {};
-let absenGuruRecord = [];
-let riwayatProgres = {};
-let eventsKalender = [];
-let dataHaflah = [];
-
-// --- FUNGSI PEMBANTU SIMPAN DATA KE FIREBASE ---
-function saveToFirebase(key, data) {
-    db.collection('rutasy').doc(key).set({ value: data })
-      .catch(err => console.error("Gagal simpan ke Firebase:", err));
-}
-
-// --- MENDENGARKAN PERUBAHAN DATA (REAL-TIME SINKRON) ---
-function listenFirebaseData() {
-    db.collection('rutasy').onSnapshot((snapshot) => {
-        snapshot.forEach((doc) => {
-            const id = doc.id;
-            const val = doc.data().value;
-            if (id === 'rutasy_santri') dataSantri = val || [];
-            if (id === 'rutasy_guru') dataGuru = val || [];
-            if (id === 'rutasy_keu_pengajuan') dataKeuanganPengajuan = val || [];
-            if (id === 'rutasy_keu_riwayat') dataKeuanganRiwayat = val || [];
-            if (id === 'rutasy_keu_manual') dataKeuanganManual = val || [];
-            if (id === 'rutasy_settings') dataSettings = val || dataSettings;
-            if (id === 'rutasy_absen') riwayatAbsensi = val || {};
-            if (id === 'rutasy_absen_guru') absenGuruRecord = val || [];
-            if (id === 'rutasy_progres_hafalan') riwayatProgres = val || {};
-            if (id === 'rutasy_kalender') eventsKalender = val || [];
-            if (id === 'rutasy_haflah') dataHaflah = val || [];
-        });
-        
-        // Logika login & auto-login dipindahkan ke sini setelah array terisi data real (Mencegah data tidak muncul)
-        const savedRole = localStorage.getItem('rutasy_role');
-        const savedUser = localStorage.getItem('rutasy_username');
-
-        if (savedRole && !currentRole) {
-            currentRole = savedRole;
-            if(currentRole === 'ortu' && savedUser) loggedInSantri = dataSantri.find(s => s.user.toLowerCase() === savedUser.toLowerCase()) || null;
-            else if (currentRole === 'guru' && savedUser) loggedInSantri = dataGuru.find(g => g.user.toLowerCase() === savedUser.toLowerCase()) || null;
-            jalankanAplikasiLanjutan();
-        } else if (currentRole) {
-            // Update reference session agar bisa membaca data yang ter-sinkronisasi dari device lain
-            if(currentRole === 'ortu' && savedUser) loggedInSantri = dataSantri.find(s => s.user.toLowerCase() === savedUser.toLowerCase()) || null;
-            else if (currentRole === 'guru' && savedUser) loggedInSantri = dataGuru.find(g => g.user.toLowerCase() === savedUser.toLowerCase()) || null;
-            
-            renderSemuaData();
-        }
-    });
-}
-
-// Panggil fungsi sinkronisasi pertama kali saat web dibuka
-listenFirebaseData();
+        let riwayatAbsensi = JSON.parse(localStorage.getItem('rutasy_absen')) || {};
+        let absenGuruRecord = JSON.parse(localStorage.getItem('rutasy_absen_guru')) || [];
+        let riwayatProgres = JSON.parse(localStorage.getItem('rutasy_progres_hafalan')) || {};
+        let eventsKalender = JSON.parse(localStorage.getItem('rutasy_kalender')) || [];
+        let dataHaflah = JSON.parse(localStorage.getItem('rutasy_haflah')) || [];
 
         const daftarSurat = [
             "Al-Fatihah", "Al-Baqarah", "Ali 'Imran", "An-Nisa'", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Taubah", "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra'", "Al-Kahf", "Maryam", "Taha", "Al-Anbiya'", "Al-Hajj", "Al-Mu'minun", "An-Nur", "Al-Furqan", "Asy-Syu'ara'", "An-Naml", "Al-Qasas", "Al-'Ankabut", "Ar-Rum", "Luqman", "As-Sajdah", "Al-Ahzab", "Saba'", "Fatir", "Yasin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir", "Fussilat", "Asy-Syura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jasiyah", "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf", "Az-Zariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid", "Al-Mujadilah", "Al-Hasyr", "Al-Mumtahanah", "As-Saff", "Al-Jumu'ah", "Al-Munafiqun", "At-Tagabun", "At-Talaq", "At-Tahrim", "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij", "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddassir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat", "An-Naba'", "An-Nazi'at", "'Abasa", "At-Takwir", "Al-Infitar", "Al-Mutaffifin", "Al-Insyiqaq", "Al-Buruj", "At-Tariq", "Al-A'la", "Al-Ghasyiyah", "Al-Fajr", "Al-Balad", "Asy-Syams", "Al-Lail", "Ad-Duha", "Asy-Syarh", "At-Tin", "Al-'Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-'Adiyat", "Al-Qari'ah", "At-Takasur", "Al-'Asr", "Al-Humazah", "Al-Fil", "Quraisy", "Al-Ma'un", "Al-Kausar", "Al-Kafirun", "An-Nasr", "Al-Lahab", "Al-Ikhlas", "Al-Falaq", "An-Nas"
@@ -1046,7 +964,15 @@ listenFirebaseData();
 
         // --- AUTH & NAVIGATION ---
         window.onload = () => {
-            // Sengaja dibiarkan kosong karena telah ditangani dengan Firebase Snapshot.
+            initFirebaseListeners();
+            const savedRole = localStorage.getItem('rutasy_role');
+            const savedUser = localStorage.getItem('rutasy_username');
+            if(savedRole) {
+                currentRole = savedRole;
+                if(currentRole === 'ortu' && savedUser) loggedInSantri = dataSantri.find(s => s.user.toLowerCase() === savedUser.toLowerCase()) || null;
+                else if (currentRole === 'guru' && savedUser) loggedInSantri = dataGuru.find(g => g.user.toLowerCase() === savedUser.toLowerCase()) || null;
+                jalankanAplikasiLanjutan();
+            }
         };
 
         function login() {
@@ -1059,30 +985,12 @@ listenFirebaseData();
             let matchedSantri = dataSantri.find(s => s.user.toLowerCase() === user && s.pass === pass);
             let matchedGuru = dataGuru.find(g => g.user.toLowerCase() === user && g.pass === pass);
 
-            if (user === 'admin' && pass === '123') { 
-                currentRole = 'admin_global'; 
-                loggedInSantri = null; 
-            } 
-            else if (user === 'admin_data' && pass === '123') { 
-                currentRole = 'admin_data'; 
-                loggedInSantri = null; 
-            }
-            else if (user === 'admin_keuangan' && pass === '123') { 
-                currentRole = 'admin_keuangan'; 
-                loggedInSantri = null; 
-            } 
-            else if (matchedSantri) { 
-                currentRole = 'ortu'; 
-                loggedInSantri = matchedSantri; 
-            } 
-            else if (matchedGuru) { 
-                currentRole = 'guru'; 
-                loggedInSantri = matchedGuru; 
-            } 
-            else { 
-                tampilkanNotif('Username atau Password tidak terdaftar!'); 
-                return; 
-            }
+            if (user === 'admin' && pass === '123') { currentRole = 'admin_global'; loggedInSantri = null; } 
+            else if (user === 'admin_data' && pass === '123') { currentRole = 'admin_data'; loggedInSantri = null; }
+            else if (user === 'admin_keuangan' && pass === '123') { currentRole = 'admin_keuangan'; loggedInSantri = null; } 
+            else if (matchedSantri) { currentRole = 'ortu'; loggedInSantri = matchedSantri; } 
+            else if (matchedGuru) { currentRole = 'guru'; loggedInSantri = matchedGuru; } 
+            else { tampilkanNotif('Username atau Password tidak terdaftar!'); return; }
 
             if(ingatSaya) { localStorage.setItem('rutasy_role', currentRole); localStorage.setItem('rutasy_username', user); }
             jalankanAplikasiLanjutan();
@@ -1358,12 +1266,7 @@ listenFirebaseData();
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { precision: 0 }
-                            }
-                        }
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
                     }
                 });
             }
@@ -1426,6 +1329,7 @@ listenFirebaseData();
 
         function renderSantri() {
             const tbody = document.querySelector('#table-santri tbody');
+            if(!tbody) return;
             tbody.innerHTML = '';
             dataSantri.forEach((s, index) => {
                 let statusColor = s.status==='Aktif' ? 'bg-blue-100 text-blue-700' : (s.status==='Alumni' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700');
@@ -1442,12 +1346,13 @@ listenFirebaseData();
                     </tr>
                 `;
             });
-            document.getElementById('dash-santri').innerText = dataSantri.length;
+            if(document.getElementById('dash-santri')) document.getElementById('dash-santri').innerText = dataSantri.length;
             renderSelectHaflahSantri(); renderDatalistSantri();
         }
 
         function renderGuru() {
             const tbody = document.querySelector('#table-guru tbody');
+            if(!tbody) return;
             tbody.innerHTML = '';
             dataGuru.forEach((g, index) => {
                 tbody.innerHTML += `
@@ -1463,7 +1368,7 @@ listenFirebaseData();
                     </tr>
                 `;
             });
-            document.getElementById('dash-guru').innerText = dataGuru.length;
+            if(document.getElementById('dash-guru')) document.getElementById('dash-guru').innerText = dataGuru.length;
             updateGuruDropdown();
             populateFilterGroups();
         }
@@ -1495,7 +1400,8 @@ listenFirebaseData();
         function deleteSantri(index) { 
             bukaKonfirmasi('Hapus Santri', `Yakin ingin menghapus santri ${dataSantri[index].nama}?`, () => {
                 dataSantri.splice(index, 1); 
-                saveToFirebase('rutasy_santri', dataSantri); 
+                localStorage.setItem('rutasy_santri', JSON.stringify(dataSantri)); 
+                saveFirebase('santri', dataSantri);
                 renderSantri(); renderBelumBayarSPP(); 
                 tampilkanNotif('Data Santri Berhasil Dihapus!'); 
             }); 
@@ -1507,7 +1413,9 @@ listenFirebaseData();
             const obj = { nis: document.getElementById('ms-nis').value, nama: document.getElementById('ms-nama').value, lp: document.getElementById('ms-lp').value, ttl: document.getElementById('ms-ttl').value, alamat: document.getElementById('ms-alamat').value, wa: document.getElementById('ms-wa-ortu').value, guru: document.getElementById('ms-guru').value, status: document.getElementById('ms-status').value, user: document.getElementById('ms-username').value, pass: document.getElementById('ms-password').value };
             if(!obj.nis || !obj.nama || !obj.user) { tampilkanNotif('Isi minimal NIS, Nama, Username!'); return; }
             if(isNaN(idx) || idx < 0) { dataSantri.push(obj); tampilkanNotif('Data Santri Berhasil Ditambahkan!'); } else { dataSantri[idx] = obj; tampilkanNotif('Data Santri Berhasil Diperbarui!'); }
-            saveToFirebase('rutasy_santri', dataSantri); renderSantri(); renderBelumBayarSPP(); document.getElementById('modal-tambah-santri').classList.add('hidden');
+            localStorage.setItem('rutasy_santri', JSON.stringify(dataSantri)); 
+            saveFirebase('santri', dataSantri);
+            renderSantri(); renderBelumBayarSPP(); document.getElementById('modal-tambah-santri').classList.add('hidden');
         }
 
         function bukaModalTambahGuru() { 
@@ -1520,7 +1428,8 @@ listenFirebaseData();
         function deleteGuru(index) { 
             bukaKonfirmasi('Hapus Guru', `Yakin ingin menghapus guru ${dataGuru[index].nama}?`, () => {
                 dataGuru.splice(index, 1); 
-                saveToFirebase('rutasy_guru', dataGuru); 
+                localStorage.setItem('rutasy_guru', JSON.stringify(dataGuru)); 
+                saveFirebase('guru', dataGuru);
                 renderGuru(); 
                 tampilkanNotif('Data Guru Berhasil Dihapus!'); 
             }); 
@@ -1532,327 +1441,329 @@ listenFirebaseData();
             const obj = { nik: document.getElementById('mg-nik').value, nama: document.getElementById('mg-nama').value, lp: document.getElementById('mg-lp').value, ttl: document.getElementById('mg-ttl').value, alamat: document.getElementById('mg-alamat').value, bank: document.getElementById('mg-bank').value, wa: document.getElementById('mg-wa').value, gaji: document.getElementById('mg-gaji').value, user: document.getElementById('mg-username').value, pass: document.getElementById('mg-password').value };
             if(!obj.nik || !obj.nama || !obj.user) { tampilkanNotif('Isi minimal NIK, Nama, Username!'); return; }
             if(isNaN(idx) || idx < 0) { dataGuru.push(obj); tampilkanNotif('Data Guru Berhasil Ditambahkan!'); } else { dataGuru[idx] = obj; tampilkanNotif('Data Guru Berhasil Diperbarui!'); }
-            saveToFirebase('rutasy_guru', dataGuru); renderGuru(); document.getElementById('modal-tambah-guru').classList.add('hidden');
+            localStorage.setItem('rutasy_guru', JSON.stringify(dataGuru)); 
+            saveFirebase('guru', dataGuru);
+            renderGuru(); document.getElementById('modal-tambah-guru').classList.add('hidden');
         }
 
         function renderDatalistSantri() {
             const dl = document.getElementById('list-santri');
-            if (dl) {
-                dl.innerHTML = '';
-                dataSantri.forEach(s => {
-                    if (s.status === 'Aktif') dl.innerHTML += `<option value="${s.nama}">${s.nis} - ${s.nama}</option>`;
-                });
+            if(dl) { 
+                dl.innerHTML = ''; 
+                dataSantri.forEach(s => { 
+                    if (currentRole === 'guru' && s.guru !== loggedInSantri.nama) return;
+                    dl.innerHTML += `<option value="${s.nama}"></option>`; 
+                }); 
             }
         }
 
-        // --- KEUANGAN ---
+        function renderSelectHaflahSantri() {
+            const hs = document.getElementById('haflah-nama-select');
+            if(hs) {
+                hs.innerHTML = '<option value="">Pilih Santri (Dari Database Entitas)</option>';
+                dataSantri.forEach(s => { hs.innerHTML += `<option value="${s.nama}">${s.nama} (${s.nis})</option>`; });
+            }
+        }
+
+        // --- KEUANGAN (SPP, INFAQ, MANUAL) ---
         function renderKeuangan() {
-            // Kalkulasi Dashboard Keuangan
             let sumPemasukanSPP = dataKeuanganRiwayat.reduce((sum, r) => sum + parseInt(r.spp || 0) + parseInt(r.infaq || 0), 0);
-            let sumPemasukanManual = dataKeuanganManual.filter(m => m.jenis === 'Pemasukan').reduce((sum, m) => sum + parseInt(m.nominal || 0), 0);
-            let sumPengeluaranManual = dataKeuanganManual.filter(m => m.jenis === 'Pengeluaran').reduce((sum, m) => sum + parseInt(m.nominal || 0), 0);
-            
+            let sumPemasukanManual = dataKeuanganManual.filter(m => m.jenis === 'Pemasukan').reduce((sum, m) => sum + m.nominal, 0);
+            let sumPengeluaranManual = dataKeuanganManual.filter(m => m.jenis === 'Pengeluaran').reduce((sum, m) => sum + m.nominal, 0);
+
             let totalPemasukan = sumPemasukanSPP + sumPemasukanManual;
-            let saldo = totalPemasukan - sumPengeluaranManual;
+            let totalPengeluaran = sumPengeluaranManual;
+            let numSaldo = totalPemasukan - totalPengeluaran;
 
-            const elSaldo = document.getElementById('keu-saldo');
-            const elPemasukan = document.getElementById('keu-pemasukan');
-            const elPengeluaran = document.getElementById('keu-pengeluaran');
-            const elDashPemasukan = document.getElementById('dash-pemasukan');
-            
-            if(elSaldo) elSaldo.innerText = `Rp ${formatRupiah(saldo)}`;
-            if(elPemasukan) elPemasukan.innerText = `Rp ${formatRupiah(totalPemasukan)}`;
-            if(elPengeluaran) elPengeluaran.innerText = `Rp ${formatRupiah(sumPengeluaranManual)}`;
-            if(elDashPemasukan) elDashPemasukan.innerText = `Rp ${formatRupiah(saldo)}`;
+            const dPemasukan = document.getElementById('dash-pemasukan');
+            if(dPemasukan) dPemasukan.innerText = 'Rp ' + formatRupiah(numSaldo);
+            const kSaldo = document.getElementById('keu-saldo');
+            if(kSaldo) kSaldo.innerText = 'Rp ' + formatRupiah(numSaldo);
+            const kPemasukan = document.getElementById('keu-pemasukan');
+            if(kPemasukan) kPemasukan.innerText = 'Rp ' + formatRupiah(totalPemasukan);
+            const kPengeluaran = document.getElementById('keu-pengeluaran');
+            if(kPengeluaran) kPengeluaran.innerText = 'Rp ' + formatRupiah(totalPengeluaran);
 
-            // Render Persetujuan (Hanya Admin)
-            const tPersetujuan = document.querySelector('#table-persetujuan tbody');
-            if(tPersetujuan) {
-                tPersetujuan.innerHTML = '';
-                dataKeuanganPengajuan.forEach((p, index) => {
-                    tPersetujuan.innerHTML += `
+            const tbodyPengajuan = document.querySelector('#table-persetujuan tbody');
+            if(tbodyPengajuan) {
+                tbodyPengajuan.innerHTML = '';
+                dataKeuanganPengajuan.forEach(p => {
+                    tbodyPengajuan.innerHTML += `
                         <tr class="border-b">
-                            <td class="p-3">${p.tgl}</td><td class="p-3">${p.nama}</td><td class="p-3">${p.bulan}</td><td class="p-3">${p.metode}</td>
-                            <td class="p-3">Rp ${formatRupiah(p.spp)}</td><td class="p-3">Rp ${formatRupiah(p.infaq)}</td>
-                            <td class="p-3">
-                                <button onclick="setujuiPembayaran(${index})" class="bg-green-500 text-white px-2 py-1 rounded text-xs mr-1 hover:bg-green-600"><i class="fa-solid fa-check"></i> Terima</button>
-                                <button onclick="tolakPembayaran(${index})" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"><i class="fa-solid fa-times"></i> Tolak</button>
-                            </td>
+                            <td class="p-3">${p.tgl}</td><td class="p-3">${p.nama}</td><td class="p-3 font-bold text-gray-700">${p.bulan}</td>
+                            <td class="p-3 text-gray-600">${p.metode}</td>
+                            <td class="p-3 text-blue-600 font-medium">Rp ${formatRupiah(p.spp)}</td><td class="p-3 text-green-600 font-medium">Rp ${formatRupiah(p.infaq)}</td>
+                            <td class="p-3"><button class="bg-primary hover:bg-dark transition text-white px-3 py-1 rounded shadow text-xs font-bold" onclick="approvePembayaran(${p.id})">Approve</button></td>
                         </tr>
                     `;
                 });
             }
 
-            // Render Riwayat
-            const tRiwayat = document.querySelector('#table-riwayat-keuangan tbody');
-            if(tRiwayat) {
-                tRiwayat.innerHTML = '';
-                let filterGuru = document.getElementById('filter-spp-guru')?.value || '';
-                let searchNama = document.getElementById('cari-spp-nama')?.value.toLowerCase() || '';
+            const qNama = document.getElementById('cari-spp-nama') ? document.getElementById('cari-spp-nama').value.toLowerCase() : '';
+            const qGuru = document.getElementById('filter-spp-guru') ? document.getElementById('filter-spp-guru').value.toLowerCase() : '';
 
-                let filtered = dataKeuanganRiwayat;
-                if(currentRole === 'ortu' && loggedInSantri) {
-                    filtered = filtered.filter(r => r.nama.toLowerCase() === loggedInSantri.nama.toLowerCase());
-                } else {
-                    if (filterGuru) filtered = filtered.filter(r => r.guru === filterGuru);
-                    if (searchNama) filtered = filtered.filter(r => r.nama.toLowerCase().includes(searchNama));
-                }
+            const tbodyRiwayat = document.querySelector('#table-riwayat-keuangan tbody');
+            if(tbodyRiwayat) {
+                tbodyRiwayat.innerHTML = '';
+                
+                dataKeuanganRiwayat.forEach((r, index) => {
+                    if (currentRole === 'ortu' && loggedInSantri && r.nama.toLowerCase() !== loggedInSantri.nama.toLowerCase()) return; 
 
-                filtered.forEach((r, idx) => {
-                    tRiwayat.innerHTML += `
-                        <tr class="border-b">
-                            <td class="p-3">${r.tgl}</td><td class="p-3">${r.nama}</td><td class="p-3">${r.guru}</td><td class="p-3">${r.bulan}</td><td class="p-3">${r.metode}</td>
-                            <td class="p-3">Rp ${formatRupiah(r.spp)}</td><td class="p-3">Rp ${formatRupiah(r.infaq)}</td>
-                            <td class="p-3"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Lunas</span></td>
-                            <td class="p-3 btn-print"><button onclick="cetakResi(${idx})" class="text-primary hover:text-dark"><i class="fa-solid fa-print"></i></button></td>
-                        </tr>
-                    `;
+                    let santriObj = dataSantri.find(s => s.nama.toLowerCase() === r.nama.toLowerCase());
+                    let namaGuru = santriObj ? santriObj.guru : '-';
+                    
+                    let matchNama = r.nama.toLowerCase().includes(qNama);
+                    let matchGuru = qGuru === '' || namaGuru.toLowerCase() === qGuru;
+
+                    if(matchNama && matchGuru) {
+                        tbodyRiwayat.innerHTML += `
+                            <tr class="border-b hover:bg-gray-50 transition">
+                                <td class="p-3">${r.tgl}</td><td class="p-3 font-medium">${r.nama}</td><td class="p-3 text-gray-600">${namaGuru}</td>
+                                <td class="p-3 font-bold text-gray-700">${r.bulan}</td><td class="p-3 text-gray-600">${r.metode || '-'}</td>
+                                <td class="p-3 font-bold text-blue-600">Rp ${formatRupiah(r.spp)}</td><td class="p-3 font-bold text-green-600">Rp ${formatRupiah(r.infaq)}</td>
+                                <td class="p-3"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Lunas</span></td>
+                                <td class="p-3 btn-print"><button class="text-blue-500 hover:text-blue-700" onclick="cetakResi(${index})"><i class="fa-solid fa-print"></i></button></td>
+                            </tr>
+                        `;
+                    }
                 });
             }
-        }
-
-        function ajukanPembayaranOrtu() {
-            const nama = document.getElementById('ortu-nama').value;
-            const bulan = document.getElementById('ortu-bulan').value;
-            const metode = document.getElementById('ortu-metode').value;
-            const spp = document.getElementById('ortu-spp').value;
-            const infaq = document.getElementById('ortu-infaq').value || 0;
-
-            if(!nama || !bulan || (!spp && spp !== '0')) { tampilkanNotif('Harap lengkapi form (Bulan & Nominal SPP)'); return; }
-            
-            let guru = dataSantri.find(s => s.nama === nama)?.guru || '-';
-            let tgl = new Date().toLocaleDateString('id-ID');
-
-            dataKeuanganPengajuan.push({ tgl, nama, guru, bulan, metode, spp, infaq });
-            saveToFirebase('rutasy_keu_pengajuan', dataKeuanganPengajuan);
-            
-            document.getElementById('ortu-bulan').value = '';
-            document.getElementById('ortu-spp').value = '';
-            document.getElementById('ortu-infaq').value = '';
-            tampilkanNotif('Pembayaran berhasil diajukan! Menunggu Admin.');
-            
-            document.getElementById('modal-peringatan-spp').classList.add('hidden');
-        }
-
-        function setujuiPembayaran(index) {
-            let data = dataKeuanganPengajuan[index];
-            dataKeuanganRiwayat.push(data);
-            dataKeuanganPengajuan.splice(index, 1);
-            saveToFirebase('rutasy_keu_riwayat', dataKeuanganRiwayat);
-            saveToFirebase('rutasy_keu_pengajuan', dataKeuanganPengajuan);
-            renderKeuangan(); renderBelumBayarSPP();
-            tampilkanNotif('Pembayaran Disetujui & Masuk ke Riwayat Kas!');
-        }
-
-        function tolakPembayaran(index) {
-            bukaKonfirmasi('Tolak Pembayaran', 'Yakin ingin menolak pengajuan pembayaran ini?', () => {
-                dataKeuanganPengajuan.splice(index, 1);
-                saveToFirebase('rutasy_keu_pengajuan', dataKeuanganPengajuan);
-                renderKeuangan();
-                tampilkanNotif('Pengajuan pembayaran ditolak.');
-            });
         }
 
         function simpanKeuanganManual() {
             const jenis = document.getElementById('man-jenis').value;
             const ket = document.getElementById('man-ket').value;
-            const nominal = parseInt(document.getElementById('man-nominal').value);
-
-            if(!ket || isNaN(nominal)) { tampilkanNotif('Keterangan dan Nominal wajib diisi!'); return; }
-            
-            dataKeuanganManual.push({ tgl: new Date().toLocaleDateString('id-ID'), jenis, ket, nominal });
-            saveToFirebase('rutasy_keu_manual', dataKeuanganManual);
-            
-            document.getElementById('man-ket').value = ''; document.getElementById('man-nominal').value = '';
-            renderKeuanganManual(); renderKeuangan();
-            tampilkanNotif('Data Keuangan Manual Tersimpan!');
+            const nominal = parseInt(document.getElementById('man-nominal').value) || 0;
+            if(!ket || nominal <= 0) { tampilkanNotif('Lengkapi keterangan dan nominal!'); return; }
+            const tgl = new Date().toLocaleDateString('id-ID');
+            const id = Date.now();
+            dataKeuanganManual.push({ id, tgl, jenis, ket, nominal });
+            localStorage.setItem('rutasy_keu_manual', JSON.stringify(dataKeuanganManual));
+            saveFirebase('keu_manual', dataKeuanganManual);
+            renderKeuangan();
+            renderKeuanganManual();
+            document.getElementById('man-ket').value = '';
+            document.getElementById('man-nominal').value = '';
+            tampilkanNotif('Data Keuangan Manual Berhasil Disimpan!');
         }
 
         function renderKeuanganManual() {
             const tbody = document.querySelector('#table-riwayat-manual tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
-            let filterTgl = document.getElementById('filter-tgl-manual')?.value;
+            const filterTgl = document.getElementById('filter-tgl-manual') ? document.getElementById('filter-tgl-manual').value : '';
             
-            let dataRender = dataKeuanganManual;
-            if(filterTgl) {
-                let tglFormatId = new Date(filterTgl).toLocaleDateString('id-ID');
-                dataRender = dataRender.filter(m => m.tgl === tglFormatId);
-            }
-
-            dataRender.forEach((m, idx) => {
-                let color = m.jenis === 'Pemasukan' ? 'text-green-600' : 'text-red-600';
+            dataKeuanganManual.forEach((m, index) => {
+                if(filterTgl) {
+                    const d = new Date(filterTgl).toLocaleDateString('id-ID');
+                    if(m.tgl !== d) return;
+                }
+                const colorClass = m.jenis === 'Pemasukan' ? 'text-green-600' : 'text-red-600';
                 tbody.innerHTML += `
                     <tr class="border-b">
                         <td class="p-3">${m.tgl}</td>
-                        <td class="p-3 font-bold ${color}">${m.jenis}</td>
+                        <td class="p-3"><span class="font-bold ${colorClass}">${m.jenis}</span></td>
                         <td class="p-3">${m.ket}</td>
-                        <td class="p-3 ${color}">Rp ${formatRupiah(m.nominal)}</td>
-                        <td class="p-3"><button onclick="hapusKeuanganManual(${idx})" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button></td>
+                        <td class="p-3 font-bold ${colorClass}">Rp ${formatRupiah(m.nominal)}</td>
+                        <td class="p-3"><button onclick="hapusKeuanganManual(${index})" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button></td>
                     </tr>
                 `;
             });
         }
 
-        function hapusKeuanganManual(idx) {
-            bukaKonfirmasi('Hapus Catatan', 'Yakin ingin menghapus catatan kas manual ini?', () => {
-                dataKeuanganManual.splice(idx, 1);
-                saveToFirebase('rutasy_keu_manual', dataKeuanganManual);
-                renderKeuanganManual(); renderKeuangan();
-                tampilkanNotif('Catatan terhapus.');
+        function hapusKeuanganManual(index) {
+            bukaKonfirmasi('Hapus Keuangan', 'Yakin ingin menghapus catatan ini?', () => {
+                dataKeuanganManual.splice(index, 1);
+                localStorage.setItem('rutasy_keu_manual', JSON.stringify(dataKeuanganManual));
+                saveFirebase('keu_manual', dataKeuanganManual);
+                renderKeuangan();
+                renderKeuanganManual();
+                tampilkanNotif('Catatan Berhasil Dihapus!');
             });
+        }
+
+        function ajukanPembayaranOrtu() {
+            const nama = document.getElementById('ortu-nama').value;
+            const bulan = document.getElementById('ortu-bulan').value;
+            const metode = document.getElementById('ortu-metode').value;
+            const spp = parseInt(document.getElementById('ortu-spp').value) || 0;
+            const infaq = parseInt(document.getElementById('ortu-infaq').value) || 0;
+            
+            if(!bulan) { tampilkanNotif('Tolong sebutkan keterangan bulan pembayaran!'); return; }
+            if(spp === 0 && infaq === 0) { tampilkanNotif('Tolong masukkan setidaknya satu nominal (SPP / Infaq)!'); return; }
+
+            let tgl = new Date().toLocaleDateString('id-ID');
+            let id = Date.now();
+            
+            dataKeuanganPengajuan.push({id, tgl, nama, bulan, metode, spp, infaq});
+            localStorage.setItem('rutasy_keu_pengajuan', JSON.stringify(dataKeuanganPengajuan));
+            saveFirebase('keu_pengajuan', dataKeuanganPengajuan);
+            
+            renderKeuangan();
+            document.getElementById('ortu-bulan').value = '';
+            document.getElementById('ortu-spp').value = '';
+            document.getElementById('ortu-infaq').value = '';
+            tampilkanNotif('Pengajuan Terkirim ke Admin Keuangan!');
+        }
+
+        function approvePembayaran(id) {
+            let index = dataKeuanganPengajuan.findIndex(p => p.id === id);
+            if(index > -1) {
+                let item = dataKeuanganPengajuan.splice(index, 1)[0];
+                dataKeuanganRiwayat.unshift({tgl: item.tgl, nama: item.nama, bulan: item.bulan, metode: item.metode || 'Transfer Bank', spp: item.spp, infaq: item.infaq});
+                
+                localStorage.setItem('rutasy_keu_pengajuan', JSON.stringify(dataKeuanganPengajuan));
+                localStorage.setItem('rutasy_keu_riwayat', JSON.stringify(dataKeuanganRiwayat));
+                saveFirebase('keu_pengajuan', dataKeuanganPengajuan);
+                saveFirebase('keu_riwayat', dataKeuanganRiwayat);
+                
+                renderKeuangan(); renderBelumBayarSPP();
+                tampilkanNotif('Pembayaran Disetujui & Masuk Riwayat!');
+            }
+        }
+
+        function cetakResi(index) {
+            const data = dataKeuanganRiwayat[index];
+            const total = parseInt(data.spp) + parseInt(data.infaq);
+            
+            const printHTML = `
+                <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; border-bottom: 2px solid #047857; padding-bottom: 10px; margin-bottom: 20px;">
+                        <h2 style="color: #047857; margin: 0; font-size: 24px; font-weight: bold;">RUTASY</h2>
+                        <p style="margin: 5px 0 0; font-size: 14px;">Sistem Manajemen Rumah Tahfidz</p>
+                        <h3 style="margin: 15px 0 0; font-size: 18px; font-weight: bold; text-decoration: underline;">BUKTI PEMBAYARAN RESMI</h3>
+                    </div>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <tr><td style="padding: 8px 0; width: 30%; font-weight: bold;">Tanggal Bayar</td><td style="padding: 8px 0;">: ${data.tgl}</td></tr>
+                        <tr><td style="padding: 8px 0; font-weight: bold;">Nama Santri</td><td style="padding: 8px 0;">: ${data.nama}</td></tr>
+                        <tr><td style="padding: 8px 0; font-weight: bold;">Bulan Pembayaran</td><td style="padding: 8px 0;">: ${data.bulan}</td></tr>
+                        <tr><td style="padding: 8px 0; font-weight: bold;">Metode Pembayaran</td><td style="padding: 8px 0;">: ${data.metode || '-'}</td></tr>
+                        <tr><td style="padding: 8px 0; font-weight: bold;">Status</td><td style="padding: 8px 0;">: <span style="color: #047857; font-weight: bold;">LUNAS</span></td></tr>
+                    </table>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; text-align: left;">
+                        <thead>
+                            <tr style="background-color: #f3f4f6; border-bottom: 2px solid #ddd;">
+                                <th style="padding: 12px 8px;">Deskripsi Pembayaran</th>
+                                <th style="padding: 12px 8px; text-align: right;">Nominal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #ddd;">
+                                <td style="padding: 12px 8px;">Pembayaran SPP (Bulanan)</td>
+                                <td style="padding: 12px 8px; text-align: right;">Rp ${formatRupiah(data.spp)}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #ddd;">
+                                <td style="padding: 12px 8px;">Infaq</td>
+                                <td style="padding: 12px 8px; text-align: right;">Rp ${formatRupiah(data.infaq)}</td>
+                            </tr>
+                            <tr style="font-weight: bold; background-color: #f9fafb;">
+                                <td style="padding: 12px 8px; text-align: right;">TOTAL KESELURUHAN</td>
+                                <td style="padding: 12px 8px; text-align: right; color: #047857; font-size: 16px;">Rp ${formatRupiah(total)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div style="text-align: center; margin-top: 50px; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
+                        <p>Terima kasih atas pembayaran Anda. Jazakumullah Khairan.</p>
+                        <p>Dokumen ini sah dicetak otomatis oleh Sistem RUTASY pada ${new Date().toLocaleString('id-ID')}</p>
+                    </div>
+                </div>
+            `;
+            
+            const printArea = document.getElementById('print-area');
+            printArea.innerHTML = printHTML;
+            window.print();
         }
 
         function renderBelumBayarSPP() {
             const tbody = document.querySelector('#table-belum-bayar tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
-            
-            const bulanIni = new Date().toLocaleString('id-ID', { month: 'long' });
-            let countBelum = 0;
 
-            dataSantri.forEach(s => {
-                if (s.status === 'Aktif') {
-                    let sudahBayar = dataKeuanganRiwayat.find(r => r.nama === s.nama && r.bulan.toLowerCase() === bulanIni.toLowerCase());
-                    let sedangDiajukan = dataKeuanganPengajuan.find(p => p.nama === s.nama && p.bulan.toLowerCase() === bulanIni.toLowerCase());
-                    
-                    if (!sudahBayar) {
-                        countBelum++;
-                        let statusText = sedangDiajukan ? '<span class="text-yellow-600 font-bold">Proses Validasi</span>' : '<span class="text-red-600 font-bold">Belum Lunas</span>';
-                        tbody.innerHTML += `
-                            <tr class="border-b">
-                                <td class="p-3">${s.nis}</td><td class="p-3">${s.nama}</td><td class="p-3">${s.guru}</td>
-                                <td class="p-3">
-                                    <a href="https://wa.me/${s.wa}" target="_blank" class="text-green-600 hover:underline"><i class="fa-brands fa-whatsapp"></i> ${s.wa}</a>
-                                </td>
-                                <td class="p-3">${statusText}</td>
-                            </tr>
-                        `;
-                    }
-                }
-            });
+            const santriSudahBayar = dataKeuanganRiwayat.filter(r => r.spp > 0).map(r => r.nama.toLowerCase());
+            const santriBelumBayar = dataSantri.filter(s => s.status === 'Aktif' && !santriSudahBayar.includes(s.nama.toLowerCase()));
 
-            if(countBelum === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 font-bold">Alhamdulillah, semua santri aktif telah melunasi SPP bulan ini.</td></tr>`;
+            if(santriBelumBayar.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-gray-500 italic">Semua santri aktif sudah melunasi SPP bulan ini.</td></tr>`;
+                return;
             }
+            santriBelumBayar.forEach(s => {
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-red-50 transition">
+                        <td class="p-3 font-medium">${s.nis}</td>
+                        <td class="p-3 font-bold text-gray-800">${s.nama}</td>
+                        <td class="p-3">${s.guru}</td>
+                        <td class="p-3">${s.wa}</td>
+                        <td class="p-3"><span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">Belum Bayar</span></td>
+                    </tr>
+                `;
+            });
         }
 
-        function cetakResi(idx) {
-            let r = dataKeuanganRiwayat[idx];
-            let html = `
-                <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #ccc;">
-                    <div style="text-align: center; border-bottom: 2px solid #047857; padding-bottom: 10px; margin-bottom: 20px;">
-                        <h2 style="color: #047857; margin: 0;">RUTASY - RUMAH TAHFIDZ</h2>
-                        <p style="margin: 5px 0 0 0; font-size: 14px; color: #555;">Tanda Terima Pembayaran SPP & Infaq</p>
-                    </div>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                        <tr><td style="padding: 8px 0; width: 30%;"><b>Tanggal Pembayaran</b></td><td>: ${r.tgl}</td></tr>
-                        <tr><td style="padding: 8px 0;"><b>Nama Santri</b></td><td>: ${r.nama}</td></tr>
-                        <tr><td style="padding: 8px 0;"><b>Kelompok/Guru</b></td><td>: ${r.guru}</td></tr>
-                        <tr><td style="padding: 8px 0;"><b>Pembayaran Bulan</b></td><td>: ${r.bulan}</td></tr>
-                        <tr><td style="padding: 8px 0;"><b>Metode</b></td><td>: ${r.metode}</td></tr>
-                    </table>
-                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                        <thead><tr style="background-color: #f3f4f6;"><th style="padding: 10px; border: 1px solid #ddd;">Rincian</th><th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Nominal</th></tr></thead>
-                        <tbody>
-                            <tr><td style="padding: 10px; border: 1px solid #ddd;">SPP</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">Rp ${formatRupiah(r.spp)}</td></tr>
-                            <tr><td style="padding: 10px; border: 1px solid #ddd;">Infaq</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">Rp ${formatRupiah(r.infaq)}</td></tr>
-                            <tr style="font-weight: bold;"><td style="padding: 10px; border: 1px solid #ddd; text-align: right;">Total Lunas</td><td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #047857;">Rp ${formatRupiah(parseInt(r.spp)+parseInt(r.infaq||0))}</td></tr>
-                        </tbody>
-                    </table>
-                    <div style="margin-top: 40px; text-align: right; font-size: 14px;">
-                        <p>Penerima / Tata Usaha</p>
-                        <br><br><br>
-                        <p><b>( Admin Keuangan )</b></p>
-                    </div>
-                </div>
-            `;
-            document.getElementById('print-area').innerHTML = html;
-            window.print();
-        }
-
-        // --- ABSENSI & GEOFENCING ---
-        function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; // Radius bumi meter
-            const φ1 = lat1 * Math.PI/180;
-            const φ2 = lat2 * Math.PI/180;
-            const Δφ = (lat2-lat1) * Math.PI/180;
-            const Δλ = (lon2-lon1) * Math.PI/180;
-            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c; 
-        }
-
+        // --- ABSENSI ---
         function absenGuruMasuk() {
-            if (!navigator.geolocation) { tampilkanNotif('Geolocation tidak didukung browser ini!'); return; }
+            if(!loggedInSantri || currentRole !== 'guru') { tampilkanNotif('Hanya akun Guru yang dapat melakukan absensi!'); return; }
+            const now = new Date();
+            const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
+            const tglStr = now.toLocaleDateString('id-ID');
             
-            const btn = document.getElementById('btn-absen-guru');
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mendeteksi Lokasi...`;
-            btn.disabled = true;
+            let status = 'Hadir On Time';
+            let telat = 0;
+            let potongan = 0;
 
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    let lat = position.coords.latitude;
-                    let lng = position.coords.longitude;
-                    
-                    let targetLat = parseFloat(dataSettings.geoLat);
-                    let targetLng = parseFloat(dataSettings.geoLng);
-                    let maxRadius = parseInt(dataSettings.geoRadius);
-                    
-                    let distance = getDistance(lat, lng, targetLat, targetLng);
-                    
-                    if (distance > maxRadius) {
-                        tampilkanNotif(`Absen Gagal! Anda berjarak ${Math.round(distance)}M. Maksimal ${maxRadius}M.`);
-                        btn.innerHTML = `<i class="fa-solid fa-fingerprint"></i> Lakukan Absensi Masuk`;
-                        btn.disabled = false;
-                        return;
-                    }
+            const [jMasukH, jMasukM] = (dataSettings.jamMasuk || '07:30').split(':').map(Number);
+            const nowMins = now.getHours() * 60 + now.getMinutes();
+            const targetMins = jMasukH * 60 + jMasukM;
 
-                    // Proses waktu absen
-                    let now = new Date();
-                    let waktuStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                    let tglStr = now.toLocaleDateString('id-ID');
-                    
-                    let [jamMasuk, minMasuk] = dataSettings.jamMasuk.split(':');
-                    let targetTime = new Date(now); targetTime.setHours(jamMasuk, minMasuk, 0);
-                    
-                    let selisihMs = now - targetTime;
-                    let telatMenit = selisihMs > 0 ? Math.floor(selisihMs / 60000) : 0;
-                    let potongan = telatMenit * parseInt(dataSettings.potongan || 0);
+            if(nowMins > targetMins) {
+                telat = nowMins - targetMins;
+                status = 'Terlambat';
+                potongan = telat * (parseInt(dataSettings.potongan) || 0);
+            }
 
-                    absenGuruRecord.push({ nama: loggedInSantri.nama, tgl: tglStr, waktu: waktuStr, status: 'Hadir', telat: telatMenit, potongan: potongan });
-                    saveToFirebase('rutasy_absen_guru', absenGuruRecord);
-                    
-                    tampilkanNotif(`Berhasil Absen! Jarak akurasi: ${Math.round(distance)} Meter.`);
-                    renderAbsenGuruPribadi();
-                    btn.innerHTML = `<i class="fa-solid fa-check"></i> Sudah Absen Hari Ini`;
-                },
-                (error) => {
-                    tampilkanNotif('Gagal mengambil lokasi. Izinkan akses GPS!');
-                    btn.innerHTML = `<i class="fa-solid fa-fingerprint"></i> Lakukan Absensi Masuk`;
-                    btn.disabled = false;
-                },
-                { enableHighAccuracy: true }
-            );
+            const rec = { nama: loggedInSantri.nama, tgl: tglStr + ' ' + jamStr, status, telat, potongan };
+            absenGuruRecord.unshift(rec);
+            localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
+            saveFirebase('absen_guru', absenGuruRecord);
+            renderAbsenGuruPribadi();
+            renderAbsenGuruGlobal();
+            tampilkanNotif(`Absensi Berhasil: ${status}`);
         }
 
         function renderAbsenGuruPribadi() {
             const tbody = document.querySelector('#table-absen-guru-pribadi tbody');
-            if(!tbody || currentRole !== 'guru' || !loggedInSantri) return;
+            if(!tbody) return;
             tbody.innerHTML = '';
-            
-            let myRecord = absenGuruRecord.filter(a => a.nama === loggedInSantri.nama).reverse();
-            myRecord.forEach(a => {
-                let statusColor = a.telat > 0 ? 'text-yellow-600' : 'text-green-600';
+            if(!loggedInSantri) return;
+
+            const userRecs = absenGuruRecord.filter(r => r.nama === loggedInSantri.nama);
+            if(userRecs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-2 text-center text-gray-500">Belum ada riwayat absen.</td></tr>`;
+                return;
+            }
+            userRecs.forEach((r, idx) => {
                 tbody.innerHTML += `
                     <tr class="border-b">
-                        <td class="p-2">${a.tgl} | ${a.waktu}</td>
-                        <td class="p-2 font-bold ${statusColor}">${a.telat > 0 ? 'Terlambat' : 'Tepat Waktu'}</td>
-                        <td class="p-2">${a.telat} Menit</td>
-                        <td class="p-2 text-red-600">Rp ${formatRupiah(a.potongan)}</td>
-                        <td class="p-2 text-green-600 font-bold"><i class="fa-solid fa-check"></i> Valid</td>
+                        <td class="p-2">${r.tgl}</td>
+                        <td class="p-2"><span class="${r.status === 'Terlambat' ? 'text-red-600' : 'text-green-600'} font-bold">${r.status}</span></td>
+                        <td class="p-2">${r.telat} mnt</td>
+                        <td class="p-2 text-red-600">Rp ${formatRupiah(r.potongan)}</td>
+                        <td class="p-2"><button onclick="hapusAbsenGuru(${idx})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
                     </tr>
                 `;
+            });
+        }
+
+        function hapusAbsenGuru(index) {
+            bukaKonfirmasi('Hapus Absen', 'Yakin ingin menghapus catatan absen ini?', () => {
+                absenGuruRecord.splice(index, 1);
+                localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
+                saveFirebase('absen_guru', absenGuruRecord);
+                renderAbsenGuruPribadi();
+                renderAbsenGuruGlobal();
+                tampilkanNotif('Catatan Absen Dihapus!');
             });
         }
 
@@ -1860,114 +1771,111 @@ listenFirebaseData();
             const tbody = document.querySelector('#table-absen-guru-global tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
-            let records = [...absenGuruRecord].reverse();
-            records.forEach(a => {
-                let statusColor = a.telat > 0 ? 'text-yellow-600' : 'text-green-600';
+            if(absenGuruRecord.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-2 text-center text-gray-500">Belum ada data absensi guru.</td></tr>`;
+                return;
+            }
+            absenGuruRecord.forEach((r, idx) => {
                 tbody.innerHTML += `
                     <tr class="border-b">
-                        <td class="p-2 font-bold">${a.nama}</td>
-                        <td class="p-2">${a.tgl} | ${a.waktu}</td>
-                        <td class="p-2 font-bold ${statusColor}">${a.telat > 0 ? 'Terlambat' : 'Tepat Waktu'}</td>
-                        <td class="p-2">${a.telat} Menit</td>
-                        <td class="p-2 text-red-600">Rp ${formatRupiah(a.potongan)}</td>
-                        <td class="p-2 text-green-600 font-bold"><i class="fa-solid fa-location-dot"></i> Tercatat (GPS)</td>
+                        <td class="p-2 font-bold">${r.nama}</td>
+                        <td class="p-2">${r.tgl}</td>
+                        <td class="p-2"><span class="${r.status === 'Terlambat' ? 'text-red-600' : 'text-green-600'} font-bold">${r.status}</span></td>
+                        <td class="p-2">${r.telat} mnt</td>
+                        <td class="p-2 text-red-600">Rp ${formatRupiah(r.potongan)}</td>
+                        <td class="p-2"><button onclick="hapusAbsenGuru(${idx})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
                     </tr>
                 `;
             });
         }
 
         function simpanAbsenPekanan() {
-            const nama = document.getElementById('input-nama-absen').value;
+            const namaInput = document.getElementById('input-nama-absen').value.trim();
             const pekan = document.getElementById('absen-pekan').value;
-            if(!nama) { tampilkanNotif('Pilih nama santri terlebih dahulu!'); return; }
+            if(!namaInput) { tampilkanNotif('Pilih/Cari Nama Santri terlebih dahulu!'); return; }
 
-            const senin = document.querySelector('.val-senin').value;
-            const selasa = document.querySelector('.val-selasa').value;
-            const rabu = document.querySelector('.val-rabu').value;
-            const kamis = document.querySelector('.val-kamis').value;
-            const jumat = document.querySelector('.val-jumat').value;
+            const sen = document.querySelector('.val-senin').value;
+            const sel = document.querySelector('.val-selasa').value;
+            const rab = document.querySelector('.val-rabu').value;
+            const kam = document.querySelector('.val-kamis').value;
+            const jum = document.querySelector('.val-jumat').value;
 
-            if (!riwayatAbsensi[nama]) riwayatAbsensi[nama] = {};
+            if(!riwayatAbsensi[namaInput]) riwayatAbsensi[namaInput] = [];
             
-            let tglSimpan = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-            let key = `${tglSimpan} - ${pekan}`;
+            riwayatAbsensi[namaInput].push({
+                pekan,
+                tgl: new Date().toLocaleDateString('id-ID'),
+                detail: { Senin: sen, Selasa: sel, Rabu: rab, Kamis: kam, Jumat: jum }
+            });
 
-            riwayatAbsensi[nama][key] = { senin, selasa, rabu, kamis, jumat };
-            saveToFirebase('rutasy_absen', riwayatAbsensi);
-            
-            document.getElementById('input-nama-absen').value = '';
-            tampilkanNotif('Absensi Pekanan Santri Tersimpan!');
+            localStorage.setItem('rutasy_absen', JSON.stringify(riwayatAbsensi));
+            saveFirebase('absen', riwayatAbsensi);
             renderTabelRiwayatAbsen();
+            document.getElementById('input-nama-absen').value = '';
+            tampilkanNotif('Absensi Pekanan Santri Berhasil Disimpan!');
         }
 
         function renderTabelRiwayatAbsen() {
             const tbody = document.querySelector('#table-riwayat-absen tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
-            
-            let filterKelompok = document.getElementById('filter-absen-kelompok')?.value;
-            let filterNama = document.getElementById('cari-riwayat-absen')?.value.toLowerCase();
 
-            let santriRender = dataSantri.filter(s => s.status === 'Aktif');
-            if(filterKelompok) santriRender = santriRender.filter(s => s.guru === filterKelompok);
-            if(filterNama) santriRender = santriRender.filter(s => s.nama.toLowerCase().includes(filterNama));
-            
-            // Jika guru yang login, paksa filter berdasarkan nama guru tersebut
-            if (currentRole === 'guru' && loggedInSantri) {
-                santriRender = santriRender.filter(s => s.guru === loggedInSantri.nama);
-            }
+            const qNama = document.getElementById('cari-riwayat-absen') ? document.getElementById('cari-riwayat-absen').value.toLowerCase() : '';
+            const qKelompok = document.getElementById('filter-absen-kelompok') ? document.getElementById('filter-absen-kelompok').value.toLowerCase() : '';
 
-            santriRender.forEach(s => {
-                let absenCount = riwayatAbsensi[s.nama] ? Object.keys(riwayatAbsensi[s.nama]).length : 0;
-                tbody.innerHTML += `
-                    <tr class="border-b">
-                        <td class="p-3 font-semibold">${s.nama}</td>
-                        <td class="p-3">${s.guru}</td>
-                        <td class="p-3">
-                            <button onclick="bukaDetailAbsen('${s.nama}')" class="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded text-xs transition font-bold">
-                                <i class="fa-solid fa-eye"></i> Detail (${absenCount} Pekan)
-                            </button>
-                        </td>
-                    </tr>
-                `;
+            dataSantri.forEach(s => {
+                if(currentRole === 'ortu' && loggedInSantri && s.nama.toLowerCase() !== loggedInSantri.nama.toLowerCase()) return;
+                if(currentRole === 'guru' && loggedInSantri && s.guru.toLowerCase() !== loggedInSantri.nama.toLowerCase()) return;
+
+                let matchNama = s.nama.toLowerCase().includes(qNama);
+                let matchKelompok = qKelompok === '' || s.guru.toLowerCase() === qKelompok;
+
+                if(matchNama && matchKelompok) {
+                    tbody.innerHTML += `
+                        <tr class="border-b">
+                            <td class="p-3 font-medium">${s.nama}</td>
+                            <td class="p-3 text-gray-600">${s.guru}</td>
+                            <td class="p-3"><button onclick="lihatDetailAbsen('${s.nama}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold text-xs hover:bg-blue-200"><i class="fa-solid fa-eye"></i> Detail Absen</button></td>
+                        </tr>
+                    `;
+                }
             });
         }
 
-        function bukaDetailAbsen(nama) {
+        function lihatDetailAbsen(nama) {
             document.getElementById('modal-nama-santri').innerText = nama;
-            const list = document.getElementById('modal-absen-list');
-            list.innerHTML = '';
-            
-            if(riwayatAbsensi[nama]) {
-                Object.keys(riwayatAbsensi[nama]).forEach(pekan => {
-                    let d = riwayatAbsensi[nama][pekan];
-                    let parseWarna = (val) => val === 'Hadir' ? 'text-green-600' : (val === 'Izin' ? 'text-yellow-600' : 'text-red-600');
-                    list.innerHTML += `
-                        <li class="py-3">
-                            <p class="font-bold text-primary mb-1">${pekan}</p>
-                            <div class="grid grid-cols-5 text-center text-xs bg-gray-50 rounded p-2">
-                                <div>Sen<br><span class="font-bold ${parseWarna(d.senin)}">${d.senin}</span></div>
-                                <div>Sel<br><span class="font-bold ${parseWarna(d.selasa)}">${d.selasa}</span></div>
-                                <div>Rab<br><span class="font-bold ${parseWarna(d.rabu)}">${d.rabu}</span></div>
-                                <div>Kam<br><span class="font-bold ${parseWarna(d.kamis)}">${d.kamis}</span></div>
-                                <div>Jum<br><span class="font-bold ${parseWarna(d.jumat)}">${d.jumat}</span></div>
+            const listEl = document.getElementById('modal-absen-list');
+            listEl.innerHTML = '';
+
+            const recs = riwayatAbsensi[nama] || [];
+            if(recs.length === 0) {
+                listEl.innerHTML = `<li class="p-3 text-center text-gray-500 italic">Belum ada riwayat absensi untuk santri ini.</li>`;
+            } else {
+                recs.forEach(r => {
+                    let d = r.detail;
+                    listEl.innerHTML += `
+                        <li class="py-2">
+                            <div class="flex justify-between font-bold text-gray-700"><span>${r.pekan}</span><span class="text-xs text-gray-500">${r.tgl}</span></div>
+                            <div class="grid grid-cols-5 gap-1 text-center text-xs mt-1">
+                                <span class="p-1 rounded bg-gray-100">Sen: ${d.Senin}</span>
+                                <span class="p-1 rounded bg-gray-100">Sel: ${d.Selasa}</span>
+                                <span class="p-1 rounded bg-gray-100">Rab: ${d.Rabu}</span>
+                                <span class="p-1 rounded bg-gray-100">Kam: ${d.Kamis}</span>
+                                <span class="p-1 rounded bg-gray-100">Jum: ${d.Jumat}</span>
                             </div>
                         </li>
                     `;
                 });
-            } else {
-                list.innerHTML = `<li class="py-3 text-center text-gray-500">Belum ada riwayat absensi.</li>`;
             }
             document.getElementById('modal-detail-absen').classList.remove('hidden');
         }
 
-        // --- PROGRES HAFALAN & TAHASIN ---
+        // --- PROGRES & UJIAN ---
         function sesuaikanFormProgres() {
-            let kat = document.getElementById('prog-kategori').value;
-            let inpSurat = document.getElementById('prog-surat');
-            let selSurat = document.getElementById('prog-surat-select');
-            
-            if (kat === 'Iqro') {
+            const kat = document.getElementById('prog-kategori').value;
+            const inpSurat = document.getElementById('prog-surat');
+            const selSurat = document.getElementById('prog-surat-select');
+            if(kat === 'Iqro') {
                 inpSurat.classList.add('hidden');
                 selSurat.classList.remove('hidden');
             } else {
@@ -1977,327 +1885,293 @@ listenFirebaseData();
         }
 
         function simpanProgresSantri() {
-            const nama = document.getElementById('prog-nama').value;
+            const nama = document.getElementById('prog-nama').value.trim();
             const pekan = document.getElementById('prog-pekan').value;
             const hari = document.getElementById('prog-hari').value;
             const kategori = document.getElementById('prog-kategori').value;
-            const surat = kategori === 'Iqro' ? document.getElementById('prog-surat-select').value : document.getElementById('prog-surat').value;
-            const baris = document.getElementById('prog-baris').value;
+            let surat = document.getElementById('prog-surat').value;
+            if(kategori === 'Iqro') surat = document.getElementById('prog-surat-select').value;
+            const baris = parseInt(document.getElementById('prog-baris').value) || 0;
 
-            if(!nama || !surat) { tampilkanNotif('Nama dan Capaian (Surat/Jilid) Wajib diisi!'); return; }
+            if(!nama) { tampilkanNotif('Pilih/Isi Nama Santri!'); return; }
+            if(!surat) { tampilkanNotif('Isi Surat / Jilid!'); return; }
 
-            if (!riwayatProgres[nama]) riwayatProgres[nama] = [];
-            
-            let today = new Date();
-            let tglRaw = today.toISOString().split('T')[0];
-            let tglFormat = today.toLocaleDateString('id-ID');
+            const tgl = new Date().toLocaleDateString('id-ID');
+            const tglRaw = new Date().toISOString().split('T')[0];
 
-            riwayatProgres[nama].push({ tglRaw, tgl: tglFormat, pekan, hari, kategori, surat, baris });
-            saveToFirebase('rutasy_progres_hafalan', riwayatProgres);
+            if(!riwayatProgres[nama]) riwayatProgres[nama] = [];
+            riwayatProgres[nama].push({ tgl, tglRaw, pekan, hari, kategori, surat, baris });
 
-            document.getElementById('prog-nama').value = '';
-            document.getElementById('prog-surat').value = '';
-            document.getElementById('prog-baris').value = '';
-            tampilkanNotif('Progres Belajar Berhasil Disimpan!');
+            localStorage.setItem('rutasy_progres_hafalan', JSON.stringify(riwayatProgres));
+            saveFirebase('progres', riwayatProgres);
             renderTabelProgres();
-            renderGlobalCharts();
+            if(chartsRendered) renderGlobalCharts();
+
+            document.getElementById('prog-baris').value = '';
+            tampilkanNotif('Progres Hafalan Santri Berhasil Disimpan!');
         }
 
-        function renderTabelProgres(search = '') {
+        function renderTabelProgres(qVal = '') {
             const tbody = document.querySelector('#table-riwayat-progres tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
+            const qNama = qVal.toLowerCase();
 
-            let santriRender = dataSantri.filter(s => s.status === 'Aktif');
-            if (currentRole === 'guru' && loggedInSantri) {
-                santriRender = santriRender.filter(s => s.guru === loggedInSantri.nama);
-            }
-            if (search) {
-                santriRender = santriRender.filter(s => s.nama.toLowerCase().includes(search.toLowerCase()));
-            }
+            dataSantri.forEach(s => {
+                if(currentRole === 'ortu' && loggedInSantri && s.nama.toLowerCase() !== loggedInSantri.nama.toLowerCase()) return;
+                if(currentRole === 'guru' && loggedInSantri && s.guru.toLowerCase() !== loggedInSantri.nama.toLowerCase()) return;
 
-            santriRender.forEach(s => {
-                let progCount = riwayatProgres[s.nama] ? riwayatProgres[s.nama].length : 0;
-                tbody.innerHTML += `
-                    <tr class="border-b">
-                        <td class="p-3 font-semibold">${s.nama}</td>
-                        <td class="p-3">${s.guru}</td>
-                        <td class="p-3">
-                            <button onclick="bukaDetailProgres('${s.nama}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs mr-2 hover:bg-blue-200"><i class="fa-solid fa-list"></i> Riwayat (${progCount})</button>
-                            <button onclick="bukaGrafikAnak('${s.nama}')" class="bg-green-100 text-green-700 px-3 py-1 rounded text-xs hover:bg-green-200"><i class="fa-solid fa-chart-line"></i> Grafik</button>
-                        </td>
-                    </tr>
-                `;
+                if(s.nama.toLowerCase().includes(qNama)) {
+                    tbody.innerHTML += `
+                        <tr class="border-b">
+                            <td class="p-3 font-medium">${s.nama}</td>
+                            <td class="p-3 text-gray-600">${s.guru}</td>
+                            <td class="p-3 flex gap-2">
+                                <button onclick="lihatDetailProgres('${s.nama}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold text-xs hover:bg-blue-200"><i class="fa-solid fa-list"></i> Detail Progres</button>
+                                <button onclick="lihatGrafikProgres('${s.nama}')" class="bg-green-100 text-green-700 px-3 py-1 rounded font-bold text-xs hover:bg-green-200"><i class="fa-solid fa-chart-line"></i> Grafik</button>
+                            </td>
+                        </tr>
+                    `;
+                }
             });
         }
 
-        function bukaDetailProgres(nama) {
+        function lihatDetailProgres(nama) {
             document.getElementById('modal-progres-nama').innerText = nama;
             const tbody = document.getElementById('modal-progres-list');
             tbody.innerHTML = '';
-            
-            if(riwayatProgres[nama] && riwayatProgres[nama].length > 0) {
-                [...riwayatProgres[nama]].reverse().forEach(p => {
-                    let colorKat = p.kategori === 'Tahfidz' ? 'text-green-600' : (p.kategori==='Tahsin'?'text-blue-600':'text-orange-600');
+
+            const list = riwayatProgres[nama] || [];
+            if(list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-500 italic">Belum ada progres tercatat.</td></tr>`;
+            } else {
+                list.forEach(p => {
                     tbody.innerHTML += `
                         <tr class="border-b">
-                            <td class="p-2 text-xs">${p.tgl}<br><span class="text-gray-400">${p.pekan} - ${p.hari}</span></td>
-                            <td class="p-2 font-bold ${colorKat}">${p.kategori}</td>
+                            <td class="p-2">${p.tgl} (${p.hari})</td>
+                            <td class="p-2 font-bold">${p.kategori}</td>
                             <td class="p-2">${p.surat}</td>
-                            <td class="p-2">${p.baris ? p.baris + ' Baris' : '-'}</td>
+                            <td class="p-2 font-semibold text-primary">${p.baris} Baris</td>
                         </tr>
                     `;
                 });
-            } else {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Belum ada progres.</td></tr>`;
             }
             document.getElementById('modal-detail-progres').classList.remove('hidden');
         }
 
-        let chartAnakInstance;
-        function bukaGrafikAnak(nama) {
-            document.getElementById('modal-grafik-nama').innerText = 'Grafik Kinerja 7 Hari Terakhir: ' + nama;
-            const ctx = document.getElementById('canvas-grafik-anak').getContext('2d');
-            
-            if(chartAnakInstance) chartAnakInstance.destroy();
+        let chartAnakInstance = null;
+        function lihatGrafikProgres(nama) {
+            document.getElementById('modal-grafik-nama').innerText = nama;
+            const list = riwayatProgres[nama] || [];
 
-            let labels = [];
-            let data = [];
-            let today = new Date();
-
-            // Setup chart data seminggu
-            for(let i = 6; i >= 0; i--) {
-                let d = new Date(today);
-                d.setDate(today.getDate() - i);
-                labels.push(d.toLocaleDateString('id-ID', { weekday:'short' }));
-                
-                let val = 0;
-                let dateStr = d.toLocaleDateString('id-ID');
-                let isoStr = d.toISOString().split('T')[0];
-                
-                if(riwayatProgres[nama]) {
-                    riwayatProgres[nama].forEach(p => {
-                        if(p.tgl === dateStr || p.tglRaw === isoStr) {
-                            val += parseInt(p.baris || 1);
-                        }
-                    });
-                }
-                data.push(val);
+            const ctx = document.getElementById('canvas-grafik-anak')?.getContext('2d');
+            if(ctx) {
+                if(chartAnakInstance) chartAnakInstance.destroy();
+                chartAnakInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: list.map((p, i) => `Sektor ${i+1} (${p.hari})`),
+                        datasets: [{
+                            label: 'Capaian (Baris)',
+                            data: list.map(p => p.baris),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
             }
-
-            chartAnakInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Total Capaian (Baris/Halaman)',
-                        data: data,
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks:{precision:0} } } }
-            });
-
             document.getElementById('modal-grafik-progres').classList.remove('hidden');
         }
 
-        // --- DASHBOARD ORTU ---
-        let chartOrtuDashboardInst;
         function renderChartOrtuDashboard() {
-            if(currentRole !== 'ortu' || !loggedInSantri) return;
+            if(!loggedInSantri) return;
             const ctx = document.getElementById('chart-ortu-hafalan')?.getContext('2d');
             if(!ctx) return;
-            
-            if(chartOrtuDashboardInst) chartOrtuDashboardInst.destroy();
-            
-            let nama = loggedInSantri.nama;
-            let labels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-            let data = [0,0,0,0,0,0,0];
-            let today = new Date();
-            
-            for(let i = 6; i >= 0; i--) {
-                let d = new Date(today); d.setDate(today.getDate() - i);
-                let dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1; 
-                let dateStr = d.toLocaleDateString('id-ID');
-                let isoStr = d.toISOString().split('T')[0];
-                
-                if(riwayatProgres[nama]) {
-                    riwayatProgres[nama].forEach(p => {
-                        if(p.tgl === dateStr || p.tglRaw === isoStr) data[dayIdx] += parseInt(p.baris || 1);
-                    });
-                }
-            }
-
-            chartOrtuDashboardInst = new Chart(ctx, {
+            const list = riwayatProgres[loggedInSantri.nama] || [];
+            new Chart(ctx, {
                 type: 'bar',
-                data: { labels: labels, datasets: [{ label: 'Capaian Baris/Halaman', data: data, backgroundColor: '#047857', borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks:{precision:0} } } }
+                data: {
+                    labels: list.slice(-5).map(p => p.hari || p.tgl),
+                    datasets: [{
+                        label: 'Capaian (Baris)',
+                        data: list.slice(-5).map(p => p.baris),
+                        backgroundColor: '#047857'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
         // --- KALENDER AKADEMIK ---
+        function tambahEventKalender() {
+            const nama = document.getElementById('input-kal-nama').value;
+            const pic = document.getElementById('input-kal-pic').value;
+            const tgl = document.getElementById('input-kal-tgl').value;
+
+            if(!nama || !tgl) { tampilkanNotif('Isi Nama Program dan Tanggal!'); return; }
+
+            const id = Date.now();
+            eventsKalender.push({ id, nama, pic, tgl });
+            localStorage.setItem('rutasy_kalender', JSON.stringify(eventsKalender));
+            saveFirebase('kalender', eventsKalender);
+            renderKalenderInit();
+            updateNotifikasiAkademik();
+
+            document.getElementById('input-kal-nama').value = '';
+            document.getElementById('input-kal-pic').value = '';
+            document.getElementById('input-kal-tgl').value = '';
+            tampilkanNotif('Program Akademik Berhasil Ditambahkan!');
+        }
+
         function renderKalenderInit() {
-            const grid = document.getElementById('kalender-grid-bulanan');
-            const namabulan = document.getElementById('nama-bulan-ini');
-            const listAgenda = document.getElementById('list-kalender');
-            
-            if(!grid) return;
-            
-            let date = new Date();
-            let month = date.getMonth();
-            let year = date.getFullYear();
-            
-            namabulan.innerText = date.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
-            
-            let firstDay = new Date(year, month, 1).getDay();
-            let daysInMonth = new Date(year, month + 1, 0).getDate();
-            
-            grid.innerHTML = '';
-            // Empty slots
-            for(let i = 0; i < firstDay; i++) { grid.innerHTML += `<div></div>`; }
-            
-            // Days
-            for(let i = 1; i <= daysInMonth; i++) {
-                let cekTglIso = new Date(year, month, i).toISOString().split('T')[0];
-                let hasEvent = eventsKalender.find(e => e.tgl === cekTglIso);
-                
-                if(hasEvent) {
-                    grid.innerHTML += `<div class="calendar-day event" onclick="bukaDetailKalender('${hasEvent.tgl}')">${i}</div>`;
+            const listEl = document.getElementById('list-kalender');
+            if(listEl) {
+                listEl.innerHTML = '';
+                if(eventsKalender.length === 0) {
+                    listEl.innerHTML = `<li class="p-3 text-center text-gray-500 italic">Belum ada agenda akademik.</li>`;
                 } else {
-                    grid.innerHTML += `<div class="calendar-day">${i}</div>`;
+                    eventsKalender.sort((a,b) => a.tgl.localeCompare(b.tgl)).forEach(e => {
+                        listEl.innerHTML += `
+                            <li class="p-3 flex justify-between items-center hover:bg-gray-50 cursor-pointer" onclick="bukaDetailKalender(${e.id})">
+                                <div>
+                                    <p class="font-bold text-gray-800">${e.nama}</p>
+                                    <p class="text-xs text-gray-500"><i class="fa-regular fa-user mr-1"></i> PIC: ${e.pic || '-'}</p>
+                                </div>
+                                <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold">${e.tgl}</span>
+                            </li>
+                        `;
+                    });
                 }
             }
 
-            // List Terdekat
-            listAgenda.innerHTML = '';
-            let todayIso = date.toISOString().split('T')[0];
-            let upcoming = eventsKalender.filter(e => e.tgl >= todayIso).sort((a,b) => a.tgl.localeCompare(b.tgl));
-            
-            if(upcoming.length === 0) {
-                listAgenda.innerHTML = `<li class="p-3 text-center text-gray-500">Tidak ada agenda terdekat</li>`;
-            } else {
-                upcoming.slice(0, 5).forEach(e => {
-                    listAgenda.innerHTML += `
-                        <li class="p-3 hover:bg-gray-50 transition">
-                            <p class="font-bold text-primary">${e.nama}</p>
-                            <p class="text-xs text-gray-600"><i class="fa-regular fa-calendar mr-1"></i> ${e.tgl} | <i class="fa-regular fa-user ml-2 mr-1"></i> PIC: ${e.pic}</p>
-                        </li>
-                    `;
-                });
+            const gridEl = document.getElementById('kalender-grid-bulanan');
+            const namaBulanEl = document.getElementById('nama-bulan-ini');
+            if(gridEl) {
+                gridEl.innerHTML = '';
+                const now = new Date();
+                if(namaBulanEl) namaBulanEl.innerText = now.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+
+                const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+
+                for(let i = 0; i < firstDay; i++) {
+                    gridEl.innerHTML += `<div class="calendar-day opacity-0"></div>`;
+                }
+
+                for(let d = 1; d <= daysInMonth; d++) {
+                    const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+                    const dayStr = String(d).padStart(2, '0');
+                    const formattedDate = `${now.getFullYear()}-${monthStr}-${dayStr}`;
+
+                    const hasEvent = eventsKalender.some(e => e.tgl === formattedDate);
+                    const eventClass = hasEvent ? 'event' : '';
+
+                    gridEl.innerHTML += `<div class="calendar-day ${eventClass}" onclick="${hasEvent ? `bukaDetailKalenderTgl('${formattedDate}')` : ''}">${d}</div>`;
+                }
             }
-            updateNotifikasiAkademik();
         }
 
-        function tambahEventKalender() {
-            let nama = document.getElementById('input-kal-nama').value;
-            let pic = document.getElementById('input-kal-pic').value;
-            let tgl = document.getElementById('input-kal-tgl').value;
-            
-            if(!nama || !tgl) { tampilkanNotif('Nama Agenda dan Tanggal wajib diisi!'); return; }
-            
-            eventsKalender.push({ nama, pic, tgl });
-            saveToFirebase('rutasy_kalender', eventsKalender);
-            
-            document.getElementById('input-kal-nama').value = ''; document.getElementById('input-kal-pic').value = ''; document.getElementById('input-kal-tgl').value = '';
-            tampilkanNotif('Agenda Berhasil Ditambahkan!');
-            renderKalenderInit();
+        function bukaDetailKalender(id) {
+            const ev = eventsKalender.find(e => e.id === id);
+            if(!ev) return;
+            document.getElementById('modal-kalender-tgl').innerText = `Detail Agenda (${ev.tgl})`;
+            document.getElementById('modal-kalender-content').innerHTML = `
+                <p><b>Nama Program:</b> ${ev.nama}</p>
+                <p><b>PIC / Penanggung Jawab:</b> ${ev.pic || '-'}</p>
+            `;
+            document.getElementById('modal-detail-kalender').classList.remove('hidden');
         }
 
-        function bukaDetailKalender(tgl) {
-            let events = eventsKalender.filter(e => e.tgl === tgl);
-            document.getElementById('modal-kalender-tgl').innerText = `Agenda Tanggal: ${tgl}`;
-            let content = document.getElementById('modal-kalender-content');
-            content.innerHTML = '';
-            
-            events.forEach(e => {
-                content.innerHTML += `
-                    <div class="border-l-4 border-primary pl-3">
-                        <p class="font-bold text-gray-800">${e.nama}</p>
-                        <p class="text-xs text-gray-500">Penanggung Jawab: ${e.pic || '-'}</p>
-                    </div>
-                `;
+        function bukaDetailKalenderTgl(tglStr) {
+            const evs = eventsKalender.filter(e => e.tgl === tglStr);
+            if(evs.length === 0) return;
+            document.getElementById('modal-kalender-tgl').innerText = `Agenda Tanggal ${tglStr}`;
+            let html = '';
+            evs.forEach(ev => {
+                html += `<div class="border-b pb-2 mb-2"><p><b>Program:</b> ${ev.nama}</p><p><b>PIC:</b> ${ev.pic || '-'}</p></div>`;
             });
+            document.getElementById('modal-kalender-content').innerHTML = html;
             document.getElementById('modal-detail-kalender').classList.remove('hidden');
         }
 
         // --- HAFLAH ---
-        function renderSelectHaflahSantri() {
-            const sel = document.getElementById('haflah-nama-select');
-            if(!sel) return;
-            sel.innerHTML = '<option value="">Pilih Santri (Dari Database Entitas)</option>';
-            dataSantri.filter(s => s.status === 'Aktif').forEach(s => {
-                sel.innerHTML += `<option value="${s.nama}">${s.nis} - ${s.nama}</option>`;
-            });
-        }
-
         function simpanHaflah() {
-            let thn = document.getElementById('haflah-tahun').value;
-            let nama = document.getElementById('haflah-nama-select').value;
-            let total = document.getElementById('haflah-total').value;
-            let nilai = document.getElementById('haflah-nilai').value;
+            const thn = document.getElementById('haflah-tahun').value;
+            const nama = document.getElementById('haflah-nama-select').value;
+            const total = document.getElementById('haflah-total').value;
+            const nilai = document.getElementById('haflah-nilai').value;
 
-            if(!thn || !nama || !total) { tampilkanNotif('Harap lengkapi semua isian!'); return; }
-            
-            // Ubah status di database utama
-            let idx = dataSantri.findIndex(s => s.nama === nama);
-            if(idx !== -1) {
-                dataSantri[idx].status = 'Alumni';
-                saveToFirebase('rutasy_santri', dataSantri);
+            if(!thn || !nama) { tampilkanNotif('Pilih Tahun Angkatan dan Santri!'); return; }
+
+            const id = Date.now();
+            dataHaflah.push({ id, thn, nama, total, nilai });
+
+            let s = dataSantri.find(x => x.nama === nama);
+            if(s) {
+                s.status = 'Alumni';
+                localStorage.setItem('rutasy_santri', JSON.stringify(dataSantri));
+                saveFirebase('santri', dataSantri);
+                renderSantri();
             }
 
-            dataHaflah.push({ tahun: thn, nama, hafalan: total, nilai });
-            saveToFirebase('rutasy_haflah', dataHaflah);
-            
-            tampilkanNotif(`Santri ${nama} resmi diluluskan!`);
-            document.getElementById('haflah-total').value = ''; document.getElementById('haflah-nilai').value = '';
-            renderTabelHaflah(); renderSantri();
+            localStorage.setItem('rutasy_haflah', JSON.stringify(dataHaflah));
+            saveFirebase('haflah', dataHaflah);
+            renderTabelHaflah();
+
+            document.getElementById('haflah-total').value = '';
+            document.getElementById('haflah-nilai').value = '';
+            tampilkanNotif('Data Alumni Haflah Berhasil Disimpan!');
         }
 
         function renderTabelHaflah() {
             const tbody = document.getElementById('table-haflah-body');
             if(!tbody) return;
             tbody.innerHTML = '';
-            
-            dataHaflah.sort((a, b) => b.tahun - a.tahun).forEach((h, idx) => {
+
+            if(dataHaflah.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-gray-500 italic">Belum ada data haflah/alumni.</td></tr>`;
+                return;
+            }
+
+            dataHaflah.forEach((h, idx) => {
                 tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-3 font-bold text-gray-600">${h.tahun}</td>
-                        <td class="p-3 text-primary font-bold"><i class="fa-solid fa-graduation-cap mr-1"></i> ${h.nama}</td>
-                        <td class="p-3">${h.hafalan}</td>
-                        <td class="p-3 font-bold">${h.nilai}</td>
+                    <tr class="border-b">
+                        <td class="p-3 font-bold text-primary">Angkatan ${h.thn}</td>
+                        <td class="p-3 font-medium">${h.nama}</td>
+                        <td class="p-3">${h.total || '-'}</td>
+                        <td class="p-3 font-bold text-blue-600">${h.nilai || '-'}</td>
                         <td class="p-3 btn-admin-only"><button onclick="hapusHaflah(${idx})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
                     </tr>
                 `;
             });
         }
-        
-        function hapusHaflah(idx) {
-            bukaKonfirmasi('Hapus Data Lulusan', 'Yakin menghapus data Haflah ini?', () => {
-                dataHaflah.splice(idx, 1);
-                saveToFirebase('rutasy_haflah', dataHaflah);
+
+        function hapusHaflah(index) {
+            bukaKonfirmasi('Hapus Haflah', 'Yakin ingin menghapus data haflah ini?', () => {
+                dataHaflah.splice(index, 1);
+                localStorage.setItem('rutasy_haflah', JSON.stringify(dataHaflah));
+                saveFirebase('haflah', dataHaflah);
                 renderTabelHaflah();
-                tampilkanNotif('Data Lulusan Dihapus.');
+                tampilkanNotif('Data Haflah Dihapus!');
             });
         }
 
-        // --- PENGATURAN GLOBAL ---
+        // --- SETTINGS & RESET ---
         function renderSettings() {
-            document.getElementById('set-jam-masuk').value = dataSettings.jamMasuk || '07:30';
-            document.getElementById('set-batas-absen').value = dataSettings.batasAbsen || '09:00';
-            document.getElementById('set-potongan').value = dataSettings.potongan || '1000';
-            document.getElementById('set-hari-kerja').value = dataSettings.hariKerja || '24';
-            
-            document.getElementById('set-geo-radius').value = dataSettings.geoRadius || '10';
-            document.getElementById('set-geo-lat').value = dataSettings.geoLat || '-3.595196';
-            document.getElementById('set-geo-lng').value = dataSettings.geoLng || '98.672223';
-            
-            document.getElementById('set-pay-bank').value = dataSettings.payBank || '';
-            document.getElementById('set-pay-ewallet').value = dataSettings.payEwallet || '';
-            document.getElementById('set-pay-cash').value = dataSettings.payCash || '';
-            
+            if(document.getElementById('set-jam-masuk')) document.getElementById('set-jam-masuk').value = dataSettings.jamMasuk || '';
+            if(document.getElementById('set-batas-absen')) document.getElementById('set-batas-absen').value = dataSettings.batasAbsen || '';
+            if(document.getElementById('set-potongan')) document.getElementById('set-potongan').value = dataSettings.potongan || '';
+            if(document.getElementById('set-hari-kerja')) document.getElementById('set-hari-kerja').value = dataSettings.hariKerja || '';
+            if(document.getElementById('set-geo-radius')) document.getElementById('set-geo-radius').value = dataSettings.geoRadius || '';
+            if(document.getElementById('set-geo-lat')) document.getElementById('set-geo-lat').value = dataSettings.geoLat || '';
+            if(document.getElementById('set-geo-lng')) document.getElementById('set-geo-lng').value = dataSettings.geoLng || '';
+            if(document.getElementById('set-pay-bank')) document.getElementById('set-pay-bank').value = dataSettings.payBank || '';
+            if(document.getElementById('set-pay-ewallet')) document.getElementById('set-pay-ewallet').value = dataSettings.payEwallet || '';
+            if(document.getElementById('set-pay-cash')) document.getElementById('set-pay-cash').value = dataSettings.payCash || '';
+
             const infoPayment = document.getElementById('ortu-info-payment');
             if(infoPayment) {
                 infoPayment.innerHTML = `
@@ -2321,40 +2195,39 @@ listenFirebaseData();
                 payEwallet: document.getElementById('set-pay-ewallet').value,
                 payCash: document.getElementById('set-pay-cash').value
             };
-            saveToFirebase('rutasy_settings', dataSettings);
-            tampilkanNotif('Pengaturan Global Berhasil Disimpan!');
+            localStorage.setItem('rutasy_settings', JSON.stringify(dataSettings));
+            saveFirebase('settings', dataSettings);
             renderSettings();
+            tampilkanNotif('Pengaturan Global Berhasil Disimpan!');
         }
 
         function deteksiGeofencingOtomatis() {
-            if (!navigator.geolocation) { tampilkanNotif('Geolocation tidak didukung!'); return; }
-            navigator.geolocation.getCurrentPosition((pos) => {
-                document.getElementById('set-geo-lat').value = pos.coords.latitude;
-                document.getElementById('set-geo-lng').value = pos.coords.longitude;
-                tampilkanNotif('Koordinat berhasil ditarik dari GPS saat ini!');
-            }, (err) => {
-                tampilkanNotif('Gagal tarik koordinat. Izinkan akses lokasi.');
-            }, { enableHighAccuracy: true });
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    document.getElementById('set-geo-lat').value = position.coords.latitude;
+                    document.getElementById('set-geo-lng').value = position.coords.longitude;
+                    tampilkanNotif('Lokasi Berhasil Terdeteksi!');
+                }, err => {
+                    tampilkanNotif('Gagal mendeteksi lokasi GPS: ' + err.message);
+                });
+            } else {
+                tampilkanNotif('Browser Anda tidak mendukung Geolocation.');
+            }
         }
 
         function hapusSemuaData() {
-            bukaKonfirmasi('RESET PERMANEN', 'PERINGATAN! Tindakan ini akan menghapus semua database. Tidak dapat dibatalkan. Lanjutkan?', () => {
+            bukaKonfirmasi('RESET TOTAL', 'PERINGATAN! Semua data di sistem & Firebase akan dihapus permanen. Lanjutkan?', () => {
+                localStorage.clear();
                 dataSantri = []; dataGuru = []; dataKeuanganPengajuan = []; dataKeuanganRiwayat = []; dataKeuanganManual = [];
                 riwayatAbsensi = {}; absenGuruRecord = []; riwayatProgres = {}; eventsKalender = []; dataHaflah = [];
                 
-                saveToFirebase('rutasy_santri', dataSantri);
-                saveToFirebase('rutasy_guru', dataGuru);
-                saveToFirebase('rutasy_keu_pengajuan', dataKeuanganPengajuan);
-                saveToFirebase('rutasy_keu_riwayat', dataKeuanganRiwayat);
-                saveToFirebase('rutasy_keu_manual', dataKeuanganManual);
-                saveToFirebase('rutasy_absen', riwayatAbsensi);
-                saveToFirebase('rutasy_absen_guru', absenGuruRecord);
-                saveToFirebase('rutasy_progres_hafalan', riwayatProgres);
-                saveToFirebase('rutasy_kalender', eventsKalender);
-                saveToFirebase('rutasy_haflah', dataHaflah);
-                
-                tampilkanNotif('SEMUA DATA BERHASIL DIRESET!');
-                setTimeout(() => window.location.reload(), 1500);
+                const docs = ['santri','guru','keu_pengajuan','keu_riwayat','keu_manual','settings','absen','absen_guru','progres','kalender','haflah'];
+                docs.forEach(docName => {
+                    saveFirebase(docName, Array.isArray(window['data' + docName]) ? [] : {});
+                });
+
+                renderSemuaData();
+                tampilkanNotif('Semua Data Berhasil Direset Total!');
             });
         }
     </script>
