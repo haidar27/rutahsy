@@ -1,13 +1,16 @@
 const CACHE_NAME = 'rutasy-v1';
 
 self.addEventListener('install', (event) => {
-    self.skipWaiting();
+  // Langsung aktifkan service worker baru
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(self.clients.claim());
+  // Langsung ambil alih kontrol halaman
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
-    // Biarkan request berjalan normal.
+  // Biarkan semua request berjalan normal ke internet (Online Mode)
+  event.respondWith(fetch(event.request));
 });
