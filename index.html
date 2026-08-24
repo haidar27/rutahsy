@@ -1014,9 +1014,12 @@
             localStorage.setItem(key, JSON.stringify(value));
 
             if(rutasyCloudEnabled && rutasyDatabase && !rutasyCloudApplying) {
-                rutasyDatabase.ref(`rutasy/${key}`).set(value).catch((err) => {
-                    console.error(`Gagal menyimpan ${key} ke Firebase:`, err);
-                });
+                rutasyDatabase.ref(`rutasy/${key}`).set(value)
+                    .then(() => console.log(`Firebase sync OK: ${key}`))
+                    .catch((err) => {
+                        console.error(`Gagal menyimpan ${key} ke Firebase:`, err);
+                        tampilkanNotif(`Gagal menyimpan ${key} ke database online.`);
+                    });
             }
         }
 
@@ -1053,39 +1056,49 @@
                     rutasyFirebaseApp = firebase.initializeApp(firebaseConfig);
                 }
 
-                // Auth anonim dipakai hanya untuk memproteksi akses database dari klien yang belum terautentikasi.
-                // Aktifkan Anonymous pada Firebase Console sebelum menggunakan mode ini.
-                await firebase.auth().signInAnonymously();
-
                 rutasyDatabase = firebase.database();
-                rutasyCloudEnabled = true;
+
+                // Coba login anonim terlebih dahulu. Ini dipakai bila Firebase Rules
+                // mensyaratkan request sudah terautentikasi.
+                // Kalau Anonymous Authentication belum diaktifkan, koneksi masih
+                // dicoba tanpa auth supaya project dengan Rules public tetap bisa dipakai.
+                try {
+                    if(firebase.auth) {
+                        await firebase.auth().signInAnonymously();
+                        console.log('Firebase Anonymous Authentication aktif.');
+                    }
+                } catch(authError) {
+                    console.warn('Anonymous Authentication gagal. Lanjut mencoba akses Realtime Database langsung:', authError);
+                }
 
                 const rootRef = rutasyDatabase.ref('rutasy');
+
+                // Jangan menandai cloud aktif sebelum pembacaan pertama benar-benar berhasil.
                 const initialSnapshot = await rootRef.once('value');
+                rutasyCloudEnabled = true;
+
                 const remote = initialSnapshot.val();
 
                 if(remote && typeof remote === 'object') {
-                    // Gunakan data cloud yang sudah ada, sekaligus unggah key lokal yang belum ada di cloud.
+                    // Data cloud adalah sumber utama. Key lokal yang belum ada dimigrasikan ke cloud.
                     rutasyCloudApplying = true;
                     try {
-                        Object.keys(RUTASY_CLOUD_MAP).forEach((key) => {
+                        for(const key of Object.keys(RUTASY_CLOUD_MAP)) {
                             if(Object.prototype.hasOwnProperty.call(remote, key)) {
                                 assignRuntimeStateByKey(key, remote[key]);
                                 localStorage.setItem(key, JSON.stringify(remote[key]));
                             } else {
                                 const localValue = getRuntimeStateByKey(key);
                                 if(localValue !== undefined) {
-                                    rootRef.child(key).set(localValue).catch((err) => {
-                                        console.error(`Gagal migrasi ${key} ke Firebase:`, err);
-                                    });
+                                    await rootRef.child(key).set(localValue);
                                 }
                             }
-                        });
+                        }
                     } finally {
                         rutasyCloudApplying = false;
                     }
                 } else {
-                    // Database cloud masih kosong: data localStorage saat ini dijadikan data awal.
+                    // Cloud kosong: jadikan localStorage sebagai data awal.
                     for(const key of Object.keys(RUTASY_CLOUD_MAP)) {
                         const localValue = getRuntimeStateByKey(key);
                         if(localValue !== undefined) {
@@ -1100,7 +1113,9 @@
                             applyCloudSnapshot(snapshot.val());
                         }
                     }, (error) => {
+                        rutasyCloudEnabled = false;
                         console.error('Firebase realtime listener error:', error);
+                        tampilkanNotif('Koneksi database online terputus. Cek Firebase Rules.');
                     });
                     rutasyCloudListenerAttached = true;
                 }
@@ -1109,7 +1124,9 @@
                 return true;
             } catch(error) {
                 rutasyCloudEnabled = false;
+                rutasyDatabase = null;
                 console.error('Firebase tidak berhasil diaktifkan. Sistem kembali ke localStorage.', error);
+                tampilkanNotif('Database online belum terhubung. Cek Firebase Rules / Authentication.');
                 return false;
             }
         }
