@@ -1033,6 +1033,8 @@ const firebaseConfig = {
         function applyCloudSnapshot(snapshotValue) {
             if(!snapshotValue || typeof snapshotValue !== 'object') return;
 
+            const hasCloudReset = !!(snapshotValue._meta && snapshotValue._meta.lastResetAt);
+
             rutasyCloudApplying = true;
             try {
                 Object.keys(RUTASY_CLOUD_MAP).forEach((key) => {
@@ -1040,6 +1042,13 @@ const firebaseConfig = {
                         const remoteValue = snapshotValue[key];
                         assignRuntimeStateByKey(key, remoteValue);
                         localStorage.setItem(key, JSON.stringify(remoteValue));
+                    } else {
+                        const emptyValue = key === 'rutasy_settings' ? {
+                            jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
+                            payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
+                        } : (key === 'rutasy_absen' || key === 'rutasy_progres_hafalan' ? {} : []);
+                        assignRuntimeStateByKey(key, emptyValue);
+                        if(hasCloudReset) localStorage.removeItem(key);
                     }
                 });
             } finally {
@@ -1085,15 +1094,24 @@ const firebaseConfig = {
                 rutasyCloudEnabled = true;
 
                 const remote = initialSnapshot.val();
+                const cloudWasReset = !!(remote && remote._meta && remote._meta.lastResetAt);
 
                 if(remote && typeof remote === 'object') {
-                    // Data cloud adalah sumber utama. Key lokal yang belum ada dimigrasikan ke cloud.
+                    // Data cloud adalah sumber utama. Setelah reset global, data lokal perangkat
+                    // tidak boleh dimigrasikan kembali ke cloud.
                     rutasyCloudApplying = true;
                     try {
                         for(const key of Object.keys(RUTASY_CLOUD_MAP)) {
                             if(Object.prototype.hasOwnProperty.call(remote, key)) {
                                 assignRuntimeStateByKey(key, remote[key]);
                                 localStorage.setItem(key, JSON.stringify(remote[key]));
+                            } else if(cloudWasReset) {
+                                const emptyValue = key === 'rutasy_settings' ? {
+                                    jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
+                                    payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
+                                } : (key === 'rutasy_absen' || key === 'rutasy_progres_hafalan' ? {} : []);
+                                assignRuntimeStateByKey(key, emptyValue);
+                                localStorage.removeItem(key);
                             } else {
                                 const localValue = getRuntimeStateByKey(key);
                                 if(localValue !== undefined) {
@@ -1105,7 +1123,7 @@ const firebaseConfig = {
                         rutasyCloudApplying = false;
                     }
                 } else {
-                    // Cloud kosong: jadikan localStorage sebagai data awal.
+                    // Cloud belum pernah diinisialisasi: jadikan localStorage sebagai data awal.
                     for(const key of Object.keys(RUTASY_CLOUD_MAP)) {
                         const localValue = getRuntimeStateByKey(key);
                         if(localValue !== undefined) {
@@ -2648,13 +2666,12 @@ const firebaseConfig = {
                 };
 
                 if(rutasyCloudEnabled && rutasyDatabase) {
-                    rutasyDatabase.ref('rutasy').remove()
-                        .then(() => {
-                            rutasyCloudApplying = true;
-                            return Promise.all(Object.keys(RUTASY_CLOUD_MAP).map(key =>
-                                rutasyDatabase.ref(`rutasy/${key}`).remove()
-                            ));
-                        })
+                    const resetAt = new Date().toISOString();
+                    rutasyCloudApplying = true;
+                    Promise.all(Object.keys(RUTASY_CLOUD_MAP).map(key =>
+                        rutasyDatabase.ref(`rutasy/${key}`).remove()
+                    ))
+                        .then(() => rutasyDatabase.ref('rutasy/_meta/lastResetAt').set(resetAt))
                         .then(() => {
                             rutasyCloudApplying = false;
                             resetRuntimeState();
