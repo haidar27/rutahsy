@@ -1,0 +1,9 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "rutasy": {
+      ".validate": "newData.hasChildren(['rutasy_santri','rutasy_guru','rutasy_keu_pengajuan','rutasy_keu_riwayat','rutasy_keu_manual','rutasy_settings','rutasy_absen','rutasy_absen_guru','rutasy_progres_hafalan','rutasy_kalender','rutasy_haflah']) || newData.val() == null"
+    }
+  }
+}
