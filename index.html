@@ -7,10 +7,10 @@
     
     <!-- PWA & Favicon Config -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23047857%22/%3E%3Ctext x=%2232%22 y=%2241%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2224%22 font-weight=%22700%22 fill=%22white%22%3ERT%3C/text%3E%3C/svg%3E" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="logo.jpg">
+    <link rel="apple-touch-icon" href="logo.png">
     <meta name="theme-color" content="#047857">
     <!-- Inline Manifest PWA untuk memicu Prompt Install Chrome -->
-    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22RUTASY%20Sistem%20Manajemen%22%2C%22short_name%22%3A%22RUTASY%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f3f4f6%22%2C%22theme_color%22%3A%22%23047857%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22logo.jpg%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%2C%7B%22src%22%3A%22logo.jpg%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%5D%7D'>
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22RUTASY%20Sistem%20Manajemen%22%2C%22short_name%22%3A%22RUTASY%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f3f4f6%22%2C%22theme_color%22%3A%22%23047857%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22logo.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%2C%7B%22src%22%3A%22logo.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%5D%7D'>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -75,7 +75,7 @@
     <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-100">
         <div class="card w-full max-w-md">
             <div class="text-center mb-6">
-                <img src="logo.jpg" alt="Logo RUTASY" class="w-24 h-24 mx-auto mb-3 object-cover shadow-md border-2 border-primary" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'">
+                <img src="logo.png" alt="Logo RUTASY" class="w-24 h-24 mx-auto mb-3 object-cover shadow-md border-2 border-primary" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'">
                 <h1 class="text-2xl font-bold text-gray-800">RUTASY SYSTEM</h1>
                 <p class="text-gray-500 mb-4 text-sm">Masukkan Username & Password akun Anda</p>
             </div>
@@ -105,7 +105,7 @@
         <!-- SIDEBAR -->
         <aside id="sidebar" class="w-64 flex-shrink-0 bg-dark text-white flex flex-col absolute md:relative z-30 h-full transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
             <div class="p-4 flex items-center gap-3 font-bold text-xl border-b border-gray-700">
-                <img src="logo.jpg" alt="Logo" class="w-8 h-8 rounded-full object-cover border border-secondary bg-white" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'"> RUTASY
+                <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-full object-cover border border-secondary bg-white" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'"> RUTASY
                 <button onclick="toggleSidebar()" class="md:hidden ml-auto text-gray-300 hover:text-white"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="p-4 text-sm text-gray-300 border-b border-gray-700">
@@ -1818,7 +1818,7 @@ const firebaseConfig = {
                 <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
                     <div style="text-align: center; border-bottom: 2px solid #047857; padding-bottom: 12px; margin-bottom: 20px;">
                         <img
-                            src="logo.jpg"
+                            src="logo.png"
                             alt="Logo RUTASY"
                             style="display: block; width: 82px; height: 82px; object-fit: contain; margin: 0 auto 8px;"
                             onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 150 150%22%3E%3Crect width=%22150%22 height=%22150%22 rx=%2275%22 fill=%22%23047857%22/%3E%3Ctext x=%2275%22 y=%2292%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2252%22 font-weight=%22700%22 fill=%22white%22%3ERT%3C/text%3E%3C/svg%3E';"
