@@ -46,6 +46,11 @@
         .calendar-header-day { font-weight: bold; padding: 5px; color: #374151; font-size: 0.875rem; }
         .calendar-day.event { background: #10b981; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .calendar-day.event:hover { background: #047857; }
+        @keyframes modalSppIn {
+            0% { opacity: 0; transform: translateY(24px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        #modal-peringatan-spp:not(.hidden) > div { animation: modalSppIn 0.35s ease-out both; }
         
         #print-area { display: none; }
         @media print {
@@ -70,7 +75,7 @@
     <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-100">
         <div class="card w-full max-w-md">
             <div class="text-center mb-6">
-                <img src="logo.jpg" alt="Logo RUTASY" class="w-24 h-24 mx-auto mb-3 rounded-full object-cover shadow-md border-2 border-primary" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'">
+                <img src="logo.jpg" alt="Logo RUTASY" class="w-24 h-24 mx-auto mb-3 object-cover shadow-md border-2 border-primary" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'">
                 <h1 class="text-2xl font-bold text-gray-800">RUTASY SYSTEM</h1>
                 <p class="text-gray-500 mb-4 text-sm">Masukkan Username & Password akun Anda</p>
             </div>
@@ -139,7 +144,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                    <div class="w-8 h-8 bg-primary text-white flex items-center justify-center font-bold">
                         <i class="fa-solid fa-user"></i>
                     </div>
                 </div>
@@ -627,7 +632,7 @@
                             <input type="number" id="haflah-nilai" placeholder="Nilai" class="border p-2 rounded w-full md:w-24 bg-white">
                             <button class="bg-primary hover:bg-dark transition text-white px-4 py-2 rounded" onclick="simpanHaflah()">Simpan & Luluskan</button>
                         </div>
-                        <p class="text-xs text-gray-500">* Menyimpan santri ke database Haflah akan otomatis mengubah statusnya di Data Santri menjadi "Alumni".</p>
+                        <p class="text-xs text-gray-500">* Menyimpan santri ke database Haflah tidak mengubah status santri di Data Santri.</p>
                     </div>
                     
                     <div id="container-tabel-haflah">
@@ -2128,7 +2133,9 @@ const firebaseConfig = {
                 const sObj = dataSantri.find(s => s.nama.toLowerCase() === nama.toLowerCase());
                 const kel = sObj ? sObj.guru : '-';
 
-                if (currentRole === 'guru' && loggedInSantri && kel.toLowerCase() !== loggedInSantri.nama.toLowerCase()) return;
+                if (currentRole === 'guru') {
+                    if(!loggedInSantri || !loggedInSantri.nama || kel === '-' || kel.toLowerCase() !== loggedInSantri.nama.toLowerCase()) return;
+                }
 
                 let matchNama = nama.toLowerCase().includes(qNama);
                 let matchKel = qKelompok === '' || kel.toLowerCase() === qKelompok;
@@ -2498,9 +2505,6 @@ const firebaseConfig = {
             persistData('rutasy_haflah', dataHaflah);
 
             santriObj.haflahStatus = haflahStatus;
-            if(haflahStatus === 'Aktif') {
-                santriObj.status = 'Alumni';
-            }
             persistData('rutasy_santri', dataSantri);
             renderSantri();
 
@@ -2622,20 +2626,45 @@ const firebaseConfig = {
 
         function hapusSemuaData() {
             bukaKonfirmasi('RESET TOTAL SYSTEM', 'PERINGATAN! Semua data santri, guru, keuangan, absensi, dan progres hafalan akan dihapus secara permanen. Lanjutkan?', () => {
-                const resetLocalAndCloud = () => {
+                const resetRuntimeState = () => {
+                    dataSantri = [];
+                    dataGuru = [];
+                    dataKeuanganPengajuan = [];
+                    dataKeuanganRiwayat = [];
+                    dataKeuanganManual = [];
+                    dataSettings = {
+                        jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
+                        payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
+                    };
+                    riwayatAbsensi = {};
+                    absenGuruRecord = [];
+                    riwayatProgres = {};
+                    eventsKalender = [];
+                    dataHaflah = [];
                     localStorage.clear();
+                    sessionStorage.clear();
                     location.reload();
                 };
 
                 if(rutasyCloudEnabled && rutasyDatabase) {
                     rutasyDatabase.ref('rutasy').remove()
-                        .then(resetLocalAndCloud)
+                        .then(() => {
+                            rutasyCloudApplying = true;
+                            return Promise.all(Object.keys(RUTASY_CLOUD_MAP).map(key =>
+                                rutasyDatabase.ref(`rutasy/${key}`).remove()
+                            ));
+                        })
+                        .then(() => {
+                            rutasyCloudApplying = false;
+                            resetRuntimeState();
+                        })
                         .catch((err) => {
+                            rutasyCloudApplying = false;
                             console.error('Gagal mereset data Firebase:', err);
                             tampilkanNotif('Gagal mereset database online. Data lokal tidak dihapus.');
                         });
                 } else {
-                    resetLocalAndCloud();
+                    resetRuntimeState();
                 }
             });
         }
