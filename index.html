@@ -72,10 +72,10 @@
     <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3"></div>
 
     <!-- LOGIN SCREEN -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-100">
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-100" style="background-color: #047857;">
         <div class="card w-full max-w-md">
             <div class="text-center mb-6">
-                <img src="navbar-logo.svg" alt="Logo RUTASY" class="w-24 h-24 mx-auto mb-3 object-cover" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'">
+                <img src="navbar-logo.svg" alt="Logo RUTASY" class="w-24 h-24 md:w-36 md:h-36 mx-auto mb-3 object-cover" style="border-radius: 5px" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'">
                 <p class="text-gray-500 mb-4 text-sm">Masukkan Username & Password akun Anda</p>
             </div>
             
@@ -613,13 +613,13 @@
                         <h3 class="font-bold mb-4">Input Data Alumni (Haflah)</h3>
                         <div class="mb-4 flex flex-col md:flex-row gap-4">
                             <select id="haflah-tahun" class="border p-2 rounded w-full md:w-48 bg-white">
-                                <option value="">Pilih Tahun Angkatan</option>
+                                <option value="">Pilih Tahun</option>
                                 <script>
                                     for(let i=2020; i<=2037; i++) document.write(`<option value="HTA-${i}">HTA-${i}</option>`);
                                 </script>
                             </select>
                             <select id="haflah-status" class="border p-2 rounded w-full md:w-48 bg-white">
-                                <option value="">Pilih Status Haflah</option>
+                                <option value="">Pilih Status</option>
                                 <option value="Aktif">Aktif</option>
                                 <option value="Nonaktif">Nonaktif</option>
                             </select>
@@ -1526,7 +1526,7 @@ const firebaseConfig = {
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Total Capaian Belajar / Hafalan',
+                            label: 'Total Pencapaian',
                             data: chartData,
                             borderColor: '#047857',
                             backgroundColor: 'rgba(4, 120, 87, 0.1)',
