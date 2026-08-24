@@ -6,7 +6,7 @@
     <title>RUTASY - Sistem Manajemen Rumah Tahfidz</title>
     
     <!-- PWA & Favicon Config -->
-    <link rel="icon" href="logo.jpg" type="image/jpeg">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23047857%22/%3E%3Ctext x=%2232%22 y=%2241%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2224%22 font-weight=%22700%22 fill=%22white%22%3ERT%3C/text%3E%3C/svg%3E" type="image/svg+xml">
     <link rel="apple-touch-icon" href="logo.jpg">
     <meta name="theme-color" content="#047857">
     <!-- Inline Manifest PWA untuk memicu Prompt Install Chrome -->
@@ -70,7 +70,7 @@
     <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-100">
         <div class="card w-full max-w-md">
             <div class="text-center mb-6">
-                <img src="logo.jpg" alt="Logo RUTASY" class="w-24 h-24 mx-auto mb-3 rounded-full object-cover shadow-md border-2 border-primary" onerror="this.src='https://via.placeholder.com/150'">
+                <img src="logo.jpg" alt="Logo RUTASY" class="w-24 h-24 mx-auto mb-3 rounded-full object-cover shadow-md border-2 border-primary" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'">
                 <h1 class="text-2xl font-bold text-gray-800">RUTASY SYSTEM</h1>
                 <p class="text-gray-500 mb-4 text-sm">Masukkan Username & Password akun Anda</p>
             </div>
@@ -100,7 +100,7 @@
         <!-- SIDEBAR -->
         <aside id="sidebar" class="w-64 flex-shrink-0 bg-dark text-white flex flex-col absolute md:relative z-30 h-full transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
             <div class="p-4 flex items-center gap-3 font-bold text-xl border-b border-gray-700">
-                <img src="logo.jpg" alt="Logo" class="w-8 h-8 rounded-full object-cover border border-secondary bg-white" onerror="this.src='https://via.placeholder.com/150'"> RUTASY
+                <img src="logo.jpg" alt="Logo" class="w-8 h-8 rounded-full object-cover border border-secondary bg-white" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'"> RUTASY
                 <button onclick="toggleSidebar()" class="md:hidden ml-auto text-gray-300 hover:text-white"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="p-4 text-sm text-gray-300 border-b border-gray-700">
@@ -815,20 +815,21 @@
         </div>
     </div>
 
+    <!-- FIREBASE SDK UNTUK SINKRONISASI DATA ONLINE -->
+    <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-database-compat.js"></script>
+
     <!-- JAVASCRIPT LOGIC -->
     <script>
         // --- PWA SETUP & INSTALL PROMPT LOGIC ---
+        // Gunakan service worker file yang benar-benar berada pada origin aplikasi.
+        // Service Worker Blob sebelumnya dihapus karena dapat memicu masalah loading/reload.
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                const swCode = `
-                    self.addEventListener('install', (e) => { self.skipWaiting(); });
-                    self.addEventListener('fetch', (e) => { });
-                `;
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).catch((err) => {
-                    console.log('PWA SW Status Registered');
-                });
+                navigator.serviceWorker.register('./sw.js')
+                    .then(() => console.log('RUTASY Service Worker aktif.'))
+                    .catch((err) => console.warn('Service Worker tidak aktif:', err));
             });
         }
 
@@ -927,6 +928,192 @@
         let eventsKalender = JSON.parse(localStorage.getItem('rutasy_kalender')) || [];
         let dataHaflah = JSON.parse(localStorage.getItem('rutasy_haflah')) || [];
 
+        // --- ONLINE DATABASE / FIREBASE REALTIME DATABASE ---
+        // Isi konfigurasi berikut dari Firebase Console > Project settings > Your apps.
+        // Web API Key / App ID bukan password. Namun tetap gunakan Security Rules yang benar.
+        const firebaseConfig = {
+            apiKey: "AIzaSyDac8HrbnmQyJ77kWCgxqSELs3u2qarxmA",
+            authDomain: "rutasy.firebaseapp.com",
+            databaseURL: "https://rutasy-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "rutasy",
+            storageBucket: "rutasy.firebasestorage.app",
+            messagingSenderId: "440629655721",
+            appId: "1:440629655721:web:d0be8bcf4121053795d1b8",
+            measurementId: "G-CN9G0EBBP8"
+        };
+
+        let rutasyFirebaseApp = null;
+        let rutasyDatabase = null;
+        let rutasyCloudEnabled = false;
+        let rutasyCloudApplying = false;
+        let rutasyCloudListenerAttached = false;
+
+        const RUTASY_CLOUD_MAP = {
+            rutasy_santri: 'dataSantri',
+            rutasy_guru: 'dataGuru',
+            rutasy_keu_pengajuan: 'dataKeuanganPengajuan',
+            rutasy_keu_riwayat: 'dataKeuanganRiwayat',
+            rutasy_keu_manual: 'dataKeuanganManual',
+            rutasy_settings: 'dataSettings',
+            rutasy_absen: 'riwayatAbsensi',
+            rutasy_absen_guru: 'absenGuruRecord',
+            rutasy_progres_hafalan: 'riwayatProgres',
+            rutasy_kalender: 'eventsKalender',
+            rutasy_haflah: 'dataHaflah'
+        };
+
+        function isFirebaseConfigured() {
+            return !!(
+                firebaseConfig.apiKey &&
+                !firebaseConfig.apiKey.startsWith('PASTE_') &&
+                firebaseConfig.projectId &&
+                !firebaseConfig.projectId.startsWith('PASTE_') &&
+                firebaseConfig.databaseURL &&
+                !firebaseConfig.databaseURL.includes('PASTE_FIREBASE')
+            );
+        }
+
+        function getRuntimeStateByKey(key) {
+            switch(key) {
+                case 'rutasy_santri': return dataSantri;
+                case 'rutasy_guru': return dataGuru;
+                case 'rutasy_keu_pengajuan': return dataKeuanganPengajuan;
+                case 'rutasy_keu_riwayat': return dataKeuanganRiwayat;
+                case 'rutasy_keu_manual': return dataKeuanganManual;
+                case 'rutasy_settings': return dataSettings;
+                case 'rutasy_absen': return riwayatAbsensi;
+                case 'rutasy_absen_guru': return absenGuruRecord;
+                case 'rutasy_progres_hafalan': return riwayatProgres;
+                case 'rutasy_kalender': return eventsKalender;
+                case 'rutasy_haflah': return dataHaflah;
+                default: return undefined;
+            }
+        }
+
+        function assignRuntimeStateByKey(key, value) {
+            const safeValue = value === null || value === undefined
+                ? (key === 'rutasy_settings' ? {} : (key === 'rutasy_absen' || key === 'rutasy_progres_hafalan' ? {} : []))
+                : value;
+
+            switch(key) {
+                case 'rutasy_santri': dataSantri = safeValue; break;
+                case 'rutasy_guru': dataGuru = safeValue; break;
+                case 'rutasy_keu_pengajuan': dataKeuanganPengajuan = safeValue; break;
+                case 'rutasy_keu_riwayat': dataKeuanganRiwayat = safeValue; break;
+                case 'rutasy_keu_manual': dataKeuanganManual = safeValue; break;
+                case 'rutasy_settings': dataSettings = safeValue; break;
+                case 'rutasy_absen': riwayatAbsensi = safeValue; break;
+                case 'rutasy_absen_guru': absenGuruRecord = safeValue; break;
+                case 'rutasy_progres_hafalan': riwayatProgres = safeValue; break;
+                case 'rutasy_kalender': eventsKalender = safeValue; break;
+                case 'rutasy_haflah': dataHaflah = safeValue; break;
+            }
+        }
+
+        function persistData(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+
+            if(rutasyCloudEnabled && rutasyDatabase && !rutasyCloudApplying) {
+                rutasyDatabase.ref(`rutasy/${key}`).set(value).catch((err) => {
+                    console.error(`Gagal menyimpan ${key} ke Firebase:`, err);
+                });
+            }
+        }
+
+        function applyCloudSnapshot(snapshotValue) {
+            if(!snapshotValue || typeof snapshotValue !== 'object') return;
+
+            rutasyCloudApplying = true;
+            try {
+                Object.keys(RUTASY_CLOUD_MAP).forEach((key) => {
+                    if(Object.prototype.hasOwnProperty.call(snapshotValue, key)) {
+                        const remoteValue = snapshotValue[key];
+                        assignRuntimeStateByKey(key, remoteValue);
+                        localStorage.setItem(key, JSON.stringify(remoteValue));
+                    }
+                });
+            } finally {
+                rutasyCloudApplying = false;
+            }
+
+            // Perbarui tampilan yang memang sudah aktif tanpa mengubah struktur sistem.
+            if(document.getElementById('main-app') && !document.getElementById('main-app').classList.contains('hidden')) {
+                renderSemuaData();
+            }
+        }
+
+        async function initFirebaseSync() {
+            if(!isFirebaseConfigured()) {
+                console.warn('Firebase belum dikonfigurasi. Sistem tetap berjalan menggunakan localStorage.');
+                return false;
+            }
+
+            try {
+                if(!rutasyFirebaseApp) {
+                    rutasyFirebaseApp = firebase.initializeApp(firebaseConfig);
+                }
+
+                // Auth anonim dipakai hanya untuk memproteksi akses database dari klien yang belum terautentikasi.
+                // Aktifkan Anonymous pada Firebase Console sebelum menggunakan mode ini.
+                await firebase.auth().signInAnonymously();
+
+                rutasyDatabase = firebase.database();
+                rutasyCloudEnabled = true;
+
+                const rootRef = rutasyDatabase.ref('rutasy');
+                const initialSnapshot = await rootRef.once('value');
+                const remote = initialSnapshot.val();
+
+                if(remote && typeof remote === 'object') {
+                    // Gunakan data cloud yang sudah ada, sekaligus unggah key lokal yang belum ada di cloud.
+                    rutasyCloudApplying = true;
+                    try {
+                        Object.keys(RUTASY_CLOUD_MAP).forEach((key) => {
+                            if(Object.prototype.hasOwnProperty.call(remote, key)) {
+                                assignRuntimeStateByKey(key, remote[key]);
+                                localStorage.setItem(key, JSON.stringify(remote[key]));
+                            } else {
+                                const localValue = getRuntimeStateByKey(key);
+                                if(localValue !== undefined) {
+                                    rootRef.child(key).set(localValue).catch((err) => {
+                                        console.error(`Gagal migrasi ${key} ke Firebase:`, err);
+                                    });
+                                }
+                            }
+                        });
+                    } finally {
+                        rutasyCloudApplying = false;
+                    }
+                } else {
+                    // Database cloud masih kosong: data localStorage saat ini dijadikan data awal.
+                    for(const key of Object.keys(RUTASY_CLOUD_MAP)) {
+                        const localValue = getRuntimeStateByKey(key);
+                        if(localValue !== undefined) {
+                            await rootRef.child(key).set(localValue);
+                        }
+                    }
+                }
+
+                if(!rutasyCloudListenerAttached) {
+                    rootRef.on('value', (snapshot) => {
+                        if(snapshot.exists()) {
+                            applyCloudSnapshot(snapshot.val());
+                        }
+                    }, (error) => {
+                        console.error('Firebase realtime listener error:', error);
+                    });
+                    rutasyCloudListenerAttached = true;
+                }
+
+                console.log('RUTASY berhasil terhubung ke Firebase Realtime Database.');
+                return true;
+            } catch(error) {
+                rutasyCloudEnabled = false;
+                console.error('Firebase tidak berhasil diaktifkan. Sistem kembali ke localStorage.', error);
+                return false;
+            }
+        }
+
         const daftarSurat = [
             "Al-Fatihah", "Al-Baqarah", "Ali 'Imran", "An-Nisa'", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Taubah", "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra'", "Al-Kahf", "Maryam", "Taha", "Al-Anbiya'", "Al-Hajj", "Al-Mu'minun", "An-Nur", "Al-Furqan", "Asy-Syu'ara'", "An-Naml", "Al-Qasas", "Al-'Ankabut", "Ar-Rum", "Luqman", "As-Sajdah", "Al-Ahzab", "Saba'", "Fatir", "Yasin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir", "Fussilat", "Asy-Syura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jasiyah", "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf", "Az-Zariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid", "Al-Mujadilah", "Al-Hasyr", "Al-Mumtahanah", "As-Saff", "Al-Jumu'ah", "Al-Munafiqun", "At-Tagabun", "At-Talaq", "At-Tahrim", "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij", "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddassir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat", "An-Naba'", "An-Nazi'at", "'Abasa", "At-Takwir", "Al-Infitar", "Al-Mutaffifin", "Al-Insyiqaq", "Al-Buruj", "At-Tariq", "Al-A'la", "Al-Ghasyiyah", "Al-Fajr", "Al-Balad", "Asy-Syams", "Al-Lail", "Ad-Duha", "Asy-Syarh", "At-Tin", "Al-'Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-'Adiyat", "Al-Qari'ah", "At-Takasur", "Al-'Asr", "Al-Humazah", "Al-Fil", "Quraisy", "Al-Ma'un", "Al-Kausar", "Al-Kafirun", "An-Nasr", "Al-Lahab", "Al-Ikhlas", "Al-Falaq", "An-Nas"
         ];
@@ -962,7 +1149,13 @@
         };
 
         // --- AUTH & NAVIGATION ---
-        window.onload = () => {
+        window.onload = async () => {
+            // Firebase tidak boleh membuat halaman menggantung tanpa batas.
+            await Promise.race([
+                initFirebaseSync(),
+                new Promise(resolve => setTimeout(resolve, 6000))
+            ]);
+
             const savedRole = localStorage.getItem('rutasy_role');
             const savedUser = localStorage.getItem('rutasy_username');
             if(savedRole) {
@@ -1419,7 +1612,7 @@
         function deleteSantri(index) { 
             bukaKonfirmasi('Hapus Santri', `Yakin ingin menghapus santri ${dataSantri[index].nama}?`, () => {
                 dataSantri.splice(index, 1); 
-                localStorage.setItem('rutasy_santri', JSON.stringify(dataSantri)); 
+                persistData('rutasy_santri', dataSantri); 
                 renderSantri(); renderBelumBayarSPP(); 
                 tampilkanNotif('Data Santri Berhasil Dihapus!'); 
             }); 
@@ -1443,7 +1636,7 @@
             };
             if(!obj.nis || !obj.nama || !obj.user) { tampilkanNotif('Isi minimal NIS, Nama, Username!'); return; }
             if(isNaN(idx) || idx < 0) { dataSantri.push(obj); tampilkanNotif('Data Santri Berhasil Ditambahkan!'); } else { dataSantri[idx] = obj; tampilkanNotif('Data Santri Berhasil Diperbarui!'); }
-            localStorage.setItem('rutasy_santri', JSON.stringify(dataSantri)); renderSantri(); renderBelumBayarSPP(); document.getElementById('modal-tambah-santri').classList.add('hidden');
+            persistData('rutasy_santri', dataSantri); renderSantri(); renderBelumBayarSPP(); document.getElementById('modal-tambah-santri').classList.add('hidden');
         }
 
         function bukaModalTambahGuru() { 
@@ -1456,7 +1649,7 @@
         function deleteGuru(index) { 
             bukaKonfirmasi('Hapus Guru', `Yakin ingin menghapus guru ${dataGuru[index].nama}?`, () => {
                 dataGuru.splice(index, 1); 
-                localStorage.setItem('rutasy_guru', JSON.stringify(dataGuru)); 
+                persistData('rutasy_guru', dataGuru); 
                 renderGuru(); 
                 tampilkanNotif('Data Guru Berhasil Dihapus!'); 
             }); 
@@ -1468,7 +1661,7 @@
             const obj = { nik: document.getElementById('mg-nik').value, nama: document.getElementById('mg-nama').value, lp: document.getElementById('mg-lp').value, ttl: document.getElementById('mg-ttl').value, alamat: document.getElementById('mg-alamat').value, bank: document.getElementById('mg-bank').value, wa: document.getElementById('mg-wa').value, gaji: document.getElementById('mg-gaji').value, user: document.getElementById('mg-username').value, pass: document.getElementById('mg-password').value };
             if(!obj.nik || !obj.nama || !obj.user) { tampilkanNotif('Isi minimal NIK, Nama, Username!'); return; }
             if(isNaN(idx) || idx < 0) { dataGuru.push(obj); tampilkanNotif('Data Guru Berhasil Ditambahkan!'); } else { dataGuru[idx] = obj; tampilkanNotif('Data Guru Berhasil Diperbarui!'); }
-            localStorage.setItem('rutasy_guru', JSON.stringify(dataGuru)); renderGuru(); document.getElementById('modal-tambah-guru').classList.add('hidden');
+            persistData('rutasy_guru', dataGuru); renderGuru(); document.getElementById('modal-tambah-guru').classList.add('hidden');
         }
 
         function renderDatalistSantri() {
@@ -1571,7 +1764,7 @@
             let id = Date.now();
             
             dataKeuanganPengajuan.push({id, tgl, nama, bulan, metode, spp, infaq});
-            localStorage.setItem('rutasy_keu_pengajuan', JSON.stringify(dataKeuanganPengajuan));
+            persistData('rutasy_keu_pengajuan', dataKeuanganPengajuan);
             
             renderKeuangan();
             document.getElementById('ortu-bulan').value = '';
@@ -1586,8 +1779,8 @@
                 let item = dataKeuanganPengajuan.splice(index, 1)[0];
                 dataKeuanganRiwayat.unshift({tgl: item.tgl, nama: item.nama, bulan: item.bulan, metode: item.metode || 'Transfer Bank', spp: item.spp, infaq: item.infaq});
                 
-                localStorage.setItem('rutasy_keu_pengajuan', JSON.stringify(dataKeuanganPengajuan));
-                localStorage.setItem('rutasy_keu_riwayat', JSON.stringify(dataKeuanganRiwayat));
+                persistData('rutasy_keu_pengajuan', dataKeuanganPengajuan);
+                persistData('rutasy_keu_riwayat', dataKeuanganRiwayat);
                 
                 renderKeuangan(); renderBelumBayarSPP();
                 tampilkanNotif('Pembayaran Disetujui & Masuk Riwayat!');
@@ -1600,7 +1793,13 @@
             
             const printHTML = `
                 <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
-                    <div style="text-align: center; border-bottom: 2px solid #047857; padding-bottom: 10px; margin-bottom: 20px;">
+                    <div style="text-align: center; border-bottom: 2px solid #047857; padding-bottom: 12px; margin-bottom: 20px;">
+                        <img
+                            src="logo.jpg"
+                            alt="Logo RUTASY"
+                            style="display: block; width: 82px; height: 82px; object-fit: contain; margin: 0 auto 8px;"
+                            onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 150 150%22%3E%3Crect width=%22150%22 height=%22150%22 rx=%2275%22 fill=%22%23047857%22/%3E%3Ctext x=%2275%22 y=%2292%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2252%22 font-weight=%22700%22 fill=%22white%22%3ERT%3C/text%3E%3C/svg%3E';"
+                        >
                         <h2 style="color: #047857; margin: 0; font-size: 24px; font-weight: bold;">RUTASY</h2>
                         <p style="margin: 5px 0 0; font-size: 14px;">Sistem Manajemen Rumah Tahfidz</p>
                         <h3 style="margin: 15px 0 0; font-size: 18px; font-weight: bold; text-decoration: underline;">BUKTI PEMBAYARAN RESMI</h3>
@@ -1646,7 +1845,13 @@
             
             const printArea = document.getElementById('print-area');
             printArea.innerHTML = printHTML;
-            window.print();
+            const logoCetak = printArea.querySelector('img');
+            if(logoCetak && !logoCetak.complete) {
+                logoCetak.onload = () => window.print();
+                logoCetak.onerror = () => window.print();
+            } else {
+                window.print();
+            }
         }
 
         function renderBelumBayarSPP() {
@@ -1684,7 +1889,7 @@
 
             const tgl = new Date().toLocaleDateString('id-ID');
             dataKeuanganManual.unshift({ id: Date.now(), tgl, jenis, ket, nominal });
-            localStorage.setItem('rutasy_keu_manual', JSON.stringify(dataKeuanganManual));
+            persistData('rutasy_keu_manual', dataKeuanganManual);
 
             document.getElementById('man-ket').value = '';
             document.getElementById('man-nominal').value = '';
@@ -1725,7 +1930,7 @@
         function hapusKeuanganManual(index) {
             bukaKonfirmasi('Hapus Transaksi', 'Yakin ingin menghapus catatan keuangan manual ini?', () => {
                 dataKeuanganManual.splice(index, 1);
-                localStorage.setItem('rutasy_keu_manual', JSON.stringify(dataKeuanganManual));
+                persistData('rutasy_keu_manual', dataKeuanganManual);
                 renderKeuangan();
                 renderKeuanganManual();
                 tampilkanNotif('Catatan keuangan manual berhasil dihapus!');
@@ -1774,7 +1979,7 @@
             };
 
             absenGuruRecord.unshift(record);
-            localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
+            persistData('rutasy_absen_guru', absenGuruRecord);
 
             renderAbsenGuruPribadi();
             renderAbsenGuruGlobal();
@@ -1838,7 +2043,7 @@
         function hapusAbsenGuru(index) {
             bukaKonfirmasi('Hapus Absen Guru', 'Yakin ingin menghapus catatan absen guru ini?', () => {
                 absenGuruRecord.splice(index, 1);
-                localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
+                persistData('rutasy_absen_guru', absenGuruRecord);
                 renderAbsenGuruPribadi();
                 renderAbsenGuruGlobal();
                 tampilkanNotif('Data absen guru berhasil dihapus!');
@@ -1878,7 +2083,7 @@
                 riwayatAbsensi[santriObj.nama].unshift(dataAbsen);
             }
 
-            localStorage.setItem('rutasy_absen', JSON.stringify(riwayatAbsensi));
+            persistData('rutasy_absen', riwayatAbsensi);
             document.getElementById('input-nama-absen').value = '';
 
             renderTabelRiwayatAbsen();
@@ -2033,7 +2238,7 @@
                 baris: baris
             });
 
-            localStorage.setItem('rutasy_progres_hafalan', JSON.stringify(riwayatProgres));
+            persistData('rutasy_progres_hafalan', riwayatProgres);
 
             document.getElementById('prog-ayat').value = '';
             document.getElementById('prog-baris').value = '';
@@ -2160,7 +2365,7 @@
             }
 
             eventsKalender.push({ id: Date.now(), nama, pic, tgl });
-            localStorage.setItem('rutasy_kalender', JSON.stringify(eventsKalender));
+            persistData('rutasy_kalender', eventsKalender);
 
             document.getElementById('input-kal-nama').value = '';
             document.getElementById('input-kal-pic').value = '';
@@ -2227,7 +2432,7 @@
         function hapusEventKalender(id) {
             bukaKonfirmasi('Hapus Agenda', 'Yakin ingin menghapus agenda ini?', () => {
                 eventsKalender = eventsKalender.filter(e => e.id !== id);
-                localStorage.setItem('rutasy_kalender', JSON.stringify(eventsKalender));
+                persistData('rutasy_kalender', eventsKalender);
                 renderKalenderInit();
                 updateNotifikasiAkademik();
                 tampilkanNotif('Agenda berhasil dihapus!');
@@ -2272,13 +2477,13 @@
             }
 
             dataHaflah.unshift({ id: Date.now(), tahun, haflahStatus, nama: santriObj.nama, total, nilai });
-            localStorage.setItem('rutasy_haflah', JSON.stringify(dataHaflah));
+            persistData('rutasy_haflah', dataHaflah);
 
             santriObj.haflahStatus = haflahStatus;
             if(haflahStatus === 'Aktif') {
                 santriObj.status = 'Alumni';
             }
-            localStorage.setItem('rutasy_santri', JSON.stringify(dataSantri));
+            persistData('rutasy_santri', dataSantri);
             renderSantri();
 
             document.getElementById('haflah-tahun').value = '';
@@ -2324,7 +2529,7 @@
             bukaKonfirmasi('Hapus Alumni', 'Yakin ingin menghapus data haflah alumni ini?', () => {
                 const removed = dataHaflah[index];
                 dataHaflah.splice(index, 1);
-                localStorage.setItem('rutasy_haflah', JSON.stringify(dataHaflah));
+                persistData('rutasy_haflah', dataHaflah);
 
                 if(removed && removed.nama) {
                     const remaining = dataHaflah.find(h => h.nama.toLowerCase() === removed.nama.toLowerCase());
@@ -2332,7 +2537,7 @@
                     if(santriObj) {
                         santriObj.haflahStatus = remaining ? (remaining.haflahStatus || 'Nonaktif') : 'Nonaktif';
                         if(!remaining && santriObj.status === 'Alumni') santriObj.status = 'Aktif';
-                        localStorage.setItem('rutasy_santri', JSON.stringify(dataSantri));
+                        persistData('rutasy_santri', dataSantri);
                         renderSantri();
                     }
                 }
@@ -2378,7 +2583,7 @@
             dataSettings.payEwallet = document.getElementById('set-pay-ewallet').value;
             dataSettings.payCash = document.getElementById('set-pay-cash').value;
 
-            localStorage.setItem('rutasy_settings', JSON.stringify(dataSettings));
+            persistData('rutasy_settings', dataSettings);
             renderSettings();
             tampilkanNotif('Pengaturan global berhasil disimpan!');
         }
@@ -2399,8 +2604,21 @@
 
         function hapusSemuaData() {
             bukaKonfirmasi('RESET TOTAL SYSTEM', 'PERINGATAN! Semua data santri, guru, keuangan, absensi, dan progres hafalan akan dihapus secara permanen. Lanjutkan?', () => {
-                localStorage.clear();
-                location.reload();
+                const resetLocalAndCloud = () => {
+                    localStorage.clear();
+                    location.reload();
+                };
+
+                if(rutasyCloudEnabled && rutasyDatabase) {
+                    rutasyDatabase.ref('rutasy').remove()
+                        .then(resetLocalAndCloud)
+                        .catch((err) => {
+                            console.error('Gagal mereset data Firebase:', err);
+                            tampilkanNotif('Gagal mereset database online. Data lokal tidak dihapus.');
+                        });
+                } else {
+                    resetLocalAndCloud();
+                }
             });
         }
 
