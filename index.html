@@ -6,12 +6,11 @@
     <title>RUTASY - Sistem Manajemen Rumah Tahfidz</title>
     
     <!-- PWA & Favicon Config -->
-    <link rel="icon" type="image/png" sizes="32x32" href="logo.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="logo.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="logo.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
     <meta name="theme-color" content="#047857">
-    <!-- Inline Manifest PWA untuk memicu Prompt Install Chrome -->
-    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22RUTASY%20Sistem%20Manajemen%20Rumah%20Tahfidz%22%2C%22short_name%22%3A%22RUTASY%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f3f4f6%22%2C%22theme_color%22%3A%22%23047857%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22logo.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%2C%7B%22src%22%3A%22logo.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D'>
+    <link rel="manifest" href="manifest.webmanifest">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -77,7 +76,6 @@
         <div class="card w-full max-w-md">
             <div class="text-center mb-6">
                 <img src="logo.png" alt="Logo RUTASY" class="w-24 h-24 mx-auto mb-3 object-cover" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'">
-                <h1 class="text-2xl font-bold text-gray-800">RUTASY SYSTEM</h1>
                 <p class="text-gray-500 mb-4 text-sm">Masukkan Username & Password akun Anda</p>
             </div>
             
@@ -106,7 +104,7 @@
         <!-- SIDEBAR -->
         <aside id="sidebar" class="w-64 flex-shrink-0 bg-dark text-white flex flex-col absolute md:relative z-30 h-full transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
             <div class="p-4 flex items-center gap-3 font-bold text-xl border-b border-gray-700">
-                <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-full object-cover border border-secondary bg-white" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'"> RUTASY
+                <img src="logo.png" alt="Logo" class="w-8 h-8 object-cover" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23047857'/%3E%3Ctext x='75' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='52' font-weight='700' fill='white'%3ERT%3C/text%3E%3C/svg%3E'"> RUTASY
                 <button onclick="toggleSidebar()" class="md:hidden ml-auto text-gray-300 hover:text-white"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="p-4 text-sm text-gray-300 border-b border-gray-700">
@@ -145,7 +143,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="w-8 h-8 bg-primary text-white flex items-center justify-center font-bold">
+                    <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">
                         <i class="fa-solid fa-user"></i>
                     </div>
                 </div>
@@ -954,6 +952,8 @@ const firebaseConfig = {
         let rutasyCloudEnabled = false;
         let rutasyCloudApplying = false;
         let rutasyCloudListenerAttached = false;
+        let rutasyCloudResetAt = "";
+        let rutasyCloudInitialized = false;
 
         const RUTASY_CLOUD_MAP = {
             rutasy_santri: 'dataSantri',
@@ -1021,12 +1021,35 @@ const firebaseConfig = {
             localStorage.setItem(key, JSON.stringify(value));
 
             if(rutasyCloudEnabled && rutasyDatabase && !rutasyCloudApplying) {
-                rutasyDatabase.ref(`rutasy/${key}`).set(value)
-                    .then(() => console.log(`Firebase sync OK: ${key}`))
-                    .catch((err) => {
-                        console.error(`Gagal menyimpan ${key} ke Firebase:`, err);
+                const expectedResetAt = rutasyCloudResetAt;
+                rutasyDatabase.ref('rutasy').transaction((current) => {
+                    current = (current && typeof current === 'object') ? current : {};
+                    const currentResetAt = current._meta && current._meta.lastResetAt ? String(current._meta.lastResetAt) : '';
+
+                    if(!rutasyCloudInitialized || currentResetAt !== expectedResetAt) {
+                        return;
+                    }
+
+                    current[key] = value;
+                    return current;
+                }, (error, committed) => {
+                    if(error) {
+                        console.error(`Gagal menyimpan ${key} ke Firebase:`, error);
                         tampilkanNotif(`Gagal menyimpan ${key} ke database online.`);
-                    });
+                    } else if(!committed) {
+                        // Perangkat ini sedang membawa state lama setelah reset global.
+                        // Jangan hidupkan kembali data lama ke cloud.
+                        const expectedReset = rutasyCloudResetAt;
+                        if(expectedReset) {
+                            const emptyValue = key === 'rutasy_settings' ? {
+                                jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
+                                payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
+                            } : (key === 'rutasy_absen' || key === 'rutasy_progres_hafalan' ? {} : []);
+                            assignRuntimeStateByKey(key, emptyValue);
+                            localStorage.removeItem(key);
+                        }
+                    }
+                });
             }
         }
 
@@ -1034,6 +1057,7 @@ const firebaseConfig = {
             if(!snapshotValue || typeof snapshotValue !== 'object') return;
 
             const hasCloudReset = !!(snapshotValue._meta && snapshotValue._meta.lastResetAt);
+            const incomingResetAt = hasCloudReset ? String(snapshotValue._meta.lastResetAt) : '';
 
             rutasyCloudApplying = true;
             try {
@@ -1051,11 +1075,12 @@ const firebaseConfig = {
                         if(hasCloudReset) localStorage.removeItem(key);
                     }
                 });
+                rutasyCloudResetAt = incomingResetAt;
+                rutasyCloudInitialized = true;
             } finally {
                 rutasyCloudApplying = false;
             }
 
-            // Perbarui tampilan yang memang sudah aktif tanpa mengubah struktur sistem.
             if(document.getElementById('main-app') && !document.getElementById('main-app').classList.contains('hidden')) {
                 renderSemuaData();
             }
@@ -1074,10 +1099,6 @@ const firebaseConfig = {
 
                 rutasyDatabase = firebase.database();
 
-                // Coba login anonim terlebih dahulu. Ini dipakai bila Firebase Rules
-                // mensyaratkan request sudah terautentikasi.
-                // Kalau Anonymous Authentication belum diaktifkan, koneksi masih
-                // dicoba tanpa auth supaya project dengan Rules public tetap bisa dipakai.
                 try {
                     if(firebase.auth) {
                         await firebase.auth().signInAnonymously();
@@ -1088,19 +1109,19 @@ const firebaseConfig = {
                 }
 
                 const rootRef = rutasyDatabase.ref('rutasy');
-
-                // Jangan menandai cloud aktif sebelum pembacaan pertama benar-benar berhasil.
                 const initialSnapshot = await rootRef.once('value');
                 rutasyCloudEnabled = true;
 
                 const remote = initialSnapshot.val();
-                const cloudWasReset = !!(remote && remote._meta && remote._meta.lastResetAt);
+                const remoteExists = !!(remote && typeof remote === 'object');
+                const cloudWasReset = !!(remoteExists && remote._meta && remote._meta.lastResetAt);
 
-                if(remote && typeof remote === 'object') {
-                    // Data cloud adalah sumber utama. Setelah reset global, data lokal perangkat
-                    // tidak boleh dimigrasikan kembali ke cloud.
-                    rutasyCloudApplying = true;
-                    try {
+                rutasyCloudApplying = true;
+                try {
+                    if(remoteExists) {
+                        rutasyCloudResetAt = cloudWasReset ? String(remote._meta.lastResetAt) : '';
+                        rutasyCloudInitialized = true;
+
                         for(const key of Object.keys(RUTASY_CLOUD_MAP)) {
                             if(Object.prototype.hasOwnProperty.call(remote, key)) {
                                 assignRuntimeStateByKey(key, remote[key]);
@@ -1112,24 +1133,24 @@ const firebaseConfig = {
                                 } : (key === 'rutasy_absen' || key === 'rutasy_progres_hafalan' ? {} : []);
                                 assignRuntimeStateByKey(key, emptyValue);
                                 localStorage.removeItem(key);
-                            } else {
-                                const localValue = getRuntimeStateByKey(key);
-                                if(localValue !== undefined) {
-                                    await rootRef.child(key).set(localValue);
-                                }
                             }
                         }
-                    } finally {
-                        rutasyCloudApplying = false;
-                    }
-                } else {
-                    // Cloud belum pernah diinisialisasi: jadikan localStorage sebagai data awal.
-                    for(const key of Object.keys(RUTASY_CLOUD_MAP)) {
-                        const localValue = getRuntimeStateByKey(key);
-                        if(localValue !== undefined) {
-                            await rootRef.child(key).set(localValue);
+                    } else {
+                        // Database benar-benar belum pernah diinisialisasi.
+                        // Jadikan localStorage sebagai data awal hanya sekali, lalu kunci
+                        // kondisi cloud dengan marker resetAt kosong.
+                        const initialMeta = { initializedAt: new Date().toISOString(), lastResetAt: '' };
+                        const initialPayload = { _meta: initialMeta };
+                        for(const key of Object.keys(RUTASY_CLOUD_MAP)) {
+                            const localValue = getRuntimeStateByKey(key);
+                            if(localValue !== undefined) initialPayload[key] = localValue;
                         }
+                        await rootRef.set(initialPayload);
+                        rutasyCloudResetAt = '';
+                        rutasyCloudInitialized = true;
                     }
+                } finally {
+                    rutasyCloudApplying = false;
                 }
 
                 if(!rutasyCloudListenerAttached) {
@@ -2660,18 +2681,36 @@ const firebaseConfig = {
                     riwayatProgres = {};
                     eventsKalender = [];
                     dataHaflah = [];
+                    rutasyCloudResetAt = resetAt;
+                    rutasyCloudInitialized = true;
                     localStorage.clear();
                     sessionStorage.clear();
                     location.reload();
                 };
 
+                const resetAt = new Date().toISOString();
+
                 if(rutasyCloudEnabled && rutasyDatabase) {
-                    const resetAt = new Date().toISOString();
                     rutasyCloudApplying = true;
-                    Promise.all(Object.keys(RUTASY_CLOUD_MAP).map(key =>
-                        rutasyDatabase.ref(`rutasy/${key}`).remove()
-                    ))
-                        .then(() => rutasyDatabase.ref('rutasy/_meta/lastResetAt').set(resetAt))
+                    const atomicReset = {
+                        'rutasy_santri': null,
+                        'rutasy_guru': null,
+                        'rutasy_keu_pengajuan': null,
+                        'rutasy_keu_riwayat': null,
+                        'rutasy_keu_manual': null,
+                        'rutasy_settings': null,
+                        'rutasy_absen': null,
+                        'rutasy_absen_guru': null,
+                        'rutasy_progres_hafalan': null,
+                        'rutasy_kalender': null,
+                        'rutasy_haflah': null,
+                        '_meta': {
+                            initializedAt: new Date().toISOString(),
+                            lastResetAt: resetAt
+                        }
+                    };
+
+                    rutasyDatabase.ref('rutasy').update(atomicReset)
                         .then(() => {
                             rutasyCloudApplying = false;
                             resetRuntimeState();
