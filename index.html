@@ -448,10 +448,10 @@
                                                 <input type="text" id="input-nama-absen" list="list-santri" placeholder="Cari / Pilih Nama..." class="border border-gray-300 p-2 pl-9 rounded w-full text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white">
                                             </div>
                                         </td>
-                                        <td><select class="border p-1 rounded text-xs val-senin"><option>Hadir</option><option>Izin</option><option>Alpa</option></select></td>
-                                        <td><select class="border p-1 rounded text-xs val-selasa"><option>Hadir</option><option>Izin</option><option>Alpa</option></select></td>
-                                        <td><select class="border p-1 rounded text-xs val-rabu"><option>Hadir</option><option>Izin</option><option>Alpa</option></select></td>
-                                        <td><select class="border p-1 rounded text-xs val-kamis"><option>Hadir</option><option>Izin</option><option>Alpa</option></select></td>
+                                        <td><select class="border p-1 rounded text-xs val-senin"><option>Hadir</option><option>Izin</option><option>Sakit</option><option>Alpha</option><option>Libur</option></select></td>
+                                        <td><select class="border p-1 rounded text-xs val-selasa"><option>Hadir</option><option>Izin</option><option>Sakit</option><option>Alpha</option><option>Libur</option></select></td>
+                                        <td><select class="border p-1 rounded text-xs val-rabu"><option>Hadir</option><option>Izin</option><option>Sakit</option><option>Alpha</option><option>Libur</option></select></td>
+                                        <td><select class="border p-1 rounded text-xs val-kamis"><option>Hadir</option><option>Izin</option><option>Sakit</option><option>Alpha</option><option>Libur</option></select></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1193,7 +1193,8 @@ const firebaseConfig = {
                 { id: 'view-setting', icon: 'fa-cog', label: 'Pengaturan Global' }
             ],
             admin_data: [
-                { id: 'view-database', icon: 'fa-database', label: 'Database Entitas' }
+                { id: 'view-database', icon: 'fa-database', label: 'Database Entitas' },
+                { id: 'view-haflah', icon: 'fa-graduation-cap', label: 'Database Haflah' }
             ],
             admin_keuangan: [
                 { id: 'view-dashboard', icon: 'fa-chart-pie', label: 'Dashboard Utama' },
