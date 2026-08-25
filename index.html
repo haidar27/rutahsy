@@ -679,6 +679,27 @@
                     </div>
                 </div>
 
+                <!-- VIEW: ADMIN -->
+                <div id="view-admin" class="view-section hidden">
+                    <div class="card mb-6">
+                        <h3 class="font-bold mb-2 text-primary">Manajemen Akun Admin</h3>
+                        <p class="text-sm text-gray-500 mb-4">Kelola username dan password seluruh akun admin sistem. Perubahan pada akun admin aktif akan berlaku pada login berikutnya.</p>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm min-w-[900px]">
+                                <thead>
+                                    <tr class="table-header">
+                                        <th class="p-3 border-b">Bagian / Role</th>
+                                        <th class="p-3 border-b">Username</th>
+                                        <th class="p-3 border-b">Password</th>
+                                        <th class="p-3 border-b">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-admin-accounts-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- VIEW: ORANG TUA -->
                 <div id="view-ortu" class="view-section hidden">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -931,6 +952,28 @@
         let riwayatProgres = JSON.parse(localStorage.getItem('rutasy_progres_hafalan')) || {};
         let eventsKalender = JSON.parse(localStorage.getItem('rutasy_kalender')) || [];
         let dataHaflah = JSON.parse(localStorage.getItem('rutasy_haflah')) || [];
+        let dataAdminAccounts = JSON.parse(localStorage.getItem('rutasy_admin_accounts'));
+        if(!Array.isArray(dataAdminAccounts) || dataAdminAccounts.length === 0) {
+            dataAdminAccounts = [
+                { id: 'admin-global', role: 'admin_global', label: 'Admin Global', username: 'admin', password: '123' },
+                { id: 'admin-data', role: 'admin_data', label: 'Admin Data', username: 'admin_data', password: '123' },
+                { id: 'admin-keuangan', role: 'admin_keuangan', label: 'Admin Keuangan', username: 'admin_keuangan', password: '123' },
+                { id: 'admin-kalender', role: 'admin_kalender', label: 'Admin Kalender Akademik', username: 'admin_kalender', password: '123' }
+            ];
+        } else {
+            const hasCalendarAdmin = dataAdminAccounts.some(a => a.role === 'admin_kalender');
+            if(!hasCalendarAdmin) {
+                dataAdminAccounts.push({ id: 'admin-kalender', role: 'admin_kalender', label: 'Admin Kalender Akademik', username: 'admin_kalender', password: '123' });
+            }
+            const hasGlobalAdmin = dataAdminAccounts.some(a => a.role === 'admin_global');
+            if(!hasGlobalAdmin) {
+                dataAdminAccounts.unshift({ id: 'admin-global', role: 'admin_global', label: 'Admin Global', username: 'admin', password: '123' });
+            }
+        }
+
+        if(!localStorage.getItem('rutasy_admin_accounts')) {
+            localStorage.setItem('rutasy_admin_accounts', JSON.stringify(dataAdminAccounts));
+        }
 
         // --- ONLINE DATABASE / FIREBASE REALTIME DATABASE ---
         // SDK yang dipakai adalah versi COMPAT karena seluruh kode database di bawah
@@ -966,7 +1009,8 @@ const firebaseConfig = {
             rutasy_absen_guru: 'absenGuruRecord',
             rutasy_progres_hafalan: 'riwayatProgres',
             rutasy_kalender: 'eventsKalender',
-            rutasy_haflah: 'dataHaflah'
+            rutasy_haflah: 'dataHaflah',
+            rutasy_admin_accounts: 'dataAdminAccounts'
         };
 
         function isFirebaseConfigured() {
@@ -993,6 +1037,7 @@ const firebaseConfig = {
                 case 'rutasy_progres_hafalan': return riwayatProgres;
                 case 'rutasy_kalender': return eventsKalender;
                 case 'rutasy_haflah': return dataHaflah;
+                case 'rutasy_admin_accounts': return dataAdminAccounts;
                 default: return undefined;
             }
         }
@@ -1014,6 +1059,7 @@ const firebaseConfig = {
                 case 'rutasy_progres_hafalan': riwayatProgres = safeValue; break;
                 case 'rutasy_kalender': eventsKalender = safeValue; break;
                 case 'rutasy_haflah': dataHaflah = safeValue; break;
+                case 'rutasy_admin_accounts': dataAdminAccounts = safeValue; break;
             }
         }
 
@@ -1130,10 +1176,19 @@ const firebaseConfig = {
                                 const emptyValue = key === 'rutasy_settings' ? {
                                     jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
                                     payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
-                                } : (key === 'rutasy_absen' || key === 'rutasy_progres_hafalan' ? {} : []);
+                                } : key === 'rutasy_admin_accounts' ? [
+                                    { id: 'admin-global', role: 'admin_global', label: 'Admin Global', username: 'admin', password: '123' },
+                                    { id: 'admin-data', role: 'admin_data', label: 'Admin Data', username: 'admin_data', password: '123' },
+                                    { id: 'admin-keuangan', role: 'admin_keuangan', label: 'Admin Keuangan', username: 'admin_keuangan', password: '123' },
+                                    { id: 'admin-kalender', role: 'admin_kalender', label: 'Admin Kalender Akademik', username: 'admin_kalender', password: '123' }
+                                ] : (key === 'rutasy_absen' || key === 'rutasy_progres_hafalan' ? {} : []);
                                 assignRuntimeStateByKey(key, emptyValue);
                                 localStorage.removeItem(key);
                             }
+                        }
+
+                        if(!Object.prototype.hasOwnProperty.call(remote, 'rutasy_admin_accounts')) {
+                            await rootRef.child('rutasy_admin_accounts').set(dataAdminAccounts);
                         }
                     } else {
                         // Database benar-benar belum pernah diinisialisasi.
@@ -1190,7 +1245,8 @@ const firebaseConfig = {
                 { id: 'view-progres', icon: 'fa-book-open', label: 'Progres & Ujian' },
                 { id: 'view-kalender', icon: 'fa-calendar-alt', label: 'Kalender Akademik' },
                 { id: 'view-haflah', icon: 'fa-graduation-cap', label: 'Database Haflah' },
-                { id: 'view-setting', icon: 'fa-cog', label: 'Pengaturan Global' }
+                { id: 'view-setting', icon: 'fa-cog', label: 'Pengaturan Global' },
+                { id: 'view-admin', icon: 'fa-user-shield', label: 'Admin' }
             ],
             admin_data: [
                 { id: 'view-database', icon: 'fa-database', label: 'Database Entitas' },
@@ -1199,6 +1255,9 @@ const firebaseConfig = {
             admin_keuangan: [
                 { id: 'view-dashboard', icon: 'fa-chart-pie', label: 'Dashboard Utama' },
                 { id: 'view-keuangan', icon: 'fa-wallet', label: 'Manajemen Keuangan' }
+            ],
+            admin_kalender: [
+                { id: 'view-kalender', icon: 'fa-calendar-alt', label: 'Kalender Akademik' }
             ],
             guru: [
                 { id: 'view-absensi', icon: 'fa-calendar-check', label: 'Absensi' },
@@ -1240,18 +1299,12 @@ const firebaseConfig = {
             let matchedSantri = dataSantri.find(s => s.user.toLowerCase() === user && s.pass === pass);
             let matchedGuru = dataGuru.find(g => g.user.toLowerCase() === user && g.pass === pass);
 
-            if (user === 'admin' && pass === '123') { 
-                currentRole = 'admin_global'; 
-                loggedInSantri = null; 
-            } 
-            else if (user === 'admin_data' && pass === '123') { 
-                currentRole = 'admin_data'; 
-                loggedInSantri = null; 
+            const matchedAdmin = dataAdminAccounts.find(a => a.username.toLowerCase() === user && a.password === pass);
+
+            if (matchedAdmin) {
+                currentRole = matchedAdmin.role;
+                loggedInSantri = null;
             }
-            else if (user === 'admin_keuangan' && pass === '123') { 
-                currentRole = 'admin_keuangan'; 
-                loggedInSantri = null; 
-            } 
             else if (matchedSantri) { 
                 currentRole = 'ortu'; 
                 loggedInSantri = matchedSantri; 
@@ -1298,7 +1351,7 @@ const firebaseConfig = {
         }
         
         function renderSemuaData() {
-            renderGuru(); renderSantri(); renderKeuangan(); renderKeuanganManual(); renderSettings(); 
+            renderGuru(); renderSantri(); renderKeuangan(); renderKeuanganManual(); renderSettings(); renderAdminAccounts();
             renderKalenderInit(); renderSelectHaflahSantri(); renderTabelHaflah(); 
             renderTabelRiwayatAbsen(); renderDatalistSantri(); renderTabelProgres();
             renderAbsenGuruPribadi(); renderAbsenGuruGlobal(); renderBelumBayarSPP();
@@ -1359,6 +1412,7 @@ const firebaseConfig = {
             document.getElementById(viewId).classList.remove('hidden');
 
             if(viewId === 'view-dashboard') renderGlobalCharts();
+            if(viewId === 'view-admin') renderAdminAccounts();
             if(viewId === 'view-kalender') renderKalenderInit();
             if(viewId === 'view-keuangan') {
                 renderBelumBayarSPP();
@@ -2610,6 +2664,68 @@ const firebaseConfig = {
             });
         }
 
+        // --- MANAJEMEN AKUN ADMIN ---
+        function renderAdminAccounts() {
+            const tbody = document.getElementById('table-admin-accounts-body');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            dataAdminAccounts.forEach((admin, index) => {
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3 font-semibold text-gray-700">${admin.label || admin.role}</td>
+                        <td class="p-3">
+                            <input type="text" id="admin-username-${index}" value="${admin.username || ''}" class="w-full border p-2 rounded bg-white">
+                        </td>
+                        <td class="p-3">
+                            <input type="text" id="admin-password-${index}" value="${admin.password || ''}" class="w-full border p-2 rounded bg-white">
+                        </td>
+                        <td class="p-3">
+                            <button onclick="simpanAkunAdmin(${index})" class="bg-primary hover:bg-dark text-white px-3 py-2 rounded text-xs font-bold">
+                                <i class="fa-solid fa-save mr-1"></i> Simpan
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function simpanAkunAdmin(index) {
+            const admin = dataAdminAccounts[index];
+            if(!admin) return;
+
+            const newUsername = document.getElementById(`admin-username-${index}`).value.trim();
+            const newPassword = document.getElementById(`admin-password-${index}`).value;
+
+            if(!newUsername || !newPassword) {
+                tampilkanNotif('Username dan Password admin tidak boleh kosong!');
+                return;
+            }
+
+            const duplicate = dataAdminAccounts.some((item, itemIndex) =>
+                itemIndex !== index && item.username.toLowerCase() === newUsername.toLowerCase()
+            );
+
+            if(duplicate) {
+                tampilkanNotif('Username tersebut sudah digunakan oleh admin lain!');
+                return;
+            }
+
+            const oldUsername = admin.username;
+            admin.username = newUsername;
+            admin.password = newPassword;
+
+            persistData('rutasy_admin_accounts', dataAdminAccounts);
+
+            const savedUsername = localStorage.getItem('rutasy_username');
+            if(savedUsername && savedUsername.toLowerCase() === oldUsername.toLowerCase()) {
+                localStorage.setItem('rutasy_username', newUsername);
+            }
+
+            renderAdminAccounts();
+            tampilkanNotif(`Akun ${admin.label || admin.role} berhasil diperbarui.`);
+        }
+
         // --- PENGATURAN GLOBAL SISTEM ---
         function renderSettings() {
             if(document.getElementById('set-jam-masuk')) document.getElementById('set-jam-masuk').value = dataSettings.jamMasuk || '07:30';
@@ -2682,6 +2798,12 @@ const firebaseConfig = {
                     riwayatProgres = {};
                     eventsKalender = [];
                     dataHaflah = [];
+                    dataAdminAccounts = [
+                        { id: 'admin-global', role: 'admin_global', label: 'Admin Global', username: 'admin', password: '123' },
+                        { id: 'admin-data', role: 'admin_data', label: 'Admin Data', username: 'admin_data', password: '123' },
+                        { id: 'admin-keuangan', role: 'admin_keuangan', label: 'Admin Keuangan', username: 'admin_keuangan', password: '123' },
+                        { id: 'admin-kalender', role: 'admin_kalender', label: 'Admin Kalender Akademik', username: 'admin_kalender', password: '123' }
+                    ];
                     rutasyCloudResetAt = resetAt;
                     rutasyCloudInitialized = true;
                     localStorage.clear();
@@ -2705,6 +2827,7 @@ const firebaseConfig = {
                         'rutasy_progres_hafalan': null,
                         'rutasy_kalender': null,
                         'rutasy_haflah': null,
+                        'rutasy_admin_accounts': null,
                         '_meta': {
                             initializedAt: new Date().toISOString(),
                             lastResetAt: resetAt
