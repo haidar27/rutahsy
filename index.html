@@ -204,6 +204,10 @@
                                     <button type="button" onclick="exportDatabaseSantriExcel()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap">
                                         <i class="fa-solid fa-file-excel"></i> Export Excel
                                     </button>
+                                    <button type="button" onclick="document.getElementById('import-database-santri-excel').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap btn-admin-only">
+                                        <i class="fa-solid fa-file-arrow-up"></i> Import Excel
+                                    </button>
+                                    <input type="file" id="import-database-santri-excel" accept=".xlsx,.xls" class="hidden" onchange="importDatabaseSantriExcel(event)">
                                 </div>
                             </div>
                             <button class="bg-primary text-white px-4 py-2 rounded text-sm btn-admin-only w-full md:w-auto" onclick="bukaModalTambahSantri()"><i class="fa-solid fa-plus"></i> Tambah Santri</button>
@@ -1496,7 +1500,16 @@ const firebaseConfig = {
             applyRoleRestrictions(currentRole);
             
             renderSemuaData();
-            switchView(roleMenus[currentRole][0].id, roleMenus[currentRole][0].label);
+            const defaultMenu = roleMenus[currentRole]?.[0];
+            if(defaultMenu) {
+                switchView(defaultMenu.id, defaultMenu.label);
+                if(defaultMenu.id === 'view-dashboard') {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => renderGlobalCharts());
+                    });
+                    setTimeout(() => renderGlobalCharts(), 150);
+                }
+            }
         }
         
         function renderSemuaData() {
@@ -1918,6 +1931,135 @@ const firebaseConfig = {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Database Santri');
             XLSX.writeFile(wb, `Database-Santri-${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        async function importDatabaseSantriExcel(event) {
+            if(currentRole !== 'admin_global' && currentRole !== 'admin_data') {
+                tampilkanNotif('Hanya Admin Global atau Admin Data yang dapat mengimpor Database Santri.');
+                event.target.value = '';
+                return;
+            }
+            if(typeof XLSX === 'undefined') {
+                tampilkanNotif('Fitur Excel belum siap. Periksa koneksi internet lalu coba lagi.');
+                event.target.value = '';
+                return;
+            }
+
+            const file = event.target.files?.[0];
+            if(!file) return;
+
+            try {
+                const buffer = await file.arrayBuffer();
+                const workbook = XLSX.read(buffer, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                if(!firstSheetName) throw new Error('Sheet Excel tidak ditemukan.');
+
+                const sheet = workbook.Sheets[firstSheetName];
+                const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
+
+                if(!rawRows.length) {
+                    throw new Error('File Excel tidak berisi data santri.');
+                }
+
+                const normalizeKey = (value) => String(value ?? '')
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, ' ');
+
+                const getValue = (row, ...keys) => {
+                    const map = {};
+                    Object.keys(row).forEach(k => { map[normalizeKey(k)] = row[k]; });
+                    for(const key of keys) {
+                        const normalized = normalizeKey(key);
+                        if(Object.prototype.hasOwnProperty.call(map, normalized)) return String(map[normalized] ?? '').trim();
+                    }
+                    return '';
+                };
+
+                const importedRows = [];
+                const invalidRows = [];
+                const seenUsers = new Set(dataSantri.map(s => normalizeKey(s.user)));
+                const seenNis = new Set(dataSantri.map(s => normalizeKey(s.nis)));
+
+                rawRows.forEach((row, index) => {
+                    const excelRow = index + 2;
+                    const nis = getValue(row, 'NIS', 'NIS(Nomor Induk Santri)');
+                    const nama = getValue(row, 'Nama Lengkap', 'Nama');
+                    const lp = getValue(row, 'L/P', 'Jenis Kelamin');
+                    const ttl = getValue(row, 'TTL', 'Tempat, Tanggal Lahir');
+                    const alamat = getValue(row, 'Alamat');
+                    const wa = getValue(row, 'No. WA Ortu', 'No WA Ortu', 'WA Ortu', 'No WA');
+                    const guru = getValue(row, 'Kelompok', 'Guru Pengajar', 'Guru');
+                    const status = getValue(row, 'Status') || 'Aktif';
+                    const user = getValue(row, 'Username', 'User');
+                    const pass = getValue(row, 'Password', 'Pass');
+
+                    if(!nama) {
+                        invalidRows.push(`Baris ${excelRow}: Nama Lengkap kosong.`);
+                        return;
+                    }
+
+                    if(!user || !pass) {
+                        invalidRows.push(`Baris ${excelRow}: Username atau Password kosong.`);
+                        return;
+                    }
+
+                    const userKey = normalizeKey(user);
+                    const nisKey = normalizeKey(nis);
+
+                    if(seenUsers.has(userKey)) {
+                        invalidRows.push(`Baris ${excelRow}: Username "${user}" sudah digunakan.`);
+                        return;
+                    }
+                    if(nisKey && seenNis.has(nisKey)) {
+                        invalidRows.push(`Baris ${excelRow}: NIS "${nis}" sudah digunakan.`);
+                        return;
+                    }
+
+                    const record = {
+                        id: Date.now() + index,
+                        nis,
+                        nama,
+                        lp,
+                        ttl,
+                        alamat,
+                        wa,
+                        guru,
+                        status,
+                        user,
+                        pass
+                    };
+
+                    importedRows.push(record);
+                    seenUsers.add(userKey);
+                    if(nisKey) seenNis.add(nisKey);
+                });
+
+                if(!importedRows.length) {
+                    throw new Error(invalidRows.length ? invalidRows.slice(0, 5).join(' ') : 'Tidak ada data valid untuk diimpor.');
+                }
+
+                dataSantri = dataSantri.concat(importedRows);
+                await persistMultipleData({ rutasy_santri: dataSantri });
+
+                halamanDatabaseSantri = 1;
+                renderSantri();
+                renderDatalistSantri();
+                populateFilterGroups();
+                renderTabelHaflah();
+
+                let message = `${importedRows.length} data santri berhasil diimpor.`;
+                if(invalidRows.length) {
+                    message += ` ${invalidRows.length} baris dilewati karena tidak valid atau duplikat.`;
+                    console.warn('Import Database Santri:', invalidRows);
+                }
+                tampilkanNotif(message);
+            } catch(error) {
+                console.error(error);
+                tampilkanNotif(error?.message || 'Import Excel gagal diproses.');
+            } finally {
+                event.target.value = '';
+            }
         }
 
         function renderGuru() {
