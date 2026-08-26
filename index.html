@@ -1527,8 +1527,14 @@ const firebaseConfig = {
         }
 
         function jalankanAplikasiLanjutan() {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('main-app').classList.remove('hidden');
+            const loginScreen = document.getElementById('login-screen');
+            const mainApp = document.getElementById('main-app');
+            if(loginScreen) loginScreen.classList.add('hidden');
+            if(mainApp) {
+                mainApp.classList.remove('hidden');
+                // Paksa layout dihitung ulang setelah pergantian akun agar view tidak membawa state visual akun sebelumnya.
+                void mainApp.offsetHeight;
+            }
             
             let labelRole = currentRole.replace('_', ' ');
             if (currentRole === 'ortu' && loggedInSantri) {
@@ -1551,12 +1557,30 @@ const firebaseConfig = {
             buildSidebar(currentRole);
             applyRoleRestrictions(currentRole);
             
-            renderSemuaData();
+            // Tampilkan view tujuan lebih dulu supaya error pada salah satu renderer
+            // tidak meninggalkan halaman putih atau view lama yang "lengket".
             const defaultMenu = roleMenus[currentRole]?.[0];
             if(defaultMenu) switchView(defaultMenu.id, defaultMenu.label);
+
+            try {
+                renderSemuaData();
+            } catch(error) {
+                console.error('Render awal aplikasi:', error);
+            }
+
+            // Render ulang view tujuan setelah seluruh data selesai dipasang.
+            if(defaultMenu) switchView(defaultMenu.id, defaultMenu.label);
+
+            const mainContent = document.querySelector('#main-app main');
+            if(mainContent) mainContent.scrollTop = 0;
+            window.scrollTo(0, 0);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if(defaultMenu) switchView(defaultMenu.id, defaultMenu.label);
+                });
+            });
         }
-        
-        function renderSemuaData() {
+function renderSemuaData() {
             renderGuru(); renderSantri(); renderKeuangan(); renderKeuanganManual(); renderSettings(); renderAdminAccounts();
             renderKalenderInit(); renderSelectHaflahSantri(); renderTabelHaflah(); 
             renderTabelRiwayatAbsen(); renderDatalistSantri(); renderTabelProgres(); renderHistoryUjian();
@@ -2051,8 +2075,10 @@ const firebaseConfig = {
 
                 const importedRows = [];
                 const invalidRows = [];
-                const seenUsers = new Set(dataSantri.map(s => normalizeKey(s.user)));
-                const seenNis = new Set(dataSantri.map(s => normalizeKey(s.nis)));
+                // Saat import, file Excel adalah sumber data baru sepenuhnya.
+                // Duplikat hanya dicek di dalam file yang sedang diimpor, bukan terhadap database lama.
+                const seenUsers = new Set();
+                const seenNis = new Set();
 
                 rawRows.forEach((row, index) => {
                     const excelRow = index + 2;
@@ -2112,7 +2138,10 @@ const firebaseConfig = {
                     throw new Error(invalidRows.length ? invalidRows.slice(0, 5).join(' ') : 'Tidak ada data valid untuk diimpor.');
                 }
 
-                dataSantri = dataSantri.concat(importedRows);
+                // REPLACE TOTAL:
+                // database santri lama dihapus/ditimpa oleh isi file Excel yang baru.
+                // Tidak ada data santri lama yang digabungkan kembali.
+                dataSantri = importedRows.map(item => ({...item}));
                 await persistMultipleData({ rutasy_santri: dataSantri });
 
                 halamanDatabaseSantri = 1;
@@ -2123,7 +2152,7 @@ const firebaseConfig = {
 
                 let message = `${importedRows.length} data santri berhasil diimpor.`;
                 if(invalidRows.length) {
-                    message += ` ${invalidRows.length} baris dilewati karena tidak valid atau duplikat.`;
+                    message += ` ${invalidRows.length} baris dilewati karena tidak valid atau duplikat di dalam file Excel.`;
                     console.warn('Import Database Santri:', invalidRows);
                 }
                 tampilkanNotif(message);
