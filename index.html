@@ -194,7 +194,7 @@
                         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
                             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
                                 <h3 class="font-bold text-lg w-full md:w-auto">Database Santri</h3>
-                                <input type="text" id="cari-database-santri" placeholder="Cari nama santri..." class="border p-2 rounded text-sm w-full sm:w-64" onkeyup="renderSantri()">
+                                <input type="text" id="cari-database-santri" placeholder="Cari nama santri..." class="border p-2 rounded text-sm w-full sm:w-64" onkeyup="halamanDatabaseSantri = 1; renderSantri()">
                             </div>
                             <button class="bg-primary text-white px-4 py-2 rounded text-sm btn-admin-only w-full md:w-auto" onclick="bukaModalTambahSantri()"><i class="fa-solid fa-plus"></i> Tambah Santri</button>
                         </div>
@@ -213,6 +213,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="pagination-database-santri" class="flex flex-wrap justify-center gap-1 mt-4"></div>
                     </div>
 
                     <div class="card">
@@ -224,7 +225,7 @@
                             <table class="w-full text-left border-collapse text-sm min-w-[1200px]" id="table-guru">
                                 <thead>
                                     <tr class="table-header">
-                                        <th class="p-3 border-b">NIK</th><th class="p-3 border-b">Nama Lengkap</th><th class="p-3 border-b">L/P</th>
+                                        <th class="p-3 border-b">No.</th><th class="p-3 border-b">NIK</th><th class="p-3 border-b">Nama Lengkap</th><th class="p-3 border-b">L/P</th>
                                         <th class="p-3 border-b">TTL</th><th class="p-3 border-b">Alamat</th><th class="p-3 border-b">Bank & Norek</th>
                                         <th class="p-3 border-b">No. WA</th><th class="p-3 border-b">Gaji Harian</th>
                                         <th class="p-3 border-b">Username</th><th class="p-3 border-b">Password</th><th class="p-3 border-b">Aksi</th>
@@ -271,7 +272,7 @@
                             </select>
                             <div class="relative">
                                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input type="text" id="man-spp-nama" list="list-santri-manual-spp" placeholder="Cari / pilih nama santri..." class="border p-2 pl-9 rounded w-full bg-white">
+                                <input type="text" id="man-spp-nama" list="list-santri-manual-spp" autocomplete="off" placeholder="Cari / pilih nama santri..." class="border p-2 pl-9 rounded w-full bg-white" oninput="sinkronNamaManualSPP(this.value)" onchange="normalisasiNamaManualSPP(this.value)">
                             </div>
                             <datalist id="list-santri-manual-spp"></datalist>
                             <input type="number" id="man-spp-nominal" placeholder="Nominal SPP (Rp)" class="border p-2 rounded">
@@ -624,11 +625,19 @@
 
                     <div class="card">
                         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
-                            <h3 class="font-bold text-blue-700">History Hasil Ujian Santri</h3>
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
+                                <h3 class="font-bold text-blue-700">History Hasil Ujian Santri</h3>
+                                <select id="filter-history-ujian-jenis" class="border p-2 rounded text-sm bg-white w-full sm:w-52" onchange="renderHistoryUjian()">
+                                    <option value="">Semua Jenis Ujian</option>
+                                    <option value="Pra Tahfidz">Ujian Pra Tahfidz</option>
+                                    <option value="Tahfidz">Ujian Tahfidz</option>
+                                    <option value="Iqra'">Ujian Iqra'</option>
+                                </select>
+                            </div>
                             <input type="text" id="cari-history-ujian" placeholder="Cari Nama Santri..." class="border p-2 rounded text-sm w-full md:w-64" onkeyup="renderHistoryUjian()">
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm min-w-[700px]" id="table-history-ujian">
+                            <table class="w-full text-left text-sm min-w-[520px]" id="table-history-ujian">
                                 <thead>
                                     <tr class="table-header">
                                         <th class="p-3">Tanggal</th><th class="p-3">Nama Santri</th><th class="p-3">Jenis Ujian</th>
@@ -686,25 +695,25 @@
                 <div id="view-haflah" class="view-section hidden">
                     <div class="card mb-6 btn-admin-only">
                         <h3 class="font-bold mb-4">Input Data Alumni (Haflah)</h3>
-                        <div class="mb-4 flex flex-col md:flex-row gap-4">
-                            <div class="w-full md:flex-1">
-                                <input type="text" id="haflah-nama-select" list="list-santri-haflah" placeholder="Pilih Santri" class="border p-2 rounded w-full min-w-[280px] bg-white">
+                        <div class="mb-4 grid grid-cols-1 md:grid-cols-12 gap-4">
+                            <div class="w-full md:col-span-4 min-w-0">
+                                <input type="text" id="haflah-nama-select" list="list-santri-haflah" placeholder="Pilih Santri" class="border p-2 rounded w-full min-w-0 bg-white">
                                 <datalist id="list-santri-haflah"></datalist>
                             </div>
-                            <select id="haflah-tahun" class="border p-2 rounded w-full md:w-48 bg-white">
+                            <select id="haflah-tahun" class="border p-2 rounded w-full md:col-span-2 bg-white min-w-0">
                                 <option value="">Pilih Tahun</option>
                                 <script>
                                     for(let i=2020; i<=2037; i++) document.write(`<option value="HTA-${i}">HTA-${i}</option>`);
                                 </script>
                             </select>
-                            <select id="haflah-status" class="border p-2 rounded w-full md:w-48 bg-white">
+                            <select id="haflah-status" class="border p-2 rounded w-full md:col-span-2 bg-white min-w-0">
                                 <option value="">Pilih Status</option>
                                 <option value="Aktif">Aktif</option>
                                 <option value="Nonaktif">Nonaktif</option>
                             </select>
-                            <input type="text" id="haflah-total" placeholder="Total Hafalan (cth: 30 Juz)" class="border p-2 rounded w-full md:w-auto bg-white">
-                            <input type="number" id="haflah-nilai" placeholder="Nilai" class="border p-2 rounded w-full md:w-24 bg-white">
-                            <button id="btn-simpan-haflah" class="bg-primary hover:bg-dark transition text-white px-4 py-2 rounded" onclick="simpanHaflah()">Simpan & Luluskan</button>
+                            <input type="text" id="haflah-total" placeholder="Total Hafalan (cth: 30 Juz)" class="border p-2 rounded w-full md:col-span-2 bg-white min-w-0">
+                            <input type="number" id="haflah-nilai" placeholder="Nilai" class="border p-2 rounded w-full md:col-span-1 bg-white min-w-0">
+                            <button id="btn-simpan-haflah" class="bg-primary hover:bg-dark transition text-white px-4 py-2 rounded w-full md:col-span-1" onclick="simpanHaflah()">Simpan & Luluskan</button>
                         </div>
                         <p class="text-xs text-gray-500">* Menyimpan santri ke database Haflah tidak mengubah status santri di Data Santri.</p>
                     </div>
@@ -1791,21 +1800,21 @@ const firebaseConfig = {
             const tbody = document.querySelector('#table-santri tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
-
-            const qNama = document.getElementById('cari-database-santri') ? document.getElementById('cari-database-santri').value.trim().toLowerCase() : '';
-            const sortedSantri = dataSantri
-                .map((s, originalIndex) => ({ ...s, _originalIndex: originalIndex }))
-                .sort((a, b) => String(a.nama || '').localeCompare(String(b.nama || ''), 'id', { sensitivity: 'base' }));
-            const filteredSantri = qNama ? sortedSantri.filter(s => String(s.nama || '').toLowerCase().includes(qNama)) : sortedSantri;
-
-            if(filteredSantri.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="12" class="p-3 text-center text-gray-500 italic">Data santri tidak ditemukan.</td></tr>';
-            } else {
-                filteredSantri.forEach((s, index) => {
-                    let statusColor = s.status==='Aktif' ? 'bg-blue-100 text-blue-700' : (s.status==='Alumni' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700');
-                    tbody.innerHTML += `
+            const qNama = document.getElementById('cari-database-santri')?.value.trim().toLowerCase() || '';
+            const sortedSantri = dataSantri.map((s, originalIndex) => ({ ...s, _originalIndex: originalIndex }))
+                .sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base'}));
+            const filteredSantri = qNama ? sortedSantri.filter(s=>String(s.nama||'').toLowerCase().includes(qNama)) : sortedSantri;
+            const totalPages=Math.max(1,Math.ceil(filteredSantri.length/BATAS_DATABASE_SANTRI));
+            halamanDatabaseSantri=Math.min(Math.max(halamanDatabaseSantri,1),totalPages);
+            if(filteredSantri.length===0){
+                tbody.innerHTML='<tr><td colspan="12" class="p-3 text-center text-gray-500 italic">Data santri tidak ditemukan.</td></tr>';
+            }else{
+                const startRow=(halamanDatabaseSantri-1)*BATAS_DATABASE_SANTRI;
+                filteredSantri.slice(startRow,startRow+BATAS_DATABASE_SANTRI).forEach((s,index)=>{
+                    const statusColor=s.status==='Aktif'?'bg-blue-100 text-blue-700':(s.status==='Alumni'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-700');
+                    tbody.innerHTML+=`
                         <tr class="border-b">
-                            <td class="p-3">${index + 1}</td><td class="p-3">${s.nis}</td><td class="p-3">${s.nama}</td><td class="p-3">${s.lp}</td>
+                            <td class="p-3">${startRow+index+1}</td><td class="p-3">${s.nis}</td><td class="p-3">${s.nama}</td><td class="p-3">${s.lp}</td>
                             <td class="p-3">${s.ttl}</td><td class="p-3">${s.alamat}</td><td class="p-3">${s.wa}</td>
                             <td class="p-3">${s.guru}</td><td class="p-3"><span class="${statusColor} px-2 py-1 rounded text-xs font-bold">${s.status}</span></td>
                             <td class="p-3">${s.user}</td><td class="p-3">${s.pass}</td>
@@ -1813,37 +1822,51 @@ const firebaseConfig = {
                                 <button onclick="editSantri(${s._originalIndex})" class="text-blue-600 hover:text-blue-800 mr-2" title="Edit"><i class="fa-solid fa-edit"></i></button>
                                 <button onclick="deleteSantri(${s._originalIndex})" class="text-red-600 hover:text-red-800" title="Hapus"><i class="fa-solid fa-trash"></i></button>
                             </td>
-                        </tr>
-                    `;
+                        </tr>`;
                 });
             }
+            const pager=document.getElementById('pagination-database-santri');
+            if(pager){
+                pager.innerHTML='';
+                for(let page=1;page<=totalPages;page++){
+                    const active=page===halamanDatabaseSantri;
+                    pager.innerHTML+=`<button onclick="gotoHalamanDatabaseSantri(${page})" class="min-w-9 px-3 py-1 rounded border ${active?'bg-primary text-white border-primary':'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}">${page}</button>`;
+                }
+            }
+            const dashSantri=document.getElementById('dash-santri');
+            if(dashSantri) dashSantri.innerText=dataSantri.length;
+            renderSelectHaflahSantri();renderDatalistSantri();
+        }
 
-            const dashSantri = document.getElementById('dash-santri');
-            if(dashSantri) dashSantri.innerText = dataSantri.length;
-            renderSelectHaflahSantri(); renderDatalistSantri();
+        function gotoHalamanDatabaseSantri(page){
+            halamanDatabaseSantri=Math.max(1,Number(page)||1);
+            renderSantri();
         }
 
         function renderGuru() {
-            const tbody = document.querySelector('#table-guru tbody');
-            tbody.innerHTML = '';
-            if(dataGuru.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" class="p-3 text-center text-gray-500 italic">Belum ada data guru.</td></tr>';
+            const tbody=document.querySelector('#table-guru tbody');
+            if(!tbody) return;
+            tbody.innerHTML='';
+            const sortedGuru=dataGuru.map((g,originalIndex)=>({...g,_originalIndex:originalIndex}))
+                .sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base'}));
+            if(sortedGuru.length===0){
+                tbody.innerHTML='<tr><td colspan="12" class="p-3 text-center text-gray-500 italic">Belum ada data guru.</td></tr>';
+            }else{
+                sortedGuru.forEach((g,index)=>{
+                    tbody.innerHTML+=`
+                        <tr class="border-b">
+                            <td class="p-3">${index+1}</td><td class="p-3">${g.nik}</td><td class="p-3">${g.nama}</td><td class="p-3">${g.lp}</td>
+                            <td class="p-3">${g.ttl}</td><td class="p-3">${g.alamat}</td><td class="p-3">${g.bank}</td>
+                            <td class="p-3">${g.wa}</td><td class="p-3">Rp ${formatRupiah(g.gaji)}</td>
+                            <td class="p-3">${g.user}</td><td class="p-3">${g.pass}</td>
+                            <td class="p-3">
+                                <button onclick="editGuru(${g._originalIndex})" class="text-blue-600 hover:text-blue-800 mr-2" title="Edit"><i class="fa-solid fa-edit"></i></button>
+                                <button onclick="deleteGuru(${g._originalIndex})" class="text-red-600 hover:text-red-800" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>`;
+                });
             }
-            dataGuru.forEach((g, index) => {
-                tbody.innerHTML += `
-                    <tr class="border-b">
-                        <td class="p-3">${g.nik}</td><td class="p-3">${g.nama}</td><td class="p-3">${g.lp}</td>
-                        <td class="p-3">${g.ttl}</td><td class="p-3">${g.alamat}</td><td class="p-3">${g.bank}</td>
-                        <td class="p-3">${g.wa}</td><td class="p-3">Rp ${formatRupiah(g.gaji)}</td>
-                        <td class="p-3">${g.user}</td><td class="p-3">${g.pass}</td>
-                        <td class="p-3">
-                            <button onclick="editGuru(${index})" class="text-blue-600 hover:text-blue-800 mr-2" title="Edit"><i class="fa-solid fa-edit"></i></button>
-                            <button onclick="deleteGuru(${index})" class="text-red-600 hover:text-red-800" title="Hapus"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-            document.getElementById('dash-guru').innerText = dataGuru.length;
+            document.getElementById('dash-guru').innerText=dataGuru.length;
             updateGuruDropdown();
             populateFilterGroups();
         }
@@ -2136,6 +2159,10 @@ const firebaseConfig = {
         }
 
         function cetakResi(index) {
+            if(currentRole === 'ortu') {
+                tampilkanNotif('Akun santri hanya dapat melihat history SPP dan tidak dapat mencetak resi.');
+                return;
+            }
             const data = dataKeuanganRiwayat[index];
             const total = parseInt(data.spp) + parseInt(data.infaq);
             
@@ -2203,6 +2230,8 @@ const firebaseConfig = {
         }
 
         const daftarBulanSPP = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        let halamanDatabaseSantri = 1;
+        const BATAS_DATABASE_SANTRI = 10;
         let halamanBelumBayarSPP = 1;
         const BATAS_SANTRI_SPP = 10;
         let halamanRiwayatProgres = 1;
@@ -2386,8 +2415,28 @@ const firebaseConfig = {
         }
 
         document.addEventListener('input', (event) => {
-            if(event.target && event.target.id === 'man-spp-nama') renderOpsiBulanSPP();
+            if(event.target && event.target.id === 'man-spp-nama') sinkronNamaManualSPP(event.target.value);
         });
+
+        function sinkronNamaManualSPP(nilai){
+            const list=document.getElementById('list-santri-manual-spp');
+            if(list){
+                const q=String(nilai||'').trim().toLowerCase();
+                list.innerHTML='';
+                dataSantri.filter(s=>s.status==='Aktif'&&(!q||String(s.nama||'').toLowerCase().includes(q)))
+                    .forEach(s=>list.innerHTML+=`<option value="${s.nama}"></option>`);
+            }
+            renderOpsiBulanSPP();
+        }
+
+        function normalisasiNamaManualSPP(nilai){
+            const input=document.getElementById('man-spp-nama');
+            if(!input)return;
+            const q=String(nilai||'').trim().toLowerCase();
+            const exact=dataSantri.find(s=>s.status==='Aktif'&&String(s.nama||'').trim().toLowerCase()===q);
+            if(exact) input.value=exact.nama;
+            renderOpsiBulanSPP();
+        }
 
         function sesuaikanFormKeuanganManual() {
             const jenis = document.getElementById('man-jenis')?.value || 'Pemasukan';
@@ -2802,19 +2851,18 @@ const firebaseConfig = {
         }
 
         function sesuaikanFormUjian() {
-            const jenis = document.getElementById('ujian-jenis')?.value || '';
-            const juz = document.getElementById('ujian-juz');
-            const ket = document.getElementById('ujian-keterangan-tahfidz');
-            if(!juz || !ket) return;
-
-            if(jenis === 'Tahfidz') {
+            const jenis=document.getElementById('ujian-jenis')?.value||'';
+            const juz=document.getElementById('ujian-juz');
+            const ket=document.getElementById('ujian-keterangan-tahfidz');
+            if(!juz||!ket)return;
+            if(jenis==='Tahfidz'||jenis==='Pra Tahfidz'){
                 juz.classList.remove('hidden');
                 ket.classList.remove('hidden');
-            } else {
+            }else{
                 juz.classList.add('hidden');
                 ket.classList.add('hidden');
-                juz.value = '';
-                ket.value = '';
+                juz.value='';
+                ket.value='';
             }
         }
 
@@ -2831,7 +2879,7 @@ const firebaseConfig = {
             if(!santriObj) { tampilkanNotif('Nama santri tidak ditemukan di database!'); return; }
             if(!jenis) { tampilkanNotif('Silakan pilih jenis ujian!'); return; }
             if(Number.isNaN(nilai) || nilai < 0 || nilai > 100) { tampilkanNotif('Nilai ujian harus berada pada 0-100!'); return; }
-            if(jenis === 'Tahfidz' && (!juz || !keteranganTahfidz)) { tampilkanNotif('Silakan pilih Juz dan A/B/C/D untuk ujian Tahfidz!'); return; }
+            if((jenis === 'Tahfidz' || jenis === 'Pra Tahfidz') && (!juz || !keteranganTahfidz)) { tampilkanNotif('Silakan pilih Juz dan A/B/C/D untuk jenis ujian ini!'); return; }
 
             const now = new Date();
             const dataBaru = {
@@ -2841,8 +2889,8 @@ const firebaseConfig = {
                 nama: santriObj.nama,
                 nis: santriObj.nis,
                 jenis,
-                juz: jenis === 'Tahfidz' ? Number(juz) : null,
-                keterangan: jenis === 'Tahfidz' ? keteranganTahfidz : '',
+                juz: (jenis === 'Tahfidz' || jenis === 'Pra Tahfidz') ? Number(juz) : null,
+                keterangan: (jenis === 'Tahfidz' || jenis === 'Pra Tahfidz') ? keteranganTahfidz : '',
                 nilai
             };
 
@@ -2860,58 +2908,42 @@ const firebaseConfig = {
             tampilkanNotif('Hasil ujian santri berhasil disimpan!');
         }
 
-        function renderHistoryUjian() {
-            const tbody = document.querySelector('#table-history-ujian tbody');
-            const pager = document.getElementById('pagination-history-ujian');
-            if(!tbody) return;
-            tbody.innerHTML = '';
-
-            const qNama = document.getElementById('cari-history-ujian')?.value.toLowerCase() || '';
-            let rows = dataUjian.filter(u => {
-                if(currentRole === 'ortu' && loggedInSantri && String(u.nama || '').toLowerCase() !== String(loggedInSantri.nama || '').toLowerCase()) return false;
-                if(currentRole === 'guru' && loggedInSantri) {
-                    const sObj = dataSantri.find(s => String(s.nama || '').toLowerCase() === String(u.nama || '').toLowerCase());
-                    if(!sObj || String(sObj.guru || '').toLowerCase() !== String(loggedInSantri.nama || '').toLowerCase()) return false;
+        function renderHistoryUjian(){
+            const tbody=document.querySelector('#table-history-ujian tbody');
+            const pager=document.getElementById('pagination-history-ujian');
+            const table=document.getElementById('table-history-ujian');
+            if(!tbody||!table)return;
+            tbody.innerHTML='';
+            const qNama=document.getElementById('cari-history-ujian')?.value.toLowerCase()||'';
+            const filterJenis=document.getElementById('filter-history-ujian-jenis')?.value||'';
+            const rows=dataUjian.filter(u=>{
+                if(currentRole==='ortu'&&loggedInSantri&&String(u.nama||'').toLowerCase()!==String(loggedInSantri.nama||'').toLowerCase())return false;
+                if(currentRole==='guru'&&loggedInSantri){
+                    const sObj=dataSantri.find(s=>String(s.nama||'').toLowerCase()===String(u.nama||'').toLowerCase());
+                    if(!sObj||String(sObj.guru||'').toLowerCase()!==String(loggedInSantri.nama||'').toLowerCase())return false;
                 }
-                return String(u.nama || '').toLowerCase().includes(qNama);
+                return String(u.nama||'').toLowerCase().includes(qNama)&&(!filterJenis||String(u.jenis||'')===filterJenis);
             });
-
-            const perPage = 10;
-            const totalPages = Math.max(1, Math.ceil(rows.length / perPage));
-            halamanHistoryUjian = Math.min(halamanHistoryUjian, totalPages);
-            if(halamanHistoryUjian < 1) halamanHistoryUjian = 1;
-
-            if(rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada history hasil ujian.</td></tr>';
-            } else {
-                const startRow = (halamanHistoryUjian - 1) * perPage;
-                rows.slice(startRow, startRow + perPage).forEach(u => {
-                    const jenis = String(u.jenis || '');
-                    const isTahfidz = jenis === 'Tahfidz';
-                    tbody.innerHTML += `
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="p-3">${u.tgl || '-'}</td>
-                            <td class="p-3 font-medium">${u.nama || '-'}</td>
-                            <td class="p-3">
-                                <select class="border p-1.5 rounded bg-white text-sm" onchange="ubahJenisHistoryUjian(${u.id}, this.value)">
-                                    <option value="Pra Tahfidz" ${jenis === 'Pra Tahfidz' ? 'selected' : ''}>Ujian Pra Tahfidz</option>
-                                    <option value="Tahfidz" ${jenis === 'Tahfidz' ? 'selected' : ''}>Ujian Tahfidz</option>
-                                    <option value="Iqra'" ${jenis === "Iqra'" ? 'selected' : ''}>Ujian Iqra'</option>
-                                </select>
-                            </td>
-                            <td class="p-3">${isTahfidz && u.juz ? 'Juz ' + u.juz : ''}</td>
-                            <td class="p-3">${isTahfidz && u.keterangan ? u.keterangan : ''}</td>
-                            <td class="p-3 font-bold text-blue-700">${u.nilai ?? '-'}</td>
-                        </tr>
-                    `;
+            const perPage=10;
+            const totalPages=Math.max(1,Math.ceil(rows.length/perPage));
+            halamanHistoryUjian=Math.min(Math.max(halamanHistoryUjian,1),totalPages);
+            const isIqraFilter=filterJenis==="Iqra'";
+            table.querySelector('thead').innerHTML=isIqraFilter?`<tr class="table-header"><th class="p-3">Tanggal</th><th class="p-3">Nama Santri</th><th class="p-3">Jenis Ujian</th><th class="p-3">Nilai</th></tr>`:`<tr class="table-header"><th class="p-3">Tanggal</th><th class="p-3">Nama Santri</th><th class="p-3">Jenis Ujian</th><th class="p-3">Juz</th><th class="p-3">Keterangan</th><th class="p-3">Nilai</th></tr>`;
+            if(rows.length===0){
+                tbody.innerHTML=`<tr><td colspan="${isIqraFilter?4:6}" class="p-3 text-center text-gray-500 italic">Belum ada history hasil ujian.</td></tr>`;
+            }else{
+                const startRow=(halamanHistoryUjian-1)*perPage;
+                rows.slice(startRow,startRow+perPage).forEach(u=>{
+                    const jenis=String(u.jenis||'');
+                    const isDetail=jenis==='Tahfidz'||jenis==='Pra Tahfidz';
+                    tbody.innerHTML+=isIqraFilter?`<tr class="border-b hover:bg-gray-50"><td class="p-3">${u.tgl||'-'}</td><td class="p-3 font-medium">${u.nama||'-'}</td><td class="p-3">${jenis}</td><td class="p-3 font-bold text-blue-700">${u.nilai??'-'}</td></tr>`:`<tr class="border-b hover:bg-gray-50"><td class="p-3">${u.tgl||'-'}</td><td class="p-3 font-medium">${u.nama||'-'}</td><td class="p-3">${jenis}</td><td class="p-3">${isDetail&&u.juz?'Juz '+u.juz:''}</td><td class="p-3">${isDetail&&u.keterangan?u.keterangan:''}</td><td class="p-3 font-bold text-blue-700">${u.nilai??'-'}</td></tr>`;
                 });
             }
-
-            if(pager) {
-                pager.innerHTML = '';
-                for(let page = 1; page <= totalPages; page++) {
-                    const active = page === halamanHistoryUjian;
-                    pager.innerHTML += `<button onclick="gotoHalamanHistoryUjian(${page})" class="min-w-9 px-3 py-1 rounded border ${active ? 'bg-primary text-white border-primary' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}">${page}</button>`;
+            if(pager){
+                pager.innerHTML='';
+                for(let page=1;page<=totalPages;page++){
+                    const active=page===halamanHistoryUjian;
+                    pager.innerHTML+=`<button onclick="gotoHalamanHistoryUjian(${page})" class="min-w-9 px-3 py-1 rounded border ${active?'bg-primary text-white border-primary':'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}">${page}</button>`;
                 }
             }
         }
@@ -2920,7 +2952,7 @@ const firebaseConfig = {
             const record = dataUjian.find(u => String(u.id) === String(id));
             if(!record || !jenisBaru) return;
             record.jenis = jenisBaru;
-            if(jenisBaru !== 'Tahfidz') {
+            if(jenisBaru === "Iqra'") {
                 record.juz = null;
                 record.keterangan = '';
             }
