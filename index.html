@@ -1125,6 +1125,7 @@ const firebaseConfig = {
         let rutasyCloudListenerAttached = false;
         let rutasyCloudResetAt = "";
         let rutasyCloudInitialized = false;
+        let rutasySantriImporting = false;
 
         const RUTASY_CLOUD_MAP = {
             rutasy_santri: 'dataSantri',
@@ -1265,6 +1266,11 @@ const firebaseConfig = {
                     if(Object.prototype.hasOwnProperty.call(snapshotValue, key)) {
                         const remoteValue = snapshotValue[key];
                         const localValue = getRuntimeStateByKey(key);
+
+                        // Saat import Excel berlangsung, node santri tidak boleh diganti sementara
+                        // oleh snapshot listener lama. Setelah operasi set() selesai, snapshot baru
+                        // akan menyinkronkan data yang benar.
+                        if(key === 'rutasy_santri' && rutasySantriImporting) return;
 
                         // Jangan biarkan snapshot kosong/stale menghapus data santri yang masih ada.
                         // Marker reset global tetap menjadi pengecualian dan selalu berwenang mengosongkan data.
@@ -1477,20 +1483,41 @@ const firebaseConfig = {
 
         // --- AUTH & NAVIGATION ---
         window.onload = async () => {
-            // Firebase tidak boleh membuat halaman menggantung tanpa batas.
-            await Promise.race([
-                initFirebaseSync(),
-                new Promise(resolve => setTimeout(resolve, 6000))
-            ]);
+            // Tampilkan UI login/dashboard secara deterministik setelah DOM siap.
+            // Sinkronisasi Firebase dijalankan sesudah state awal dibaca agar startup
+            // tidak pernah meninggalkan dashboard dalam kondisi setengah-render.
+            try {
+                await Promise.race([
+                    initFirebaseSync(),
+                    new Promise(resolve => setTimeout(resolve, 6000))
+                ]);
+            } catch(error) {
+                console.error('Inisialisasi Firebase saat startup:', error);
+            }
 
             const savedRole = localStorage.getItem('rutasy_role');
             const savedUser = localStorage.getItem('rutasy_username');
-            if(savedRole) {
-                currentRole = savedRole;
-                if(currentRole === 'ortu' && savedUser) loggedInSantri = dataSantri.find(s => String(s.user || '').toLowerCase() === savedUser.toLowerCase()) || null;
-                else if (currentRole === 'guru' && savedUser) loggedInSantri = dataGuru.find(g => String(g.user || '').toLowerCase() === savedUser.toLowerCase()) || null;
-                jalankanAplikasiLanjutan();
+            if(!savedRole) return;
+
+            currentRole = savedRole;
+            loggedInSantri = null;
+            if(currentRole === 'ortu' && savedUser) {
+                loggedInSantri = dataSantri.find(s => String(s.user || '').toLowerCase() === savedUser.toLowerCase()) || null;
+                if(!loggedInSantri) {
+                    localStorage.removeItem('rutasy_role');
+                    localStorage.removeItem('rutasy_username');
+                    return;
+                }
+            } else if(currentRole === 'guru' && savedUser) {
+                loggedInSantri = dataGuru.find(g => String(g.user || '').toLowerCase() === savedUser.toLowerCase()) || null;
+                if(!loggedInSantri) {
+                    localStorage.removeItem('rutasy_role');
+                    localStorage.removeItem('rutasy_username');
+                    return;
+                }
             }
+
+            jalankanAplikasiLanjutan();
         };
 
         function login() {
@@ -1529,13 +1556,19 @@ const firebaseConfig = {
         function jalankanAplikasiLanjutan() {
             const loginScreen = document.getElementById('login-screen');
             const mainApp = document.getElementById('main-app');
+            const dashboardView = document.getElementById('view-dashboard');
+            const mainContent = document.querySelector('#main-app main');
+
+            destroyDashboardCharts();
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             if(loginScreen) loginScreen.classList.add('hidden');
             if(mainApp) {
                 mainApp.classList.remove('hidden');
-                // Paksa layout dihitung ulang setelah pergantian akun agar view tidak membawa state visual akun sebelumnya.
+                void mainApp.offsetWidth;
                 void mainApp.offsetHeight;
             }
-            
+            if(mainContent) mainContent.scrollTop = 0;
+
             let labelRole = currentRole.replace('_', ' ');
             if (currentRole === 'ortu' && loggedInSantri) {
                 labelRole = `Ortu (${loggedInSantri.nama})`;
@@ -1557,27 +1590,20 @@ const firebaseConfig = {
             buildSidebar(currentRole);
             applyRoleRestrictions(currentRole);
             
-            // Tampilkan view tujuan lebih dulu supaya error pada salah satu renderer
-            // tidak meninggalkan halaman putih atau view lama yang "lengket".
             const defaultMenu = roleMenus[currentRole]?.[0];
-            if(defaultMenu) switchView(defaultMenu.id, defaultMenu.label);
-
             try {
                 renderSemuaData();
             } catch(error) {
                 console.error('Render awal aplikasi:', error);
             }
 
-            // Render ulang view tujuan setelah seluruh data selesai dipasang.
+            // Selalu pasang view default terakhir, setelah semua renderer selesai.
             if(defaultMenu) switchView(defaultMenu.id, defaultMenu.label);
-
-            const mainContent = document.querySelector('#main-app main');
             if(mainContent) mainContent.scrollTop = 0;
             window.scrollTo(0, 0);
+            void dashboardView?.offsetHeight;
             requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    if(defaultMenu) switchView(defaultMenu.id, defaultMenu.label);
-                });
+                if(defaultMenu) switchView(defaultMenu.id, defaultMenu.label);
             });
         }
 function renderSemuaData() {
@@ -1939,6 +1965,7 @@ function renderSemuaData() {
             if(!tbody) return;
             tbody.innerHTML = '';
             const qNama = document.getElementById('cari-database-santri')?.value.trim().toLowerCase() || '';
+            const qGuru = document.getElementById('filter-database-santri-guru')?.value.trim().toLowerCase() || '';
             const sortedSantri = dataSantri.map((s, originalIndex) => ({ ...s, _originalIndex: originalIndex }))
                 .sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base'}));
             const filteredSantri = sortedSantri.filter(s => {
@@ -2139,16 +2166,32 @@ function renderSemuaData() {
                 }
 
                 // REPLACE TOTAL:
-                // database santri lama dihapus/ditimpa oleh isi file Excel yang baru.
-                // Tidak ada data santri lama yang digabungkan kembali.
-                dataSantri = importedRows.map(item => ({...item}));
-                await persistMultipleData({ rutasy_santri: dataSantri });
+                // File Excel menjadi satu-satunya sumber database santri baru.
+                // Tulis localStorage dan Firebase secara eksplisit supaya database lama
+                // benar-benar tertimpa dan tidak dapat dikalahkan transaksi sebelumnya.
+                const replacementSantri = importedRows.map(item => ({...item}));
+                dataSantri = replacementSantri;
+                localStorage.setItem('rutasy_santri', JSON.stringify(replacementSantri));
+
+                rutasySantriImporting = true;
+                try {
+                    if(rutasyCloudEnabled && rutasyDatabase) {
+                        await rutasyDatabase.ref('rutasy/rutasy_santri').set(replacementSantri);
+                    } else {
+                        await persistMultipleData({ rutasy_santri: replacementSantri });
+                    }
+                } finally {
+                    rutasySantriImporting = false;
+                }
 
                 halamanDatabaseSantri = 1;
                 renderSantri();
                 renderDatalistSantri();
                 populateFilterGroups();
                 renderTabelHaflah();
+                renderSantri();
+                const dashboardAfterImport = document.getElementById('view-dashboard');
+                if(dashboardAfterImport && !dashboardAfterImport.classList.contains('hidden')) queueGlobalChartsRender();
 
                 let message = `${importedRows.length} data santri berhasil diimpor.`;
                 if(invalidRows.length) {
