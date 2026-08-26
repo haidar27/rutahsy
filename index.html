@@ -18,9 +18,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- PDF Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <!-- Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -202,8 +201,8 @@
                                     <select id="filter-database-santri-guru" class="border p-2 rounded text-sm bg-white w-full sm:w-52" onchange="halamanDatabaseSantri = 1; renderSantri()">
                                         <option value="">Semua Kelompok</option>
                                     </select>
-                                    <button type="button" onclick="exportDatabaseSantriPDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap">
-                                        <i class="fa-solid fa-file-pdf"></i> Export PDF
+                                    <button type="button" onclick="exportDatabaseSantriExcel()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap">
+                                        <i class="fa-solid fa-file-excel"></i> Export Excel
                                     </button>
                                 </div>
                             </div>
@@ -1537,7 +1536,12 @@ const firebaseConfig = {
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('login-username').value = ''; document.getElementById('login-password').value = '';
-            chartsRendered = false; 
+            chartsRendered = false;
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            const dashboardView = document.getElementById('view-dashboard');
+            if(dashboardView) dashboardView.classList.remove('hidden');
+            document.getElementById('page-title').innerText = 'Dashboard';
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active', 'text-white'));
             tampilkanNotif('Berhasil Keluar dari Sistem');
         }
 
@@ -1872,9 +1876,9 @@ const firebaseConfig = {
             renderSantri();
         }
 
-        function exportDatabaseSantriPDF() {
-            if(typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
-                tampilkanNotif('Fitur PDF belum siap. Periksa koneksi internet lalu coba lagi.');
+        function exportDatabaseSantriExcel() {
+            if(typeof XLSX === 'undefined') {
+                tampilkanNotif('Fitur Excel belum siap. Periksa koneksi internet lalu coba lagi.');
                 return;
             }
 
@@ -1894,46 +1898,26 @@ const firebaseConfig = {
                 return;
             }
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-            const title = 'DATABASE SANTRI | RUTASY';
-            const subtitle = qGuru ? `Kelompok: ${rows[0].guru || qGuru}` : 'Semua Kelompok';
-            const printedAt = new Date().toLocaleString('id-ID');
+            const dataExcel = rows.map((s, i) => ({
+                'No.': i + 1,
+                'NIS': s.nis || '-',
+                'Nama Lengkap': s.nama || '-',
+                'L/P': s.lp || '-',
+                'TTL': s.ttl || '-',
+                'Alamat': s.alamat || '-',
+                'No. WA Ortu': s.wa || '-',
+                'Kelompok': s.guru || '-',
+                'Status': s.status || '-',
+                'Username': s.user || '-',
+                'Password': s.pass || '-'
+            }));
 
-            doc.setFontSize(16);
-            doc.setTextColor(4, 120, 87);
-            doc.text(title, 14, 14);
-            doc.setFontSize(9);
-            doc.setTextColor(80, 80, 80);
-            doc.text(subtitle, 14, 20);
-            doc.text(`Dicetak: ${printedAt}`, 14, 25);
-
-            const body = rows.map((s, i) => [
-                i + 1,
-                s.nis || '-',
-                s.nama || '-',
-                s.lp || '-',
-                s.ttl || '-',
-                s.alamat || '-',
-                s.wa || '-',
-                s.guru || '-',
-                s.status || '-',
-                s.user || '-',
-                s.pass || '-'
-            ]);
-
-            doc.autoTable({
-                startY: 30,
-                head: [['No.', 'NIS', 'Nama Lengkap', 'L/P', 'TTL', 'Alamat', 'No. WA Ortu', 'Kelompok', 'Status', 'Username', 'Password']],
-                body,
-                theme: 'grid',
-                styles: { fontSize: 7, cellPadding: 2, valign: 'middle' },
-                headStyles: { fillColor: [4, 120, 87], textColor: 255, fontStyle: 'bold' },
-                alternateRowStyles: { fillColor: [248, 250, 252] },
-                margin: { left: 10, right: 10 }
-            });
-
-            doc.save(`Database-Santri-${new Date().toISOString().slice(0,10)}.pdf`);
+            const ws = XLSX.utils.json_to_sheet(dataExcel);
+            const widths = [6,16,28,8,24,36,18,24,14,20,20];
+            ws['!cols'] = widths.map(w => ({ wch: w }));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Database Santri');
+            XLSX.writeFile(wb, `Database-Santri-${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         function renderGuru() {
