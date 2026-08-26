@@ -18,6 +18,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -194,7 +197,15 @@
                         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
                             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
                                 <h3 class="font-bold text-lg w-full md:w-auto">Database Santri</h3>
-                                <input type="text" id="cari-database-santri" placeholder="Cari nama santri..." class="border p-2 rounded text-sm w-full sm:w-64" onkeyup="halamanDatabaseSantri = 1; renderSantri()">
+                                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                    <input type="text" id="cari-database-santri" placeholder="Cari nama santri..." class="border p-2 rounded text-sm w-full sm:w-64" onkeyup="halamanDatabaseSantri = 1; renderSantri()">
+                                    <select id="filter-database-santri-guru" class="border p-2 rounded text-sm bg-white w-full sm:w-52" onchange="halamanDatabaseSantri = 1; renderSantri()">
+                                        <option value="">Semua Kelompok</option>
+                                    </select>
+                                    <button type="button" onclick="exportDatabaseSantriPDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap">
+                                        <i class="fa-solid fa-file-pdf"></i> Export PDF
+                                    </button>
+                                </div>
                             </div>
                             <button class="bg-primary text-white px-4 py-2 rounded text-sm btn-admin-only w-full md:w-auto" onclick="bukaModalTambahSantri()"><i class="fa-solid fa-plus"></i> Tambah Santri</button>
                         </div>
@@ -403,7 +414,7 @@
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm min-w-[800px]" id="table-riwayat-keuangan">
-                                <thead><tr class="table-header"><th class="p-3">Tanggal</th><th class="p-3">Nama</th><th class="p-3">Kelompok</th><th class="p-3">Bulan</th><th class="p-3">Metode</th><th class="p-3">SPP</th><th class="p-3">Infaq</th><th class="p-3">Status</th><th class="p-3 btn-print">Resi</th><th class="p-3 admin-keuangan-only admin-global-only">Aksi</th></tr></thead>
+                                <thead><tr class="table-header"><th class="p-3">Tanggal</th><th class="p-3">Nama</th><th class="p-3">Kelompok</th><th class="p-3">Bulan</th><th class="p-3">Metode</th><th class="p-3">SPP</th><th class="p-3">Infaq</th><th class="p-3">Status</th><th class="p-3 btn-print" id="th-resi-spp">Resi</th><th class="p-3 admin-keuangan-only admin-global-only" id="th-aksi-spp">Aksi</th></tr></thead>
                                 <tbody>
                                     <!-- Dinamis dari JS -->
                                 </tbody>
@@ -442,7 +453,14 @@
 
                     <!-- Riwayat Absensi Guru Global (Admin Only) -->
                     <div class="card mb-6 btn-admin-only">
-                        <h3 class="font-bold mb-4 text-blue-700">Riwayat Kehadiran Guru</h3>
+                        <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
+                            <h3 class="font-bold text-blue-700 w-full md:w-auto">Riwayat Kehadiran Guru</h3>
+                            <div class="flex items-center gap-2 w-full md:w-auto">
+                                <label for="filter-tgl-absen-guru" class="text-sm font-semibold text-gray-600 whitespace-nowrap">Tanggal:</label>
+                                <input type="date" id="filter-tgl-absen-guru" class="border p-2 rounded text-sm bg-white w-full md:w-auto" onchange="renderAbsenGuruGlobal()">
+                                <button type="button" onclick="document.getElementById('filter-tgl-absen-guru').value=''; renderAbsenGuruGlobal();" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded text-sm whitespace-nowrap">Semua</button>
+                            </div>
+                        </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm border" id="table-absen-guru-global">
                                 <thead>
@@ -1810,7 +1828,11 @@ const firebaseConfig = {
             const qNama = document.getElementById('cari-database-santri')?.value.trim().toLowerCase() || '';
             const sortedSantri = dataSantri.map((s, originalIndex) => ({ ...s, _originalIndex: originalIndex }))
                 .sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base'}));
-            const filteredSantri = qNama ? sortedSantri.filter(s=>String(s.nama||'').toLowerCase().includes(qNama)) : sortedSantri;
+            const filteredSantri = sortedSantri.filter(s => {
+                const matchNama = !qNama || String(s.nama||'').toLowerCase().includes(qNama);
+                const matchGuru = !qGuru || String(s.guru||'').toLowerCase() === qGuru;
+                return matchNama && matchGuru;
+            });
             const totalPages=Math.max(1,Math.ceil(filteredSantri.length/BATAS_DATABASE_SANTRI));
             halamanDatabaseSantri=Math.min(Math.max(halamanDatabaseSantri,1),totalPages);
             if(filteredSantri.length===0){
@@ -1848,6 +1870,70 @@ const firebaseConfig = {
         function gotoHalamanDatabaseSantri(page){
             halamanDatabaseSantri=Math.max(1,Number(page)||1);
             renderSantri();
+        }
+
+        function exportDatabaseSantriPDF() {
+            if(typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+                tampilkanNotif('Fitur PDF belum siap. Periksa koneksi internet lalu coba lagi.');
+                return;
+            }
+
+            const qNama = document.getElementById('cari-database-santri')?.value.trim().toLowerCase() || '';
+            const qGuru = document.getElementById('filter-database-santri-guru')?.value.trim().toLowerCase() || '';
+            const rows = dataSantri
+                .map((s, originalIndex) => ({ ...s, _originalIndex: originalIndex }))
+                .sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base'}))
+                .filter(s => {
+                    const matchNama = !qNama || String(s.nama||'').toLowerCase().includes(qNama);
+                    const matchGuru = !qGuru || String(s.guru||'').toLowerCase() === qGuru;
+                    return matchNama && matchGuru;
+                });
+
+            if(rows.length === 0) {
+                tampilkanNotif('Tidak ada data santri yang sesuai untuk diekspor.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const title = 'DATABASE SANTRI | RUTASY';
+            const subtitle = qGuru ? `Kelompok: ${rows[0].guru || qGuru}` : 'Semua Kelompok';
+            const printedAt = new Date().toLocaleString('id-ID');
+
+            doc.setFontSize(16);
+            doc.setTextColor(4, 120, 87);
+            doc.text(title, 14, 14);
+            doc.setFontSize(9);
+            doc.setTextColor(80, 80, 80);
+            doc.text(subtitle, 14, 20);
+            doc.text(`Dicetak: ${printedAt}`, 14, 25);
+
+            const body = rows.map((s, i) => [
+                i + 1,
+                s.nis || '-',
+                s.nama || '-',
+                s.lp || '-',
+                s.ttl || '-',
+                s.alamat || '-',
+                s.wa || '-',
+                s.guru || '-',
+                s.status || '-',
+                s.user || '-',
+                s.pass || '-'
+            ]);
+
+            doc.autoTable({
+                startY: 30,
+                head: [['No.', 'NIS', 'Nama Lengkap', 'L/P', 'TTL', 'Alamat', 'No. WA Ortu', 'Kelompok', 'Status', 'Username', 'Password']],
+                body,
+                theme: 'grid',
+                styles: { fontSize: 7, cellPadding: 2, valign: 'middle' },
+                headStyles: { fillColor: [4, 120, 87], textColor: 255, fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                margin: { left: 10, right: 10 }
+            });
+
+            doc.save(`Database-Santri-${new Date().toISOString().slice(0,10)}.pdf`);
         }
 
         function renderGuru() {
@@ -2048,6 +2134,11 @@ const firebaseConfig = {
             const qGuru = document.getElementById('filter-spp-guru')?.value.toLowerCase() || '';
             const filterDate = document.getElementById('filter-tgl-riwayat-spp')?.value || '';
 
+            const resiHeader = document.getElementById('th-resi-spp');
+            const aksiHeader = document.getElementById('th-aksi-spp');
+            if(resiHeader) resiHeader.classList.toggle('hidden', currentRole === 'ortu');
+            if(aksiHeader) aksiHeader.classList.toggle('hidden', currentRole === 'ortu' || !(currentRole === 'admin_keuangan' || currentRole === 'admin_global'));
+
             const tbodyRiwayat = document.querySelector('#table-riwayat-keuangan tbody');
             if(tbodyRiwayat) {
                 tbodyRiwayat.innerHTML = '';
@@ -2069,14 +2160,14 @@ const firebaseConfig = {
                                 <td class="p-3 font-bold text-gray-700">${r.bulan || '-'}</td><td class="p-3 text-gray-600">${r.metode || '-'}</td>
                                 <td class="p-3 font-bold text-blue-600">Rp ${formatRupiah(r.spp)}</td><td class="p-3 font-bold text-green-600">Rp ${formatRupiah(r.infaq)}</td>
                                 <td class="p-3"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Lunas</span></td>
-                                <td class="p-3 btn-print"><button class="text-blue-500 hover:text-blue-700" onclick="cetakResi(${index})"><i class="fa-solid fa-print"></i></button></td>
-                                <td class="p-3 admin-keuangan-only admin-global-only"><button class="text-red-600 hover:text-red-800" onclick="hapusRiwayatSPP(${index})" title="Hapus Riwayat SPP"><i class="fa-solid fa-trash"></i></button></td>
+                                ${currentRole === 'ortu' ? '' : `<td class="p-3 btn-print"><button class="text-blue-500 hover:text-blue-700" onclick="cetakResi(${index})"><i class="fa-solid fa-print"></i></button></td>`}
+                                ${currentRole === 'admin_keuangan' || currentRole === 'admin_global' ? `<td class="p-3"><button class="text-red-600 hover:text-red-800" onclick="hapusRiwayatSPP(${index})" title="Hapus Riwayat SPP"><i class="fa-solid fa-trash"></i></button></td>` : ''}
                             </tr>
                         `;
                     }
                 });
                 if(visibleCount === 0) {
-                    tbodyRiwayat.innerHTML = '<tr><td colspan="10" class="p-3 text-center text-gray-500 italic">Belum ada riwayat pembayaran yang sesuai.</td></tr>';
+                    tbodyRiwayat.innerHTML = `<tr><td colspan="${currentRole === 'ortu' ? 8 : ((currentRole === 'admin_keuangan' || currentRole === 'admin_global') ? 10 : 9)}" class="p-3 text-center text-gray-500 italic">Belum ada riwayat pembayaran yang sesuai.</td></tr>`;
                 }
             }
         }
@@ -2094,7 +2185,7 @@ const firebaseConfig = {
         }
 
         function hapusRiwayatSPP(index) {
-            if(currentRole === 'ortu') { tampilkanNotif('Akun santri hanya dapat melihat history SPP sendiri.'); return; }
+            if(currentRole !== 'admin_global' && currentRole !== 'admin_keuangan') { tampilkanNotif('Akun santri hanya dapat melihat history SPP sendiri.'); return; }
             bukaKonfirmasi('Hapus Riwayat SPP', 'Yakin ingin menghapus riwayat pembayaran SPP ini? Penghapusan akan memengaruhi grafik arus kas masuk.', async () => {
                 if(index < 0 || index >= dataKeuanganRiwayat.length) return;
                 dataKeuanganRiwayat.splice(index, 1);
@@ -2167,7 +2258,7 @@ const firebaseConfig = {
         }
 
         function cetakResi(index) {
-            if(currentRole === 'ortu') {
+            if(currentRole === 'ortu' || !['admin_global','admin_keuangan'].includes(currentRole)) {
                 tampilkanNotif('Akun santri hanya dapat melihat history SPP dan tidak dapat mencetak resi.');
                 return;
             }
@@ -2642,6 +2733,18 @@ const firebaseConfig = {
             const jamStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
             const todayKey = now.toISOString().split('T')[0];
+
+            const batasAbsen = String(dataSettings.batasAbsen || '').trim();
+            if(batasAbsen) {
+                const batasParts = batasAbsen.split(':');
+                const batasTime = new Date();
+                batasTime.setHours(parseInt(batasParts[0]) || 0, parseInt(batasParts[1]) || 0, 0, 0);
+                if(now > batasTime) {
+                    tampilkanNotif(`Batas akhir absensi sudah lewat (${batasAbsen}). Anda sudah tidak dapat melakukan absensi hari ini.`);
+                    return;
+                }
+            }
+
             const sudahAbsen = absenGuruRecord.find(a => a.guru === loggedInSantri.nama && a.tglRaw === todayKey);
 
             if(sudahAbsen) {
@@ -2711,12 +2814,16 @@ const firebaseConfig = {
             if(!tbody) return;
             tbody.innerHTML = '';
 
-            if(absenGuruRecord.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada data absensi guru.</td></tr>';
+            const filterDate = document.getElementById('filter-tgl-absen-guru')?.value || '';
+            const filtered = absenGuruRecord.filter(a => !filterDate || String(a.tglRaw || '').slice(0,10) === filterDate);
+
+            if(filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada data absensi guru pada tanggal yang dipilih.</td></tr>';
                 return;
             }
 
-            absenGuruRecord.forEach((a, index) => {
+            filtered.forEach((a) => {
+                const originalIndex = absenGuruRecord.indexOf(a);
                 let badgeColor = a.telat > 0 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700';
                 tbody.innerHTML += `
                     <tr class="border-b hover:bg-gray-50">
@@ -2726,7 +2833,7 @@ const firebaseConfig = {
                         <td class="p-2">${a.telat} Menit</td>
                         <td class="p-2 text-red-600 font-medium">Rp ${formatRupiah(a.potongan)}</td>
                         <td class="p-2">
-                            <button onclick="hapusAbsenGuru(${index})" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
+                            <button onclick="hapusAbsenGuru(${originalIndex})" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
                 `;
