@@ -272,7 +272,8 @@
                             </select>
                             <div class="relative">
                                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input type="text" id="man-spp-nama" list="list-santri-manual-spp" autocomplete="off" placeholder="Cari / pilih nama santri..." class="border p-2 pl-9 rounded w-full bg-white" oninput="sinkronNamaManualSPP(this.value)" onchange="normalisasiNamaManualSPP(this.value)">
+                                <input type="text" id="man-spp-nama" list="list-santri-manual-spp" autocomplete="off" placeholder="Cari / pilih nama santri..." class="border p-2 pl-9 rounded w-full bg-white" oninput="sinkronNamaManualSPP(this.value)" onfocus="tampilkanSaranNamaManualSPP(this.value)" onblur="sembunyikanSaranNamaManualSPP()" onchange="normalisasiNamaManualSPP(this.value)">
+                                <div id="manual-spp-suggestions" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-56 overflow-y-auto"></div>
                             </div>
                             <datalist id="list-santri-manual-spp"></datalist>
                             <input type="number" id="man-spp-nominal" placeholder="Nominal SPP (Rp)" class="border p-2 rounded">
@@ -695,27 +696,29 @@
                 <div id="view-haflah" class="view-section hidden">
                     <div class="card mb-6 btn-admin-only">
                         <h3 class="font-bold mb-4">Input Data Alumni (Haflah)</h3>
-                        <div class="mb-4 grid grid-cols-1 md:grid-cols-12 gap-4">
-                            <div class="w-full md:col-span-4 min-w-0">
+                        <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+                            <div class="w-full min-w-0 lg:col-span-4">
                                 <input type="text" id="haflah-nama-select" list="list-santri-haflah" placeholder="Pilih Santri" class="border p-2 rounded w-full min-w-0 bg-white">
                                 <datalist id="list-santri-haflah"></datalist>
                             </div>
-                            <select id="haflah-tahun" class="border p-2 rounded w-full md:col-span-2 bg-white min-w-0">
+                            <select id="haflah-tahun" class="border p-2 rounded w-full min-w-0 lg:col-span-2 bg-white">
                                 <option value="">Pilih Tahun</option>
                                 <script>
                                     for(let i=2020; i<=2037; i++) document.write(`<option value="HTA-${i}">HTA-${i}</option>`);
                                 </script>
                             </select>
-                            <select id="haflah-status" class="border p-2 rounded w-full md:col-span-2 bg-white min-w-0">
+                            <select id="haflah-status" class="border p-2 rounded w-full min-w-0 lg:col-span-2 bg-white">
                                 <option value="">Pilih Status</option>
                                 <option value="Aktif">Aktif</option>
                                 <option value="Nonaktif">Nonaktif</option>
                             </select>
-                            <input type="text" id="haflah-total" placeholder="Total Hafalan (cth: 30 Juz)" class="border p-2 rounded w-full md:col-span-2 bg-white min-w-0">
-                            <input type="number" id="haflah-nilai" placeholder="Nilai" class="border p-2 rounded w-full md:col-span-1 bg-white min-w-0">
-                            <button id="btn-simpan-haflah" class="bg-primary hover:bg-dark transition text-white px-4 py-2 rounded w-full md:col-span-1" onclick="simpanHaflah()">Simpan & Luluskan</button>
+                            <input type="text" id="haflah-total" placeholder="Total Hafalan (cth: 30 Juz)" class="border p-2 rounded w-full min-w-0 lg:col-span-2 bg-white">
+                            <input type="number" id="haflah-nilai" placeholder="Nilai" class="border p-2 rounded w-full min-w-0 lg:col-span-2 bg-white">
                         </div>
-                        <p class="text-xs text-gray-500">* Menyimpan santri ke database Haflah tidak mengubah status santri di Data Santri.</p>
+                        <div class="flex justify-end">
+                            <button id="btn-simpan-haflah" class="bg-primary hover:bg-dark transition text-white px-5 py-2 rounded w-full sm:w-auto" onclick="simpanHaflah()">Simpan & Luluskan</button>
+                        </div>
+                                <p class="text-xs text-gray-500">* Menyimpan santri ke database Haflah tidak mengubah status santri di Data Santri.</p>
                     </div>
                     
                     <div id="container-tabel-haflah">
@@ -1613,6 +1616,10 @@ const firebaseConfig = {
                 if(document.getElementById('cari-riwayat-progres')) document.getElementById('cari-riwayat-progres').style.display = '';
             }
 
+            if(role === 'ortu') {
+                document.querySelectorAll('.btn-print, #table-riwayat-keuangan .btn-print').forEach(el => { el.style.display = 'none'; });
+            }
+
             if(role === 'guru') {
                 cssHide('.btn-admin-only, .stats-keuangan, .ortu-only, .admin-keuangan-only, .admin-global-only, .btn-print, .calendar-detail-admin-only');
             } else if (role === 'ortu') {
@@ -2087,6 +2094,7 @@ const firebaseConfig = {
         }
 
         function hapusRiwayatSPP(index) {
+            if(currentRole === 'ortu') { tampilkanNotif('Akun santri hanya dapat melihat history SPP sendiri.'); return; }
             bukaKonfirmasi('Hapus Riwayat SPP', 'Yakin ingin menghapus riwayat pembayaran SPP ini? Penghapusan akan memengaruhi grafik arus kas masuk.', async () => {
                 if(index < 0 || index >= dataKeuanganRiwayat.length) return;
                 dataKeuanganRiwayat.splice(index, 1);
@@ -2414,19 +2422,59 @@ const firebaseConfig = {
             }
         }
 
-        document.addEventListener('input', (event) => {
-            if(event.target && event.target.id === 'man-spp-nama') sinkronNamaManualSPP(event.target.value);
-        });
-
         function sinkronNamaManualSPP(nilai){
+            const q=String(nilai||'').trim().toLowerCase();
             const list=document.getElementById('list-santri-manual-spp');
             if(list){
-                const q=String(nilai||'').trim().toLowerCase();
                 list.innerHTML='';
                 dataSantri.filter(s=>s.status==='Aktif'&&(!q||String(s.nama||'').toLowerCase().includes(q)))
-                    .forEach(s=>list.innerHTML+=`<option value="${s.nama}"></option>`);
+                    .slice(0,50)
+                    .forEach(s=>list.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(s.nama)}"></option>`));
             }
+            tampilkanSaranNamaManualSPP(nilai);
             renderOpsiBulanSPP();
+        }
+
+        function tampilkanSaranNamaManualSPP(nilai){
+            const box=document.getElementById('manual-spp-suggestions');
+            if(!box)return;
+            const q=String(nilai||'').trim().toLowerCase();
+            const matches=dataSantri.filter(s=>s.status==='Aktif'&&(!q||String(s.nama||'').toLowerCase().includes(q)))
+                .sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base'}))
+                .slice(0,20);
+            box.innerHTML='';
+            if(matches.length===0){
+                box.classList.add('hidden');
+                return;
+            }
+            matches.forEach(s=>{
+                const btn=document.createElement('button');
+                btn.type='button';
+                btn.className='w-full text-left px-3 py-2 hover:bg-gray-100 text-sm';
+                btn.textContent=s.nama;
+                btn.addEventListener('mousedown',e=>{
+                    e.preventDefault();
+                    pilihNamaManualSPP(s.nama);
+                });
+                box.appendChild(btn);
+            });
+            box.classList.remove('hidden');
+        }
+
+        function pilihNamaManualSPP(nama){
+            const input=document.getElementById('man-spp-nama');
+            if(!input)return;
+            input.value=nama;
+            renderOpsiBulanSPP();
+            const box=document.getElementById('manual-spp-suggestions');
+            if(box)box.classList.add('hidden');
+        }
+
+        function sembunyikanSaranNamaManualSPP(){
+            setTimeout(()=>{
+                const box=document.getElementById('manual-spp-suggestions');
+                if(box)box.classList.add('hidden');
+            },150);
         }
 
         function normalisasiNamaManualSPP(nilai){
@@ -2779,6 +2827,10 @@ const firebaseConfig = {
         }
 
         function lihatDetailAbsen(nama) {
+            if(currentRole === 'ortu' && loggedInSantri && String(nama).toLowerCase() !== String(loggedInSantri.nama || '').toLowerCase()) {
+                tampilkanNotif('Anda hanya dapat melihat history santri Anda sendiri.');
+                return;
+            }
             document.getElementById('modal-nama-santri').innerText = `Santri: ${nama}`;
             const ul = document.getElementById('modal-absen-list');
             ul.innerHTML = '';
@@ -2812,6 +2864,7 @@ const firebaseConfig = {
         }
 
         async function hapusDetailAbsen(nama, index) {
+            if(currentRole === 'ortu') { tampilkanNotif('Akun santri tidak dapat menghapus history.'); return; }
             bukaKonfirmasi('Hapus Absen Santri', 'Yakin ingin menghapus riwayat absensi ini?', async () => {
                 if(!riwayatAbsensi[nama] || index < 0 || index >= riwayatAbsensi[nama].length) return;
                 riwayatAbsensi[nama].splice(index, 1);
@@ -3092,6 +3145,10 @@ const firebaseConfig = {
         }
 
         function lihatDetailProgres(nama) {
+            if(currentRole === 'ortu' && loggedInSantri && String(nama).toLowerCase() !== String(loggedInSantri.nama || '').toLowerCase()) {
+                tampilkanNotif('Anda hanya dapat melihat history santri Anda sendiri.');
+                return;
+            }
             document.getElementById('modal-progres-nama').innerText = `Santri: ${nama}`;
             const tbody = document.getElementById('modal-progres-list');
             tbody.innerHTML = '';
@@ -3119,6 +3176,10 @@ const firebaseConfig = {
 
         let chartGrafikAnak;
         function lihatGrafikAnak(nama) {
+            if(currentRole === 'ortu' && loggedInSantri && String(nama).toLowerCase() !== String(loggedInSantri.nama || '').toLowerCase()) {
+                tampilkanNotif('Anda hanya dapat melihat history santri Anda sendiri.');
+                return;
+            }
             document.getElementById('modal-grafik-nama').innerText = `Santri: ${nama}`;
             document.getElementById('modal-grafik-progres').classList.remove('hidden');
 
