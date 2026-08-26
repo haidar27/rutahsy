@@ -1021,6 +1021,7 @@
         let currentRole = '';
         let loggedInSantri = null;
         let chartsRendered = false;
+        let dashboardRenderFrame = null;
 
         function formatRupiah(num) {
             if (num === null || num === undefined || num === '') return '0';
@@ -1256,12 +1257,27 @@ const firebaseConfig = {
 
             const hasCloudReset = !!(snapshotValue._meta && snapshotValue._meta.lastResetAt);
             const incomingResetAt = hasCloudReset ? String(snapshotValue._meta.lastResetAt) : '';
+            let restoreLocalSantriToCloud = null;
 
             rutasyCloudApplying = true;
             try {
                 Object.keys(RUTASY_CLOUD_MAP).forEach((key) => {
                     if(Object.prototype.hasOwnProperty.call(snapshotValue, key)) {
                         const remoteValue = snapshotValue[key];
+                        const localValue = getRuntimeStateByKey(key);
+
+                        // Jangan biarkan snapshot kosong/stale menghapus data santri yang masih ada.
+                        // Marker reset global tetap menjadi pengecualian dan selalu berwenang mengosongkan data.
+                        const keepLocalSantri = key === 'rutasy_santri' &&
+                            !hasCloudReset &&
+                            Array.isArray(localValue) && localValue.length > 0 &&
+                            Array.isArray(remoteValue) && remoteValue.length === 0;
+
+                        if(keepLocalSantri) {
+                            restoreLocalSantriToCloud = localValue.map(item => ({...item}));
+                            return;
+                        }
+
                         assignRuntimeStateByKey(key, remoteValue);
                         localStorage.setItem(key, JSON.stringify(remoteValue));
                     } else {
@@ -1279,8 +1295,26 @@ const firebaseConfig = {
                 rutasyCloudApplying = false;
             }
 
+            // Pulihkan kembali data santri lokal ke cloud hanya bila cloud mengirim array kosong
+            // tanpa marker reset. Transaction menjaga agar kita tidak menimpa data cloud yang sudah muncul.
+            if(restoreLocalSantriToCloud && rutasyCloudEnabled && rutasyDatabase && rutasyCloudInitialized) {
+                const santriToRestore = restoreLocalSantriToCloud;
+                rutasyDatabase.ref('rutasy').transaction((current) => {
+                    current = (current && typeof current === 'object') ? current : {};
+                    const currentResetAt = current._meta && current._meta.lastResetAt ? String(current._meta.lastResetAt) : '';
+                    if(currentResetAt !== incomingResetAt) return;
+                    if(Array.isArray(current.rutasy_santri) && current.rutasy_santri.length === 0) {
+                        current.rutasy_santri = santriToRestore;
+                        return current;
+                    }
+                    return;
+                }).catch(error => console.error('Gagal memulihkan data santri ke Firebase:', error));
+            }
+
             if(document.getElementById('main-app') && !document.getElementById('main-app').classList.contains('hidden')) {
                 renderSemuaData();
+                const dashboard = document.getElementById('view-dashboard');
+                if(dashboard && !dashboard.classList.contains('hidden')) queueGlobalChartsRender();
             }
         }
 
@@ -1320,10 +1354,21 @@ const firebaseConfig = {
                         rutasyCloudResetAt = cloudWasReset ? String(remote._meta.lastResetAt) : '';
                         rutasyCloudInitialized = true;
 
+                        let restoreLocalSantriToCloud = null;
+                        const localSantriAtStartup = Array.isArray(dataSantri) ? dataSantri.map(item => ({...item})) : [];
+
                         for(const key of Object.keys(RUTASY_CLOUD_MAP)) {
                             if(Object.prototype.hasOwnProperty.call(remote, key)) {
-                                assignRuntimeStateByKey(key, remote[key]);
-                                localStorage.setItem(key, JSON.stringify(remote[key]));
+                                const remoteValue = remote[key];
+                                if(key === 'rutasy_santri' && !cloudWasReset && localSantriAtStartup.length > 0 && Array.isArray(remoteValue) && remoteValue.length === 0) {
+                                    // Cloud kosong/stale tidak boleh menghapus database santri lokal yang masih utuh.
+                                    dataSantri = localSantriAtStartup;
+                                    localStorage.setItem(key, JSON.stringify(localSantriAtStartup));
+                                    restoreLocalSantriToCloud = localSantriAtStartup;
+                                } else {
+                                    assignRuntimeStateByKey(key, remoteValue);
+                                    localStorage.setItem(key, JSON.stringify(remoteValue));
+                                }
                             } else if(cloudWasReset) {
                                 const emptyValue = key === 'rutasy_settings' ? {
                                     jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
@@ -1341,6 +1386,13 @@ const firebaseConfig = {
 
                         if(!Object.prototype.hasOwnProperty.call(remote, 'rutasy_admin_accounts')) {
                             await rootRef.child('rutasy_admin_accounts').set(dataAdminAccounts);
+                        }
+                        if(restoreLocalSantriToCloud) {
+                            const currentSantri = restoreLocalSantriToCloud;
+                            await rootRef.child('rutasy_santri').transaction((current) => {
+                                if(Array.isArray(current) && current.length === 0) return currentSantri;
+                                return;
+                            });
                         }
                     } else {
                         // Database benar-benar belum pernah diinisialisasi.
@@ -1435,8 +1487,8 @@ const firebaseConfig = {
             const savedUser = localStorage.getItem('rutasy_username');
             if(savedRole) {
                 currentRole = savedRole;
-                if(currentRole === 'ortu' && savedUser) loggedInSantri = dataSantri.find(s => s.user.toLowerCase() === savedUser.toLowerCase()) || null;
-                else if (currentRole === 'guru' && savedUser) loggedInSantri = dataGuru.find(g => g.user.toLowerCase() === savedUser.toLowerCase()) || null;
+                if(currentRole === 'ortu' && savedUser) loggedInSantri = dataSantri.find(s => String(s.user || '').toLowerCase() === savedUser.toLowerCase()) || null;
+                else if (currentRole === 'guru' && savedUser) loggedInSantri = dataGuru.find(g => String(g.user || '').toLowerCase() === savedUser.toLowerCase()) || null;
                 jalankanAplikasiLanjutan();
             }
         };
@@ -1501,15 +1553,7 @@ const firebaseConfig = {
             
             renderSemuaData();
             const defaultMenu = roleMenus[currentRole]?.[0];
-            if(defaultMenu) {
-                switchView(defaultMenu.id, defaultMenu.label);
-                if(defaultMenu.id === 'view-dashboard') {
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => renderGlobalCharts());
-                    });
-                    setTimeout(() => renderGlobalCharts(), 150);
-                }
-            }
+            if(defaultMenu) switchView(defaultMenu.id, defaultMenu.label);
         }
         
         function renderSemuaData() {
@@ -1541,18 +1585,40 @@ const firebaseConfig = {
             });
         }
 
+        function destroyDashboardCharts() {
+            if(chartPrestasiRutasy) { chartPrestasiRutasy.destroy(); chartPrestasiRutasy = null; }
+            if(chartPrestasiGuru) { chartPrestasiGuru.destroy(); chartPrestasiGuru = null; }
+            if(chartArusKas) { chartArusKas.destroy(); chartArusKas = null; }
+            chartsRendered = false;
+        }
+
+        function queueGlobalChartsRender() {
+            if(dashboardRenderFrame) cancelAnimationFrame(dashboardRenderFrame);
+            dashboardRenderFrame = requestAnimationFrame(() => {
+                dashboardRenderFrame = requestAnimationFrame(() => {
+                    dashboardRenderFrame = null;
+                    const mainApp = document.getElementById('main-app');
+                    const dashboard = document.getElementById('view-dashboard');
+                    if(mainApp && !mainApp.classList.contains('hidden') && dashboard && !dashboard.classList.contains('hidden')) {
+                        renderGlobalCharts();
+                    }
+                });
+            });
+        }
+
         function logout() {
             localStorage.removeItem('rutasy_role'); localStorage.removeItem('rutasy_username');
             loggedInSantri = null;
+            if(dashboardRenderFrame) { cancelAnimationFrame(dashboardRenderFrame); dashboardRenderFrame = null; }
+            destroyDashboardCharts();
             document.getElementById('sidebar').classList.add('-translate-x-full');
             document.getElementById('sidebar-overlay').classList.add('hidden');
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('login-username').value = ''; document.getElementById('login-password').value = '';
-            chartsRendered = false;
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             const dashboardView = document.getElementById('view-dashboard');
-            if(dashboardView) dashboardView.classList.remove('hidden');
+            if(dashboardView) dashboardView.classList.add('hidden');
             document.getElementById('page-title').innerText = 'Dashboard';
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active', 'text-white'));
             tampilkanNotif('Berhasil Keluar dari Sistem');
@@ -1579,10 +1645,13 @@ const firebaseConfig = {
 
         function switchView(viewId, title) {
             document.getElementById('page-title').innerText = title;
+            if(viewId !== 'view-dashboard') destroyDashboardCharts();
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-            document.getElementById(viewId).classList.remove('hidden');
+            const targetView = document.getElementById(viewId);
+            if(!targetView) return;
+            targetView.classList.remove('hidden');
 
-            if(viewId === 'view-dashboard') renderGlobalCharts();
+            if(viewId === 'view-dashboard') queueGlobalChartsRender();
             if(viewId === 'view-admin') renderAdminAccounts();
             if(viewId === 'view-kalender') renderKalenderInit();
             if(viewId === 'view-keuangan') {
@@ -1674,6 +1743,9 @@ const firebaseConfig = {
         // --- DASHBOARD CHARTS ---
         let chartPrestasiRutasy, chartPrestasiGuru, chartArusKas;
         function renderGlobalCharts() {
+            const mainApp = document.getElementById('main-app');
+            const dashboard = document.getElementById('view-dashboard');
+            if(!mainApp || mainApp.classList.contains('hidden') || !dashboard || dashboard.classList.contains('hidden')) return;
             chartsRendered = true;
             const ctx1 = document.getElementById('chart-prestasi-rutasy')?.getContext('2d');
             const ctx2 = document.getElementById('chart-prestasi-guru')?.getContext('2d');
@@ -1897,7 +1969,8 @@ const firebaseConfig = {
 
             const qNama = document.getElementById('cari-database-santri')?.value.trim().toLowerCase() || '';
             const qGuru = document.getElementById('filter-database-santri-guru')?.value.trim().toLowerCase() || '';
-            const rows = dataSantri
+            const santriSnapshot = Array.isArray(dataSantri) ? dataSantri.map(s => ({...s})) : [];
+            const rows = santriSnapshot
                 .map((s, originalIndex) => ({ ...s, _originalIndex: originalIndex }))
                 .sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base'}))
                 .filter(s => {
