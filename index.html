@@ -193,10 +193,10 @@
                 <!-- VIEW: DATABASE -->
                 <div id="view-database" class="view-section hidden">
                     <div class="card mb-6">
-                        <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
-                            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
-                                <h3 class="font-bold text-lg w-full md:w-auto">Database Santri</h3>
-                                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                        <div class="flex flex-wrap md:flex-nowrap justify-between items-center mb-4 gap-3">
+                            <div class="flex flex-wrap items-center gap-3 w-full min-w-0">
+                                <h3 class="font-bold text-lg">Database Santri</h3>
+                                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                                     <input type="text" id="cari-database-santri" placeholder="Cari nama santri..." class="border p-2 rounded text-sm w-full sm:w-64" onkeyup="halamanDatabaseSantri = 1; renderSantri()">
                                     <select id="filter-database-santri-guru" class="border p-2 rounded text-sm bg-white w-full sm:w-52" onchange="halamanDatabaseSantri = 1; renderSantri()">
                                         <option value="">Semua Kelompok</option>
@@ -1763,11 +1763,15 @@ function renderSemuaData() {
                 if(document.getElementById('cari-spp-nama')) document.getElementById('cari-spp-nama').style.display = 'none';
                 if(document.getElementById('filter-spp-guru')) document.getElementById('filter-spp-guru').style.display = 'none';
                 if(document.getElementById('cari-riwayat-progres')) document.getElementById('cari-riwayat-progres').style.display = 'none';
+                if(document.getElementById('cari-history-ujian')) document.getElementById('cari-history-ujian').style.display = 'none';
+                if(document.getElementById('filter-history-ujian-jenis')) document.getElementById('filter-history-ujian-jenis').style.display = 'none';
             } else {
                 document.getElementById('notif-container').style.display = '';
                 if(document.getElementById('cari-spp-nama')) document.getElementById('cari-spp-nama').style.display = '';
                 if(document.getElementById('filter-spp-guru')) document.getElementById('filter-spp-guru').style.display = '';
                 if(document.getElementById('cari-riwayat-progres')) document.getElementById('cari-riwayat-progres').style.display = '';
+                if(document.getElementById('cari-history-ujian')) document.getElementById('cari-history-ujian').style.display = '';
+                if(document.getElementById('filter-history-ujian-jenis')) document.getElementById('filter-history-ujian-jenis').style.display = '';
             }
 
             if(role === 'ortu') {
@@ -3348,7 +3352,14 @@ function renderSemuaData() {
             const qNama=document.getElementById('cari-history-ujian')?.value.toLowerCase()||'';
             const filterJenis=document.getElementById('filter-history-ujian-jenis')?.value||'';
             const rows=dataUjian.filter(u=>{
-                if(currentRole==='ortu'&&loggedInSantri&&String(u.nama||'').toLowerCase()!==String(loggedInSantri.nama||'').toLowerCase())return false;
+                if(currentRole==='ortu') {
+                    if(!loggedInSantri) return false;
+                    const loggedNis=String(loggedInSantri.nis||'').trim().toLowerCase();
+                    const recordNis=String(u.nis||'').trim().toLowerCase();
+                    const sameByNis=loggedNis && recordNis ? loggedNis===recordNis : false;
+                    const sameByName=!recordNis && !loggedNis && String(u.nama||'').trim().toLowerCase()===String(loggedInSantri.nama||'').trim().toLowerCase();
+                    if(!sameByNis && !sameByName) return false;
+                }
                 if(currentRole==='guru'&&loggedInSantri){
                     const sObj=dataSantri.find(s=>String(s.nama||'').toLowerCase()===String(u.nama||'').toLowerCase());
                     if(!sObj||String(sObj.guru||'').toLowerCase()!==String(loggedInSantri.nama||'').toLowerCase())return false;
