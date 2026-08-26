@@ -922,7 +922,7 @@
             <p id="modal-progres-nama" class="text-gray-600 mb-4 font-bold border-b pb-2"></p>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm border">
-                    <thead><tr class="bg-gray-100 text-gray-600"><th class="p-2">Tanggal</th><th class="p-2">Kategori</th><th class="p-2">Surat / Jilid</th><th class="p-2">Ayat</th><th class="p-2">Capaian (Baris)</th></tr></thead>
+                    <thead><tr class="bg-gray-100 text-gray-600"><th class="p-2">Tanggal</th><th class="p-2">Kategori</th><th class="p-2">Surat / Jilid</th><th class="p-2">Ayat</th><th class="p-2">Capaian (Baris)</th><th class="p-2 btn-admin-only">Aksi</th></tr></thead>
                     <tbody id="modal-progres-list"></tbody>
                 </table>
             </div>
@@ -3290,7 +3290,8 @@ function renderSemuaData() {
             const juz=document.getElementById('ujian-juz');
             const ket=document.getElementById('ujian-keterangan-tahfidz');
             if(!juz||!ket)return;
-            if(jenis==='Tahfidz'||jenis==='Pra Tahfidz'){
+
+            if(jenis==='Tahfidz'){
                 juz.classList.remove('hidden');
                 ket.classList.remove('hidden');
             }else{
@@ -3314,7 +3315,7 @@ function renderSemuaData() {
             if(!santriObj) { tampilkanNotif('Nama santri tidak ditemukan di database!'); return; }
             if(!jenis) { tampilkanNotif('Silakan pilih jenis ujian!'); return; }
             if(Number.isNaN(nilai) || nilai < 0 || nilai > 100) { tampilkanNotif('Nilai ujian harus berada pada 0-100!'); return; }
-            if((jenis === 'Tahfidz' || jenis === 'Pra Tahfidz') && (!juz || !keteranganTahfidz)) { tampilkanNotif('Silakan pilih Juz dan A/B/C/D untuk jenis ujian ini!'); return; }
+            if(jenis === 'Tahfidz' && (!juz || !keteranganTahfidz)) { tampilkanNotif('Silakan pilih Juz dan A/B/C/D untuk Ujian Tahfidz!'); return; }
 
             const now = new Date();
             const dataBaru = {
@@ -3324,8 +3325,8 @@ function renderSemuaData() {
                 nama: santriObj.nama,
                 nis: santriObj.nis,
                 jenis,
-                juz: (jenis === 'Tahfidz' || jenis === 'Pra Tahfidz') ? Number(juz) : null,
-                keterangan: (jenis === 'Tahfidz' || jenis === 'Pra Tahfidz') ? keteranganTahfidz : '',
+                juz: jenis === 'Tahfidz' ? Number(juz) : null,
+                keterangan: jenis === 'Tahfidz' ? keteranganTahfidz : '',
                 nilai
             };
 
@@ -3370,15 +3371,17 @@ function renderSemuaData() {
             const totalPages=Math.max(1,Math.ceil(rows.length/perPage));
             halamanHistoryUjian=Math.min(Math.max(halamanHistoryUjian,1),totalPages);
             const isIqraFilter=filterJenis==="Iqra'";
-            table.querySelector('thead').innerHTML=isIqraFilter?`<tr class="table-header"><th class="p-3">Tanggal</th><th class="p-3">Nama Santri</th><th class="p-3">Jenis Ujian</th><th class="p-3">Nilai</th></tr>`:`<tr class="table-header"><th class="p-3">Tanggal</th><th class="p-3">Nama Santri</th><th class="p-3">Jenis Ujian</th><th class="p-3">Juz</th><th class="p-3">Keterangan</th><th class="p-3">Nilai</th></tr>`;
+            table.querySelector('thead').innerHTML=isIqraFilter?`<tr class="table-header"><th class="p-3">Tanggal</th><th class="p-3">Nama Santri</th><th class="p-3">Jenis Ujian</th><th class="p-3">Nilai</th><th class="p-3 btn-admin-only">Aksi</th></tr>`:`<tr class="table-header"><th class="p-3">Tanggal</th><th class="p-3">Nama Santri</th><th class="p-3">Jenis Ujian</th><th class="p-3">Juz</th><th class="p-3">Keterangan</th><th class="p-3">Nilai</th><th class="p-3 btn-admin-only">Aksi</th></tr>`;
             if(rows.length===0){
-                tbody.innerHTML=`<tr><td colspan="${isIqraFilter?4:6}" class="p-3 text-center text-gray-500 italic">Belum ada history hasil ujian.</td></tr>`;
+                tbody.innerHTML=`<tr><td colspan="${isIqraFilter?5:7}" class="p-3 text-center text-gray-500 italic">Belum ada history hasil ujian.</td></tr>`;
             }else{
                 const startRow=(halamanHistoryUjian-1)*perPage;
                 rows.slice(startRow,startRow+perPage).forEach(u=>{
                     const jenis=String(u.jenis||'');
                     const isDetail=jenis==='Tahfidz'||jenis==='Pra Tahfidz';
-                    tbody.innerHTML+=isIqraFilter?`<tr class="border-b hover:bg-gray-50"><td class="p-3">${u.tgl||'-'}</td><td class="p-3 font-medium">${u.nama||'-'}</td><td class="p-3">${jenis}</td><td class="p-3 font-bold text-blue-700">${u.nilai??'-'}</td></tr>`:`<tr class="border-b hover:bg-gray-50"><td class="p-3">${u.tgl||'-'}</td><td class="p-3 font-medium">${u.nama||'-'}</td><td class="p-3">${jenis}</td><td class="p-3">${isDetail&&u.juz?'Juz '+u.juz:''}</td><td class="p-3">${isDetail&&u.keterangan?u.keterangan:''}</td><td class="p-3 font-bold text-blue-700">${u.nilai??'-'}</td></tr>`;
+                    tbody.innerHTML+=isIqraFilter
+                        ? `<tr class="border-b hover:bg-gray-50"><td class="p-3">${u.tgl||'-'}</td><td class="p-3 font-medium">${u.nama||'-'}</td><td class="p-3">${jenis}</td><td class="p-3 font-bold text-blue-700">${u.nilai??'-'}</td><td class="p-3 btn-admin-only"><button onclick="hapusRiwayatUjian(${Number(u.id)})" class="text-red-600 hover:text-red-800 font-bold" title="Hapus riwayat ujian"><i class="fa-solid fa-trash"></i></button></td></tr>`
+                        : `<tr class="border-b hover:bg-gray-50"><td class="p-3">${u.tgl||'-'}</td><td class="p-3 font-medium">${u.nama||'-'}</td><td class="p-3">${jenis}</td><td class="p-3">${isDetail&&u.juz?'Juz '+u.juz:''}</td><td class="p-3">${isDetail&&u.keterangan?u.keterangan:''}</td><td class="p-3 font-bold text-blue-700">${u.nilai??'-'}</td><td class="p-3 btn-admin-only"><button onclick="hapusRiwayatUjian(${Number(u.id)})" class="text-red-600 hover:text-red-800 font-bold" title="Hapus riwayat ujian"><i class="fa-solid fa-trash"></i></button></td></tr>`;
                 });
             }
             if(pager){
@@ -3401,6 +3404,27 @@ function renderSemuaData() {
             await persistMultipleData({ rutasy_ujian: dataUjian });
             renderHistoryUjian();
             tampilkanNotif('Jenis ujian pada history berhasil diperbarui.');
+        }
+
+        async function hapusRiwayatUjian(id) {
+            if(currentRole !== 'admin_global' && currentRole !== 'admin_data' && currentRole !== 'guru') {
+                tampilkanNotif('Anda tidak memiliki akses untuk menghapus riwayat ujian.');
+                return;
+            }
+            const index = dataUjian.findIndex(u => String(u.id) === String(id));
+            if(index < 0) return;
+            const record = dataUjian[index];
+            bukaKonfirmasi(
+                'Hapus Riwayat Ujian',
+                `Yakin ingin menghapus hasil ujian ${record?.nama || 'santri ini'} pada ${record?.tgl || 'tanggal tersebut'}?`,
+                async () => {
+                    dataUjian.splice(index, 1);
+                    await persistMultipleData({ rutasy_ujian: dataUjian });
+                    halamanHistoryUjian = 1;
+                    renderHistoryUjian();
+                    tampilkanNotif('Riwayat hasil ujian berhasil dihapus.');
+                }
+            );
         }
 
         function gotoHalamanHistoryUjian(page) {
@@ -3513,6 +3537,9 @@ function renderSemuaData() {
                                 <button onclick="lihatGrafikAnak('${nama.replace(/'/g, "\'")}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold transition">
                                     <i class="fa-solid fa-chart-line"></i> Grafik
                                 </button>
+                                <button onclick="hapusRiwayatProgresSantri('${nama.replace(/'/g, "\'")}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold transition btn-admin-only" title="Hapus seluruh riwayat progres santri ini">
+                                    <i class="fa-solid fa-trash"></i> Hapus
+                                </button>
                             </td>
                         </tr>
                     `;
@@ -3533,6 +3560,52 @@ function renderSemuaData() {
             renderTabelProgres();
         }
 
+        async function hapusRiwayatProgresSantri(nama) {
+            if(currentRole !== 'admin_global' && currentRole !== 'admin_data' && currentRole !== 'guru') {
+                tampilkanNotif('Anda tidak memiliki akses untuk menghapus riwayat progres.');
+                return;
+            }
+            if(!riwayatProgres[nama] || !riwayatProgres[nama].length) {
+                tampilkanNotif('Riwayat progres santri ini tidak ditemukan.');
+                return;
+            }
+            bukaKonfirmasi(
+                'Hapus Riwayat Progres',
+                `Yakin ingin menghapus seluruh riwayat progres belajar ${nama}?`,
+                async () => {
+                    delete riwayatProgres[nama];
+                    persistData('rutasy_progres_hafalan', riwayatProgres);
+                    renderTabelProgres();
+                    if(chartsRendered) renderGlobalCharts();
+                    document.getElementById('modal-detail-progres')?.classList.add('hidden');
+                    tampilkanNotif('Seluruh riwayat progres santri berhasil dihapus.');
+                }
+            );
+        }
+
+        async function hapusDetailProgres(nama, index) {
+            if(currentRole !== 'admin_global' && currentRole !== 'admin_data' && currentRole !== 'guru') {
+                tampilkanNotif('Anda tidak memiliki akses untuk menghapus riwayat progres.');
+                return;
+            }
+            const records = riwayatProgres[nama] || [];
+            if(index < 0 || index >= records.length) return;
+            const record = records[index];
+            bukaKonfirmasi(
+                'Hapus Riwayat Progres',
+                `Yakin ingin menghapus catatan progres ${nama} tanggal ${record?.tgl || '-'}?`,
+                async () => {
+                    records.splice(index, 1);
+                    if(records.length === 0) delete riwayatProgres[nama];
+                    persistData('rutasy_progres_hafalan', riwayatProgres);
+                    lihatDetailProgres(nama);
+                    renderTabelProgres();
+                    if(chartsRendered) renderGlobalCharts();
+                    tampilkanNotif('Riwayat progres berhasil dihapus.');
+                }
+            );
+        }
+
         function lihatDetailProgres(nama) {
             if(currentRole === 'ortu' && loggedInSantri && String(nama).toLowerCase() !== String(loggedInSantri.nama || '').toLowerCase()) {
                 tampilkanNotif('Anda hanya dapat melihat history santri Anda sendiri.');
@@ -3544,7 +3617,7 @@ function renderSemuaData() {
 
             const records = riwayatProgres[nama] || [];
             if(records.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-gray-500 italic">Belum ada catatan progres.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada catatan progres.</td></tr>';
             } else {
                 records.forEach((p) => {
                     let badgeKat = p.kategori === 'Tahfidz' ? 'bg-green-100 text-green-700' : (p.kategori === 'Tahsin' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700');
@@ -3555,6 +3628,11 @@ function renderSemuaData() {
                             <td class="p-2 font-medium">${p.surat}</td>
                             <td class="p-2 font-bold text-blue-700">${p.kategori === 'Iqro' ? (p.ayat ? 'Hal ' + p.ayat : '-') : (p.ayat || '-')}</td>
                             <td class="p-2 font-bold text-primary">${p.baris} ${p.kategori === 'Iqro' ? 'Hal' : 'Baris'}</td>
+                            <td class="p-2 btn-admin-only">
+                                <button onclick="hapusDetailProgres('${nama.replace(/'/g, "\'")}', ${records.indexOf(p)})" class="text-red-600 hover:text-red-800 font-bold" title="Hapus riwayat ini">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
                         </tr>
                     `;
                 });
