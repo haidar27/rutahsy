@@ -673,6 +673,123 @@
                     </div>
                 </div>
 
+                <!-- VIEW: KELUAR / MASUK SANTRI MANUAL -->
+                <div id="view-mutasi-santri" class="view-section hidden">
+                    <div class="card mb-6">
+                        <h3 class="font-bold text-lg text-primary mb-4">Input Keluar / Masuk Santri Manual</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                            <div class="md:col-span-2">
+                                <label class="text-sm text-gray-600 block mb-1">Nama Santri</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                    <input type="text" id="mutasi-santri-nama" list="list-santri-mutasi" autocomplete="off" placeholder="Cari / pilih nama santri..." class="border p-2 pl-9 rounded w-full bg-white" oninput="normalisasiNamaMutasiSantri(this.value)">
+                                    <datalist id="list-santri-mutasi"></datalist>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-600 block mb-1">Jenis</label>
+                                <select id="mutasi-santri-jenis" class="border p-2 rounded w-full bg-white">
+                                    <option value="Masuk">Masuk</option>
+                                    <option value="Keluar">Keluar</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-600 block mb-1">Tanggal</label>
+                                <input type="date" id="mutasi-santri-tanggal" class="border p-2 rounded w-full bg-white">
+                            </div>
+                            <div>
+                                <button type="button" onclick="simpanMutasiSantriManual()" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded w-full transition">
+                                    <i class="fa-solid fa-save"></i> Simpan Data
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-3">Data akan otomatis tersusun berdasarkan abjad nama santri.</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-4 mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg">Riwayat Keluar / Masuk Santri</h3>
+                                <p class="text-xs text-gray-500 mt-1">Gunakan pencarian, filter bulan, dan jenis untuk melihat data.</p>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full xl:w-auto">
+                                <input type="text" id="cari-mutasi-santri" placeholder="Cari nama santri..." class="border p-2 rounded text-sm bg-white" oninput="renderMutasiSantriManual()">
+                                <input type="month" id="filter-mutasi-bulan" class="border p-2 rounded text-sm bg-white" onchange="renderMutasiSantriManual()">
+                                <select id="filter-mutasi-jenis" class="border p-2 rounded text-sm bg-white" onchange="renderMutasiSantriManual()">
+                                    <option value="">Semua</option>
+                                    <option value="Masuk">Masuk</option>
+                                    <option value="Keluar">Keluar</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm min-w-[650px]" id="table-mutasi-santri">
+                                <thead>
+                                    <tr class="table-header">
+                                        <th class="p-3 border-b">No.</th>
+                                        <th class="p-3 border-b">Nama Santri</th>
+                                        <th class="p-3 border-b">Jenis</th>
+                                        <th class="p-3 border-b">Tanggal</th>
+                                        <th class="p-3 border-b">Bulan</th>
+                                        <th class="p-3 border-b">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: PKG GURU -->
+                <div id="view-pkg" class="view-section hidden">
+                    <div class="card mb-6">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h3 class="font-bold text-lg text-primary">PKG (Poin Kinerja Guru)</h3>
+                                <p class="text-sm text-gray-500 mt-1">Ranking dihitung dari riwayat absensi guru pada bulan yang dipilih.</p>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                                <label class="text-sm font-semibold flex items-center">Bulan:</label>
+                                <input type="month" id="filter-pkg-bulan" class="border p-2 rounded bg-white" onchange="renderPKG()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="card border-l-4 border-primary">
+                            <p class="text-sm text-gray-500">Jam Masuk PKG</p>
+                            <h3 class="text-2xl font-bold" id="pkg-info-jam">16:00</h3>
+                        </div>
+                        <div class="card border-l-4 border-green-500">
+                            <p class="text-sm text-gray-500">Poin Datang Lebih Awal</p>
+                            <h3 class="text-2xl font-bold" id="pkg-info-poin-masuk">+10</h3>
+                        </div>
+                        <div class="card border-l-4 border-red-500">
+                            <p class="text-sm text-gray-500">Pengurangan Saat Telat</p>
+                            <h3 class="text-2xl font-bold" id="pkg-info-poin-telat">-5</h3>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm min-w-[720px]" id="table-pkg">
+                                <thead>
+                                    <tr class="table-header">
+                                        <th class="p-3 border-b text-center">Peringkat</th>
+                                        <th class="p-3 border-b">Guru</th>
+                                        <th class="p-3 border-b text-center">Hari Absen</th>
+                                        <th class="p-3 border-b text-center">Datang Lebih Awal</th>
+                                        <th class="p-3 border-b text-center">Terlambat</th>
+                                        <th class="p-3 border-b text-center">Total Poin</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-4">Peringkat 1 otomatis diberi tanda mahkota. Guru tanpa riwayat absen tetap tampil dengan 0 poin.</p>
+                    </div>
+                </div>
+
                 <!-- VIEW: KALENDER AKADEMIK -->
                 <div id="view-kalender" class="view-section hidden">
                     <div class="card mb-6 btn-admin-only">
@@ -764,6 +881,9 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="md:col-span-2 border-b pb-2 mb-2"><h4 class="font-semibold text-gray-700"><i class="fa-solid fa-clock"></i> Pengaturan Absensi & Kepegawaian</h4></div>
                             <div><label class="text-sm text-gray-600 block mb-1">Jam Masuk Guru</label><input type="time" id="set-jam-masuk" class="w-full border p-2 rounded bg-white"></div>
+                            <div><label class="text-sm text-gray-600 block mb-1">Jam Masuk PKG</label><input type="time" id="set-pkg-jam-masuk" class="w-full border p-2 rounded bg-white"></div>
+                            <div><label class="text-sm text-gray-600 block mb-1">Poin Datang Lebih Awal PKG</label><input type="number" id="set-pkg-poin-masuk" class="w-full border p-2 rounded bg-white" min="0" placeholder="Contoh: 10"></div>
+                            <div><label class="text-sm text-gray-600 block mb-1">Pengurangan Poin Saat Telat PKG</label><input type="number" id="set-pkg-poin-telat" class="w-full border p-2 rounded bg-white" min="0" placeholder="Contoh: 5"></div>
                             <div><label class="text-sm text-gray-600 block mb-1">Batas Akhir Absen (Paling Lama)</label><input type="time" id="set-batas-absen" class="w-full border p-2 rounded bg-white"></div>
                             <div><label class="text-sm text-gray-600 block mb-1">Potongan Telat (Rp/Menit)</label><input type="number" id="set-potongan" class="w-full border p-2 rounded bg-white" placeholder="Contoh: 1.000"></div>
                             <div><label class="text-sm text-gray-600 block mb-1">Jumlah Hari Dalam Bekerja (Sebulan)</label><input type="number" id="set-hari-kerja" class="w-full border p-2 rounded bg-white" placeholder="Contoh: 24"></div>
@@ -1068,9 +1188,10 @@
         let dataKeuanganRiwayat = JSON.parse(localStorage.getItem('rutasy_keu_riwayat')) || [];
         let dataKeuanganManual = JSON.parse(localStorage.getItem('rutasy_keu_manual')) || [];
         let dataUjian = JSON.parse(localStorage.getItem('rutasy_ujian')) || [];
+        let dataMutasiSantri = JSON.parse(localStorage.getItem('rutasy_mutasi_santri')) || [];
 
         let dataSettings = JSON.parse(localStorage.getItem('rutasy_settings')) || {
-            jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
+            jamMasuk: '07:30', pkgJamMasuk: '16:00', pkgPoinMasuk: '10', pkgPoinTelat: '5', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
             payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
         };
 
@@ -1134,6 +1255,7 @@ const firebaseConfig = {
             rutasy_keu_riwayat: 'dataKeuanganRiwayat',
             rutasy_keu_manual: 'dataKeuanganManual',
             rutasy_ujian: 'dataUjian',
+            rutasy_mutasi_santri: 'dataMutasiSantri',
             rutasy_settings: 'dataSettings',
             rutasy_absen: 'riwayatAbsensi',
             rutasy_absen_guru: 'absenGuruRecord',
@@ -1162,6 +1284,7 @@ const firebaseConfig = {
                 case 'rutasy_keu_riwayat': return dataKeuanganRiwayat;
                 case 'rutasy_keu_manual': return dataKeuanganManual;
                 case 'rutasy_ujian': return dataUjian;
+                case 'rutasy_mutasi_santri': return dataMutasiSantri;
                 case 'rutasy_settings': return dataSettings;
                 case 'rutasy_absen': return riwayatAbsensi;
                 case 'rutasy_absen_guru': return absenGuruRecord;
@@ -1185,6 +1308,7 @@ const firebaseConfig = {
                 case 'rutasy_keu_riwayat': dataKeuanganRiwayat = safeValue; break;
                 case 'rutasy_keu_manual': dataKeuanganManual = safeValue; break;
                 case 'rutasy_ujian': dataUjian = safeValue; break;
+                case 'rutasy_mutasi_santri': dataMutasiSantri = safeValue; break;
                 case 'rutasy_settings': dataSettings = safeValue; break;
                 case 'rutasy_absen': riwayatAbsensi = safeValue; break;
                 case 'rutasy_absen_guru': absenGuruRecord = safeValue; break;
@@ -1220,7 +1344,7 @@ const firebaseConfig = {
                         const expectedReset = rutasyCloudResetAt;
                         if(expectedReset) {
                             const emptyValue = key === 'rutasy_settings' ? {
-                                jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
+                                jamMasuk: '07:30', pkgJamMasuk: '16:00', pkgPoinMasuk: '10', pkgPoinTelat: '5', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
                                 payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
                             } : (key === 'rutasy_absen' || key === 'rutasy_progres_hafalan' ? {} : []);
                             assignRuntimeStateByKey(key, emptyValue);
@@ -1288,7 +1412,7 @@ const firebaseConfig = {
                         localStorage.setItem(key, JSON.stringify(remoteValue));
                     } else {
                         const emptyValue = key === 'rutasy_settings' ? {
-                            jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
+                            jamMasuk: '07:30', pkgJamMasuk: '16:00', pkgPoinMasuk: '10', pkgPoinTelat: '5', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
                             payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
                         } : (key === 'rutasy_absen' || key === 'rutasy_progres_hafalan' ? {} : []);
                         assignRuntimeStateByKey(key, emptyValue);
@@ -1377,7 +1501,7 @@ const firebaseConfig = {
                                 }
                             } else if(cloudWasReset) {
                                 const emptyValue = key === 'rutasy_settings' ? {
-                                    jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
+                                    jamMasuk: '07:30', pkgJamMasuk: '16:00', pkgPoinMasuk: '10', pkgPoinTelat: '5', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
                                     payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
                                 } : key === 'rutasy_admin_accounts' ? [
                                     { id: 'admin-global', role: 'admin_global', label: 'Admin Global', username: 'admin', password: '123' },
@@ -1452,6 +1576,8 @@ const firebaseConfig = {
                 { id: 'view-database', icon: 'fa-database', label: 'Database Entitas' },
                 { id: 'view-keuangan', icon: 'fa-wallet', label: 'Manajemen Keuangan' },
                 { id: 'view-absensi', icon: 'fa-calendar-check', label: 'Data Absensi' },
+                { id: 'view-mutasi-santri', icon: 'fa-right-left', label: 'Keluar / Masuk Santri' },
+                { id: 'view-pkg', icon: 'fa-ranking-star', label: 'PKG Guru' },
                 { id: 'view-progres', icon: 'fa-book-open', label: 'Progres & Ujian' },
                 { id: 'view-kalender', icon: 'fa-calendar-alt', label: 'Kalender Akademik' },
                 { id: 'view-haflah', icon: 'fa-graduation-cap', label: 'Database Haflah' },
@@ -1460,6 +1586,7 @@ const firebaseConfig = {
             ],
             admin_data: [
                 { id: 'view-database', icon: 'fa-database', label: 'Database Entitas' },
+                { id: 'view-mutasi-santri', icon: 'fa-right-left', label: 'Keluar / Masuk Santri' },
                 { id: 'view-haflah', icon: 'fa-graduation-cap', label: 'Database Haflah' }
             ],
             admin_keuangan: [
@@ -1611,6 +1738,7 @@ function renderSemuaData() {
             renderKalenderInit(); renderSelectHaflahSantri(); renderTabelHaflah(); 
             renderTabelRiwayatAbsen(); renderDatalistSantri(); renderTabelProgres(); renderHistoryUjian();
             renderAbsenGuruPribadi(); renderAbsenGuruGlobal(); renderBelumBayarSPP();
+            renderMutasiSantriDatalist(); renderMutasiSantriManual(); renderPKG();
             sesuaikanFormUjian(); sesuaikanFormProgres(); sesuaikanFormKeuanganManual();
             renderOpsiBulanSPP();
             populateFilterGroups(); updateNotifikasiAkademik();
@@ -1711,6 +1839,8 @@ function renderSemuaData() {
                 sesuaikanFormKeuanganManual();
             }
             if(viewId === 'view-ortu') renderChartOrtuDashboard();
+            if(viewId === 'view-mutasi-santri') { renderMutasiSantriDatalist(); renderMutasiSantriManual(); }
+            if(viewId === 'view-pkg') renderPKG();
         }
 
         function toggleSidebar() {
@@ -3044,6 +3174,7 @@ function renderSemuaData() {
                 id: Date.now(),
                 guru: loggedInSantri.nama,
                 waktu: `${tglStr} ${jamStr}`,
+                jamRaw: jamStr,
                 tglRaw: todayKey,
                 status: status,
                 telat: telatMenit,
@@ -3860,9 +3991,219 @@ function renderSemuaData() {
             tampilkanNotif(`Akun ${admin.label || admin.role} berhasil diperbarui.`);
         }
 
+        // --- KELUAR / MASUK SANTRI MANUAL ---
+        function formatTanggalMutasi(tgl) {
+            if(!tgl) return '-';
+            const parts = String(tgl).split('-');
+            if(parts.length !== 3) return tgl;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function namaBulanMutasi(tgl) {
+            if(!tgl) return '-';
+            const date = new Date(`${tgl}T00:00:00`);
+            if(Number.isNaN(date.getTime())) return '-';
+            return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        }
+
+        function renderMutasiSantriDatalist() {
+            const el = document.getElementById('list-santri-mutasi');
+            if(!el) return;
+            const names = dataSantri.map(s => String(s.nama || '').trim()).filter(Boolean).sort((a,b) => a.localeCompare(b, 'id', { sensitivity: 'base' }));
+            el.innerHTML = [...new Set(names)].map(n => `<option value="${n.replace(/"/g, '&quot;')}"></option>`).join('');
+        }
+
+        function normalisasiNamaMutasiSantri(value) {
+            const el = document.getElementById('mutasi-santri-nama');
+            if(!el) return;
+            const match = dataSantri.find(s => String(s.nama || '').trim().toLowerCase() === String(value || '').trim().toLowerCase());
+            if(match) el.value = match.nama;
+        }
+
+        function simpanMutasiSantriManual() {
+            if(currentRole !== 'admin_global' && currentRole !== 'admin_data') {
+                tampilkanNotif('Anda tidak memiliki akses untuk input keluar / masuk santri.');
+                return;
+            }
+
+            const namaInput = document.getElementById('mutasi-santri-nama')?.value.trim() || '';
+            const jenis = document.getElementById('mutasi-santri-jenis')?.value || 'Masuk';
+            const tanggal = document.getElementById('mutasi-santri-tanggal')?.value || '';
+            const santriObj = dataSantri.find(s => String(s.nama || '').trim().toLowerCase() === namaInput.toLowerCase());
+
+            if(!santriObj) { tampilkanNotif('Nama santri tidak ditemukan. Silakan pilih dari daftar santri.'); return; }
+            if(!tanggal) { tampilkanNotif('Silakan pilih tanggal.'); return; }
+
+            const record = {
+                id: Date.now(),
+                nama: santriObj.nama,
+                jenis,
+                tanggal,
+                bulan: tanggal.slice(0,7),
+                dibuatPada: new Date().toISOString()
+            };
+
+            dataMutasiSantri.push(record);
+            persistData('rutasy_mutasi_santri', dataMutasiSantri);
+
+            const namaEl = document.getElementById('mutasi-santri-nama');
+            const tanggalEl = document.getElementById('mutasi-santri-tanggal');
+            if(namaEl) namaEl.value = '';
+            if(tanggalEl) tanggalEl.value = '';
+            renderMutasiSantriManual();
+            tampilkanNotif(`Data ${jenis.toLowerCase()} santri berhasil disimpan!`);
+        }
+
+        function hapusMutasiSantriManual(id) {
+            if(currentRole !== 'admin_global' && currentRole !== 'admin_data') return;
+            bukaKonfirmasi('Hapus Data Keluar / Masuk', 'Yakin ingin menghapus data keluar / masuk santri ini?', () => {
+                dataMutasiSantri = dataMutasiSantri.filter(r => String(r.id) !== String(id));
+                persistData('rutasy_mutasi_santri', dataMutasiSantri);
+                renderMutasiSantriManual();
+                tampilkanNotif('Data keluar / masuk santri berhasil dihapus!');
+            });
+        }
+
+        function renderMutasiSantriManual() {
+            const tanggalInput = document.getElementById('mutasi-santri-tanggal');
+            if(tanggalInput && !tanggalInput.value) tanggalInput.value = new Date().toISOString().slice(0,10);
+            const tbody = document.querySelector('#table-mutasi-santri tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            const q = (document.getElementById('cari-mutasi-santri')?.value || '').trim().toLowerCase();
+            const filterBulan = document.getElementById('filter-mutasi-bulan')?.value || '';
+            const filterJenis = document.getElementById('filter-mutasi-jenis')?.value || '';
+
+            const rows = dataMutasiSantri.filter(r => {
+                const matchNama = String(r.nama || '').toLowerCase().includes(q);
+                const bulan = r.bulan || String(r.tanggal || '').slice(0,7);
+                const matchBulan = !filterBulan || bulan === filterBulan;
+                const matchJenis = !filterJenis || String(r.jenis || '') === filterJenis;
+                return matchNama && matchBulan && matchJenis;
+            }).sort((a,b) => {
+                const byName = String(a.nama || '').localeCompare(String(b.nama || ''), 'id', { sensitivity: 'base' });
+                if(byName !== 0) return byName;
+                return String(a.tanggal || '').localeCompare(String(b.tanggal || ''));
+            });
+
+            if(rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada data keluar / masuk santri.</td></tr>';
+                return;
+            }
+
+            rows.forEach((r, i) => {
+                const masuk = String(r.jenis || '').toLowerCase() === 'masuk';
+                const badge = masuk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+                const globalId = String(r.id).replace(/'/g, "\\'");
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3">${i + 1}</td>
+                        <td class="p-3 font-semibold">${r.nama || '-'}</td>
+                        <td class="p-3"><span class="${badge} px-2 py-1 rounded text-xs font-bold">${r.jenis || '-'}</span></td>
+                        <td class="p-3">${formatTanggalMutasi(r.tanggal)}</td>
+                        <td class="p-3">${namaBulanMutasi(r.tanggal)}</td>
+                        <td class="p-3"><button onclick="hapusMutasiSantriManual('${globalId}')" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- PKG (POIN KINERJA GURU) ---
+        function getJamAbsenGuru(record) {
+            if(record && record.jamRaw) return String(record.jamRaw).slice(0,5);
+            const waktu = String(record?.waktu || '');
+            const match = waktu.match(/(\d{1,2})[.:](\d{2})/);
+            if(!match) return '';
+            return `${String(parseInt(match[1],10)).padStart(2,'0')}:${match[2]}`;
+        }
+
+        function timeToMinutesPkg(time) {
+            const parts = String(time || '').split(':');
+            if(parts.length < 2) return NaN;
+            const h = parseInt(parts[0],10), m = parseInt(parts[1],10);
+            if(Number.isNaN(h) || Number.isNaN(m)) return NaN;
+            return (h * 60) + m;
+        }
+
+        function getBulanPKG() {
+            const filter = document.getElementById('filter-pkg-bulan');
+            if(filter?.value) return filter.value;
+            return new Date().toISOString().slice(0,7);
+        }
+
+        function renderPKG() {
+            const tbody = document.querySelector('#table-pkg tbody');
+            if(!tbody) return;
+
+            const bulan = getBulanPKG();
+            const filter = document.getElementById('filter-pkg-bulan');
+            if(filter && !filter.value) filter.value = bulan;
+
+            const jamPKG = String(dataSettings.pkgJamMasuk || '16:00').slice(0,5);
+            const poinMasuk = Math.max(0, parseInt(dataSettings.pkgPoinMasuk,10) || 0);
+            const poinTelat = Math.max(0, parseInt(dataSettings.pkgPoinTelat,10) || 0);
+            const targetMinutes = timeToMinutesPkg(jamPKG);
+
+            const infoJam = document.getElementById('pkg-info-jam');
+            const infoMasuk = document.getElementById('pkg-info-poin-masuk');
+            const infoTelat = document.getElementById('pkg-info-poin-telat');
+            if(infoJam) infoJam.innerText = jamPKG;
+            if(infoMasuk) infoMasuk.innerText = `+${poinMasuk}`;
+            if(infoTelat) infoTelat.innerText = `-${poinTelat}`;
+
+            const ranking = dataGuru.map(guru => {
+                const nama = String(guru.nama || '').trim();
+                const records = absenGuruRecord.filter(a => String(a.guru || '').trim().toLowerCase() === nama.toLowerCase() && String(a.tglRaw || '').slice(0,7) === bulan);
+                let totalPoin = 0;
+                let datangAwal = 0;
+                let terlambat = 0;
+
+                records.forEach(record => {
+                    const jam = getJamAbsenGuru(record);
+                    const actual = timeToMinutesPkg(jam);
+                    if(Number.isNaN(actual) || Number.isNaN(targetMinutes)) return;
+                    if(actual < targetMinutes) {
+                        totalPoin += poinMasuk;
+                        datangAwal++;
+                    } else if(actual > targetMinutes) {
+                        totalPoin -= poinTelat;
+                        terlambat++;
+                    }
+                });
+
+                return { nama, hariAbsen: records.length, datangAwal, terlambat, totalPoin };
+            }).sort((a,b) => b.totalPoin - a.totalPoin || b.datangAwal - a.datangAwal || a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }));
+
+            tbody.innerHTML = '';
+            if(ranking.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada data guru.</td></tr>';
+                return;
+            }
+
+            ranking.forEach((row, index) => {
+                const rank = index + 1;
+                const crown = rank === 1 ? '<span class="text-yellow-500 text-lg mr-1" title="Juara 1"><i class="fa-solid fa-crown"></i></span>' : '';
+                const poinClass = row.totalPoin > 0 ? 'text-green-600' : (row.totalPoin < 0 ? 'text-red-600' : 'text-gray-700');
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50 ${rank === 1 ? 'bg-yellow-50' : ''}">
+                        <td class="p-3 text-center font-bold">${crown}${rank}</td>
+                        <td class="p-3 font-semibold">${row.nama || '-'}</td>
+                        <td class="p-3 text-center">${row.hariAbsen}</td>
+                        <td class="p-3 text-center text-green-600 font-medium">${row.datangAwal}</td>
+                        <td class="p-3 text-center text-red-600 font-medium">${row.terlambat}</td>
+                        <td class="p-3 text-center font-bold ${poinClass}">${row.totalPoin}</td>
+                    </tr>
+                `;
+            });
+        }
+
         // --- PENGATURAN GLOBAL SISTEM ---
         function renderSettings() {
             if(document.getElementById('set-jam-masuk')) document.getElementById('set-jam-masuk').value = dataSettings.jamMasuk || '07:30';
+            if(document.getElementById('set-pkg-jam-masuk')) document.getElementById('set-pkg-jam-masuk').value = dataSettings.pkgJamMasuk || '16:00';
+            if(document.getElementById('set-pkg-poin-masuk')) document.getElementById('set-pkg-poin-masuk').value = dataSettings.pkgPoinMasuk ?? '10';
+            if(document.getElementById('set-pkg-poin-telat')) document.getElementById('set-pkg-poin-telat').value = dataSettings.pkgPoinTelat ?? '5';
             if(document.getElementById('set-batas-absen')) document.getElementById('set-batas-absen').value = dataSettings.batasAbsen || '09:00';
             if(document.getElementById('set-potongan')) document.getElementById('set-potongan').value = dataSettings.potongan || '1000';
             if(document.getElementById('set-hari-kerja')) document.getElementById('set-hari-kerja').value = dataSettings.hariKerja || '24';
@@ -3886,6 +4227,9 @@ function renderSemuaData() {
 
         function simpanPengaturanGlobal() {
             dataSettings.jamMasuk = document.getElementById('set-jam-masuk').value;
+            dataSettings.pkgJamMasuk = document.getElementById('set-pkg-jam-masuk').value || '16:00';
+            dataSettings.pkgPoinMasuk = document.getElementById('set-pkg-poin-masuk').value || '10';
+            dataSettings.pkgPoinTelat = document.getElementById('set-pkg-poin-telat').value || '5';
             dataSettings.batasAbsen = document.getElementById('set-batas-absen').value;
             dataSettings.potongan = document.getElementById('set-potongan').value;
             dataSettings.hariKerja = document.getElementById('set-hari-kerja').value;
@@ -3898,6 +4242,7 @@ function renderSemuaData() {
 
             persistData('rutasy_settings', dataSettings);
             renderSettings();
+            renderPKG();
             tampilkanNotif('Pengaturan global berhasil disimpan!');
         }
 
@@ -3924,8 +4269,9 @@ function renderSemuaData() {
                     dataKeuanganRiwayat = [];
                     dataKeuanganManual = [];
                     dataUjian = [];
+                    dataMutasiSantri = [];
                     dataSettings = {
-                        jamMasuk: '07:30', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
+                        jamMasuk: '07:30', pkgJamMasuk: '16:00', pkgPoinMasuk: '10', pkgPoinTelat: '5', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
                         payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
                     };
                     riwayatAbsensi = {};
@@ -3957,6 +4303,7 @@ function renderSemuaData() {
                         'rutasy_keu_riwayat': null,
                         'rutasy_keu_manual': null,
                         'rutasy_ujian': null,
+                        'rutasy_mutasi_santri': null,
                         'rutasy_settings': null,
                         'rutasy_absen': null,
                         'rutasy_absen_guru': null,
