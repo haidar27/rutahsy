@@ -156,8 +156,9 @@
                 
                 <!-- VIEW: DASHBOARD -->
                 <div id="view-dashboard" class="view-section hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div class="card bg-primary text-white"><p class="text-sm">Total Santri</p><h3 class="text-3xl font-bold" id="dash-santri">0</h3></div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                        <div class="card bg-primary text-white"><p class="text-sm">Total Santri Aktif</p><h3 class="text-3xl font-bold" id="dash-santri">0</h3></div>
+                        <div class="card bg-green-600 text-white"><p class="text-sm">Total Alumni</p><h3 class="text-3xl font-bold" id="dash-alumni">0</h3></div>
                         <div class="card bg-secondary text-white"><p class="text-sm">Total Guru</p><h3 class="text-3xl font-bold" id="dash-guru">0</h3></div>
                         <div class="card bg-blue-600 text-white"><p class="text-sm">Total Saldo Keuangan</p><h3 class="text-3xl font-bold" id="dash-pemasukan">Rp 0</h3></div>
                     </div>
@@ -458,10 +459,11 @@
                     <div class="card mb-6 btn-admin-only">
                         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
                             <h3 class="font-bold text-blue-700 w-full md:w-auto">Riwayat Kehadiran Guru</h3>
-                            <div class="flex items-center gap-2 w-full md:w-auto">
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+                                <input type="text" id="cari-riwayat-absen-guru" placeholder="Filter Nama Guru..." class="border p-2 rounded text-sm bg-white w-full sm:w-56" oninput="halamanAbsenGuruGlobal = 1; renderAbsenGuruGlobal()">
                                 <label for="filter-tgl-absen-guru" class="text-sm font-semibold text-gray-600 whitespace-nowrap">Tanggal:</label>
-                                <input type="date" id="filter-tgl-absen-guru" class="border p-2 rounded text-sm bg-white w-full md:w-auto" onchange="renderAbsenGuruGlobal()">
-                                <button type="button" onclick="document.getElementById('filter-tgl-absen-guru').value=''; renderAbsenGuruGlobal();" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded text-sm whitespace-nowrap">Semua</button>
+                                <input type="date" id="filter-tgl-absen-guru" class="border p-2 rounded text-sm bg-white w-full sm:w-auto" onchange="halamanAbsenGuruGlobal = 1; renderAbsenGuruGlobal()">
+                                <button type="button" onclick="document.getElementById('filter-tgl-absen-guru').value=''; document.getElementById('cari-riwayat-absen-guru').value=''; halamanAbsenGuruGlobal = 1; renderAbsenGuruGlobal();" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded text-sm whitespace-nowrap">Semua</button>
                             </div>
                         </div>
                         <div class="overflow-x-auto">
@@ -481,6 +483,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="pagination-absen-guru-global" class="flex flex-wrap justify-center gap-1 mt-4"></div>
                     </div>
 
                     <!-- Absen Santri (Input Pekanan) -->
@@ -746,16 +749,28 @@
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
                                 <h3 class="font-bold text-lg text-primary">PKG (Poin Kinerja Guru)</h3>
-                                <p class="text-sm text-gray-500 mt-1">Ranking dihitung dari riwayat absensi guru pada bulan yang dipilih.</p>
+                                <p class="text-sm text-gray-500 mt-1">Poin PKG bersifat akumulatif dan tetap berjalan meskipun bulan berganti.</p>
                             </div>
-                            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto pkg-admin-only">
                                 <label class="text-sm font-semibold flex items-center">Bulan:</label>
                                 <input type="month" id="filter-pkg-bulan" class="border p-2 rounded bg-white" onchange="renderPKG()">
                             </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="card mb-6 pkg-admin-only">
+                        <h3 class="font-bold text-primary mb-4">Input Manual Poin PKG</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <select id="pkg-manual-nama" class="border p-2 rounded bg-white">
+                                <option value="">-- Pilih Guru --</option>
+                            </select>
+                            <input type="number" id="pkg-manual-poin" placeholder="Poin (+ / -)" class="border p-2 rounded">
+                            <input type="text" id="pkg-manual-ket" placeholder="Keterangan" class="border p-2 rounded">
+                            <button type="button" onclick="simpanPKGManual()" class="bg-primary hover:bg-dark text-white p-2 rounded"><i class="fa-solid fa-save"></i> Simpan Poin</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 pkg-admin-only">
                         <div class="card border-l-4 border-primary">
                             <p class="text-sm text-gray-500">Jam Masuk PKG</p>
                             <h3 class="text-2xl font-bold" id="pkg-info-jam">16:00</h3>
@@ -770,7 +785,7 @@
                         </div>
                     </div>
 
-                    <div class="card">
+                    <div class="card pkg-admin-only">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm min-w-[720px]" id="table-pkg">
                                 <thead>
@@ -786,7 +801,14 @@
                                 <tbody></tbody>
                             </table>
                         </div>
-                        <p class="text-xs text-gray-500 mt-4">Peringkat 1 otomatis diberi tanda mahkota. Guru tanpa riwayat absen tetap tampil dengan 0 poin.</p>
+                        <p class="text-xs text-gray-500 mt-4">Peringkat dan total poin dihitung secara akumulatif dari seluruh riwayat absensi dan input manual poin.</p>
+                    </div>
+
+                    <div class="card hidden pkg-guru-only">
+                        <div class="text-center">
+                            <p class="text-sm text-gray-500 mb-2">Peringkat PKG Anda</p>
+                            <h3 id="pkg-guru-rank" class="text-5xl font-bold text-primary">-</h3>
+                        </div>
                     </div>
                 </div>
 
@@ -860,8 +882,15 @@
                     </div>
                     
                     <div id="container-tabel-haflah">
-                        <div class="mb-4 flex justify-end">
-                            <select id="filter-haflah-status" class="border p-2 rounded text-sm bg-white" onchange="renderTabelHaflah()">
+                        <div class="mb-4 flex flex-col sm:flex-row justify-end gap-2">
+                            <input type="text" id="cari-haflah-nama" placeholder="Filter Nama Santri..." class="border p-2 rounded text-sm bg-white w-full sm:w-64" oninput="halamanHaflah = 1; renderTabelHaflah()">
+                            <select id="filter-haflah-tahun" class="border p-2 rounded text-sm bg-white" onchange="halamanHaflah = 1; renderTabelHaflah()">
+                                <option value="">Semua Tahun</option>
+                                <script>
+                                    for(let i=2037; i>=2020; i--) document.write(`<option value="HTA-${i}">HTA-${i}</option>`);
+                                </script>
+                            </select>
+                            <select id="filter-haflah-status" class="border p-2 rounded text-sm bg-white" onchange="halamanHaflah = 1; renderTabelHaflah()">
                                 <option value="">Semua Status</option>
                                 <option value="Aktif">Aktif</option>
                                 <option value="Nonaktif">Nonaktif</option>
@@ -871,6 +900,7 @@
                             <thead><tr class="table-header"><th class="p-3">Tahun Angkatan</th><th class="p-3">Status Haflah</th><th class="p-3">Nama Lengkap</th><th class="p-3">Total Hafalan</th><th class="p-3">Nilai</th><th class="p-3 btn-admin-only">Aksi</th></tr></thead>
                             <tbody id="table-haflah-body"></tbody>
                         </table>
+                        <div id="pagination-haflah" class="flex flex-wrap justify-center gap-1 mt-4"></div>
                     </div>
                 </div>
 
@@ -1145,8 +1175,13 @@
 
         function formatRupiah(num) {
             if (num === null || num === undefined || num === '') return '0';
-            let parsed = parseInt(num, 10);
-            return isNaN(parsed) ? num : parsed.toLocaleString('id-ID');
+            if (typeof num === 'string') {
+                const cleaned = num.replace(/[^0-9-]/g, '');
+                if(cleaned === '' || cleaned === '-') return '0';
+                num = cleaned;
+            }
+            const parsed = Number(num);
+            return Number.isFinite(parsed) ? parsed.toLocaleString('id-ID') : String(num);
         }
         
         function tampilkanNotif(pesan) {
@@ -1187,6 +1222,7 @@
         let dataKeuanganPengajuan = JSON.parse(localStorage.getItem('rutasy_keu_pengajuan')) || [];
         let dataKeuanganRiwayat = JSON.parse(localStorage.getItem('rutasy_keu_riwayat')) || [];
         let dataKeuanganManual = JSON.parse(localStorage.getItem('rutasy_keu_manual')) || [];
+        let dataPKGManual = JSON.parse(localStorage.getItem('rutasy_pkg_manual')) || [];
         let dataUjian = JSON.parse(localStorage.getItem('rutasy_ujian')) || [];
         let dataMutasiSantri = JSON.parse(localStorage.getItem('rutasy_mutasi_santri')) || [];
 
@@ -1254,6 +1290,7 @@ const firebaseConfig = {
             rutasy_keu_pengajuan: 'dataKeuanganPengajuan',
             rutasy_keu_riwayat: 'dataKeuanganRiwayat',
             rutasy_keu_manual: 'dataKeuanganManual',
+            rutasy_pkg_manual: 'dataPKGManual',
             rutasy_ujian: 'dataUjian',
             rutasy_mutasi_santri: 'dataMutasiSantri',
             rutasy_settings: 'dataSettings',
@@ -1283,6 +1320,7 @@ const firebaseConfig = {
                 case 'rutasy_keu_pengajuan': return dataKeuanganPengajuan;
                 case 'rutasy_keu_riwayat': return dataKeuanganRiwayat;
                 case 'rutasy_keu_manual': return dataKeuanganManual;
+                case 'rutasy_pkg_manual': return dataPKGManual;
                 case 'rutasy_ujian': return dataUjian;
                 case 'rutasy_mutasi_santri': return dataMutasiSantri;
                 case 'rutasy_settings': return dataSettings;
@@ -1307,6 +1345,7 @@ const firebaseConfig = {
                 case 'rutasy_keu_pengajuan': dataKeuanganPengajuan = safeValue; break;
                 case 'rutasy_keu_riwayat': dataKeuanganRiwayat = safeValue; break;
                 case 'rutasy_keu_manual': dataKeuanganManual = safeValue; break;
+                case 'rutasy_pkg_manual': dataPKGManual = safeValue; break;
                 case 'rutasy_ujian': dataUjian = safeValue; break;
                 case 'rutasy_mutasi_santri': dataMutasiSantri = safeValue; break;
                 case 'rutasy_settings': dataSettings = safeValue; break;
@@ -1598,6 +1637,7 @@ const firebaseConfig = {
             ],
             guru: [
                 { id: 'view-absensi', icon: 'fa-calendar-check', label: 'Absensi' },
+                { id: 'view-pkg', icon: 'fa-ranking-star', label: 'Peringkat PKG' },
                 { id: 'view-progres', icon: 'fa-book-open', label: 'Progres & Ujian' },
                 { id: 'view-kalender', icon: 'fa-calendar-alt', label: 'Kalender Akademik' }
             ],
@@ -1738,7 +1778,7 @@ function renderSemuaData() {
             renderKalenderInit(); renderSelectHaflahSantri(); renderTabelHaflah(); 
             renderTabelRiwayatAbsen(); renderDatalistSantri(); renderTabelProgres(); renderHistoryUjian();
             renderAbsenGuruPribadi(); renderAbsenGuruGlobal(); renderBelumBayarSPP();
-            renderMutasiSantriDatalist(); renderMutasiSantriManual(); renderPKG();
+            renderMutasiSantriDatalist(); renderMutasiSantriManual(); populatePKGManualGuruSelect(); renderPKG();
             sesuaikanFormUjian(); sesuaikanFormProgres(); sesuaikanFormKeuanganManual();
             renderOpsiBulanSPP();
             populateFilterGroups(); updateNotifikasiAkademik();
@@ -1910,7 +1950,7 @@ function renderSemuaData() {
             }
 
             if(role === 'guru') {
-                cssHide('.btn-admin-only, .stats-keuangan, .ortu-only, .admin-keuangan-only, .admin-global-only, .btn-print, .calendar-detail-admin-only');
+                cssHide('.btn-admin-only, .stats-keuangan, .ortu-only, .admin-keuangan-only, .admin-global-only, .btn-print, .calendar-detail-admin-only, .pkg-admin-only');
             } else if (role === 'ortu') {
                 cssHide('.btn-admin-only, .stats-keuangan, .admin-keuangan-only, .div-absen-pribadi, .form-absen-guru-only, .form-input-hafalan, .admin-global-only, .btn-print, .calendar-detail-admin-only');
             } else if (role === 'admin_keuangan') {
@@ -2085,14 +2125,10 @@ function renderSemuaData() {
         function updateGuruDropdown() {
             const select = document.getElementById('ms-guru');
             if(!select) return;
-            select.innerHTML = '';
-            if(dataGuru.length === 0) {
-                select.innerHTML = '<option value="">- Belum Ada Guru -</option>';
-            } else {
-                dataGuru.forEach(g => {
-                    select.innerHTML += `<option value="${g.nama}">${g.nama}</option>`;
-                });
-            }
+            select.innerHTML = '<option value="Tidak Ada">Tidak Ada</option>';
+            dataGuru.forEach(g => {
+                select.innerHTML += `<option value="${g.nama}">${g.nama}</option>`;
+            });
         }
 
         function renderSantri() {
@@ -2138,7 +2174,16 @@ function renderSemuaData() {
                 }
             }
             const dashSantri=document.getElementById('dash-santri');
-            if(dashSantri) dashSantri.innerText=dataSantri.length;
+            if(dashSantri) dashSantri.innerText=dataSantri.filter(s => String(s.status || '').toLowerCase() === 'aktif').length;
+            const dashAlumni=document.getElementById('dash-alumni');
+            if(dashAlumni) {
+                const alumniNames = new Set();
+                dataHaflah.forEach(h => {
+                    const linked = dataSantri.find(s => String(s.nama || '').trim().toLowerCase() === String(h.nama || '').trim().toLowerCase());
+                    if(String(h.haflahStatus || '').toLowerCase() === 'alumni' || String(linked?.status || '').toLowerCase() === 'alumni') alumniNames.add(String(h.nama || '').trim().toLowerCase());
+                });
+                dashAlumni.innerText = alumniNames.size;
+            }
             renderSelectHaflahSantri();renderDatalistSantri();
         }
 
@@ -2368,6 +2413,7 @@ function renderSemuaData() {
             document.getElementById('dash-guru').innerText=dataGuru.length;
             updateGuruDropdown();
             populateFilterGroups();
+            populatePKGManualGuruSelect();
         }
 
         function bukaModalTambahSantri() { 
@@ -2739,6 +2785,10 @@ function renderSemuaData() {
         const BATAS_DATABASE_SANTRI = 10;
         let halamanBelumBayarSPP = 1;
         const BATAS_SANTRI_SPP = 10;
+        let halamanAbsenGuruGlobal = 1;
+        const BATAS_ABSEN_GURU_GLOBAL = 10;
+        let halamanHaflah = 1;
+        const BATAS_HAFLAH = 10;
         let halamanRiwayatProgres = 1;
         let halamanHistoryUjian = 1;
 
@@ -2824,7 +2874,15 @@ function renderSemuaData() {
                 if([...select.options].some(o => o.value === current)) select.value = current;
             };
 
-            buildOptions(manualSelect, namaManual, '-- Pilih Bulan Pembayaran --');
+            if(manualSelect) {
+                const current = manualSelect.value;
+                manualSelect.innerHTML = '<option value="">-- Pilih Bulan Pembayaran (Januari - Agustus) --</option>';
+                const tahunManual = new Date().getFullYear();
+                daftarBulanSPP.slice(0,8).forEach((bulan, index) => {
+                    if(namaManual) manualSelect.innerHTML += `<option value="${bulan}" data-tahun="${tahunManual}">${bulan} ${tahunManual}</option>`;
+                });
+                if([...manualSelect.options].some(o => o.value === current)) manualSelect.value = current;
+            }
             buildOptions(ortuSelect, namaOrtu, '-- Pilih Bulan --');
         }
 
@@ -3222,29 +3280,46 @@ function renderSemuaData() {
             tbody.innerHTML = '';
 
             const filterDate = document.getElementById('filter-tgl-absen-guru')?.value || '';
-            const filtered = absenGuruRecord.filter(a => !filterDate || String(a.tglRaw || '').slice(0,10) === filterDate);
+            const filterNama = document.getElementById('cari-riwayat-absen-guru')?.value.trim().toLowerCase() || '';
+            const filtered = absenGuruRecord.filter(a => {
+                const matchDate = !filterDate || String(a.tglRaw || '').slice(0,10) === filterDate;
+                const matchNama = !filterNama || String(a.guru || '').toLowerCase().includes(filterNama);
+                return matchDate && matchNama;
+            });
+
+            const totalPages = Math.max(1, Math.ceil(filtered.length / BATAS_ABSEN_GURU_GLOBAL));
+            halamanAbsenGuruGlobal = Math.min(Math.max(halamanAbsenGuruGlobal, 1), totalPages);
 
             if(filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada data absensi guru pada tanggal yang dipilih.</td></tr>';
-                return;
+                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada data absensi guru yang sesuai.</td></tr>';
+            } else {
+                const startRow = (halamanAbsenGuruGlobal - 1) * BATAS_ABSEN_GURU_GLOBAL;
+                filtered.slice(startRow, startRow + BATAS_ABSEN_GURU_GLOBAL).forEach((a) => {
+                    const originalIndex = absenGuruRecord.indexOf(a);
+                    let badgeColor = a.telat > 0 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700';
+                    tbody.innerHTML += `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-2 font-medium">${a.guru}</td>
+                            <td class="p-2">${a.waktu}</td>
+                            <td class="p-2"><span class="${badgeColor} px-2 py-0.5 rounded text-xs font-bold">${a.status}</span></td>
+                            <td class="p-2">${a.telat} Menit</td>
+                            <td class="p-2 text-red-600 font-medium">Rp ${formatRupiah(a.potongan)}</td>
+                            <td class="p-2">
+                                <button onclick="hapusAbsenGuru(${originalIndex})" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
             }
 
-            filtered.forEach((a) => {
-                const originalIndex = absenGuruRecord.indexOf(a);
-                let badgeColor = a.telat > 0 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700';
-                tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-2 font-medium">${a.guru}</td>
-                        <td class="p-2">${a.waktu}</td>
-                        <td class="p-2"><span class="${badgeColor} px-2 py-0.5 rounded text-xs font-bold">${a.status}</span></td>
-                        <td class="p-2">${a.telat} Menit</td>
-                        <td class="p-2 text-red-600 font-medium">Rp ${formatRupiah(a.potongan)}</td>
-                        <td class="p-2">
-                            <button onclick="hapusAbsenGuru(${originalIndex})" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
+            const pager = document.getElementById('pagination-absen-guru-global');
+            if(pager) {
+                pager.innerHTML = '';
+                for(let page = 1; page <= totalPages; page++) {
+                    const active = page === halamanAbsenGuruGlobal;
+                    pager.innerHTML += `<button onclick="halamanAbsenGuruGlobal=${page}; renderAbsenGuruGlobal()" class="min-w-9 px-3 py-1 rounded border ${active ? 'bg-primary text-white border-primary' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}">${page}</button>`;
+                }
+            }
         }
 
         function hapusAbsenGuru(index) {
@@ -3918,11 +3993,47 @@ function renderSemuaData() {
 
         function renderTabelHaflah(){
             const tbody=document.getElementById('table-haflah-body'); if(!tbody) return; tbody.innerHTML='';
-            const filterStatus=document.getElementById('filter-haflah-status')?.value||''; const groups={};
-            dataHaflah.map(h=>({...h,tahun:String(h.tahun||'').startsWith('HTA-')?h.tahun:(h.tahun?`HTA-${h.tahun}`:'-')})).forEach(h=>{ const status=h.haflahStatus||'Nonaktif'; if(filterStatus&&status!==filterStatus)return; if(!groups[h.tahun])groups[h.tahun]=[]; groups[h.tahun].push(h); });
-            const years=Object.keys(groups).sort((a,b)=>b.localeCompare(a,undefined,{numeric:true}));
-            if(!years.length){tbody.innerHTML='<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada data haflah / alumni yang sesuai.</td></tr>';return;}
-            years.forEach(tahun=>{ const items=groups[tahun]; const statusHtml=items.map(h=>{const st=h.haflahStatus||'Nonaktif',cl=st==='Aktif'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-700';return `<div class="mb-1 last:mb-0"><span class="${cl} px-2 py-1 rounded text-xs font-bold">${escapeHtml(st)}</span></div>`;}).join(''); const namesHtml=items.map(h=>`<div class="mb-1 last:mb-0 font-medium">${escapeHtml(h.nama)}</div>`).join(''); const totalHtml=items.map(h=>`<div class="mb-1 last:mb-0 text-primary font-bold">${escapeHtml(h.total||'-')}</div>`).join(''); const nilaiHtml=items.map(h=>`<div class="mb-1 last:mb-0 font-semibold">${escapeHtml(h.nilai||'-')}</div>`).join(''); const actionHtml=items.map(h=>`<div class="mb-1 last:mb-0 flex gap-2"><button onclick="editHaflah(${Number(h.id)})" class="text-blue-600 hover:text-blue-800" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="hapusHaflah(${Number(h.id)})" class="text-red-600 hover:text-red-800" title="Hapus"><i class="fa-solid fa-trash"></i></button></div>`).join(''); tbody.innerHTML+=`<tr class="border-b hover:bg-gray-50 align-top"><td class="p-3 font-bold text-gray-700">${escapeHtml(tahun)}</td><td class="p-3">${statusHtml}</td><td class="p-3">${namesHtml}</td><td class="p-3">${totalHtml}</td><td class="p-3">${nilaiHtml}</td><td class="p-3 btn-admin-only">${actionHtml}</td></tr>`; });
+            const filterStatus=document.getElementById('filter-haflah-status')?.value||'';
+            const filterNama=document.getElementById('cari-haflah-nama')?.value.trim().toLowerCase()||'';
+            const filterTahun=document.getElementById('filter-haflah-tahun')?.value||'';
+
+            const rows=dataHaflah.map(h=>({
+                ...h,
+                tahun:String(h.tahun||'').startsWith('HTA-')?String(h.tahun):(h.tahun?`HTA-${h.tahun}`:'-')
+            })).filter(h=>{
+                const status=h.haflahStatus||'Nonaktif';
+                const matchStatus=!filterStatus||status===filterStatus;
+                const matchNama=!filterNama||String(h.nama||'').toLowerCase().includes(filterNama);
+                const matchTahun=!filterTahun||h.tahun===filterTahun;
+                return matchStatus&&matchNama&&matchTahun;
+            }).sort((a,b)=>{
+                const yearCompare=String(b.tahun||'').localeCompare(String(a.tahun||''),undefined,{numeric:true});
+                if(yearCompare!==0) return yearCompare;
+                return String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base'});
+            });
+
+            const totalPages=Math.max(1,Math.ceil(rows.length/BATAS_HAFLAH));
+            halamanHaflah=Math.min(Math.max(halamanHaflah,1),totalPages);
+
+            if(!rows.length){
+                tbody.innerHTML='<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada data haflah / alumni yang sesuai.</td></tr>';
+            }else{
+                const startRow=(halamanHaflah-1)*BATAS_HAFLAH;
+                rows.slice(startRow,startRow+BATAS_HAFLAH).forEach((h,index)=>{
+                    const st=h.haflahStatus||'Nonaktif';
+                    const cl=st==='Aktif'?'bg-green-100 text-green-700':(st==='Alumni'?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-700');
+                    tbody.innerHTML+=`<tr class="border-b hover:bg-gray-50 align-top"><td class="p-3 font-bold text-gray-700">${escapeHtml(h.tahun)}</td><td class="p-3"><span class="${cl} px-2 py-1 rounded text-xs font-bold">${escapeHtml(st)}</span></td><td class="p-3 font-medium">${escapeHtml(h.nama||'-')}</td><td class="p-3 text-primary font-bold">${escapeHtml(h.total||'-')}</td><td class="p-3 font-semibold">${escapeHtml(h.nilai||'-')}</td><td class="p-3 btn-admin-only"><div class="flex gap-2"><button onclick="editHaflah(${Number(h.id)})" class="text-blue-600 hover:text-blue-800" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="hapusHaflah(${Number(h.id)})" class="text-red-600 hover:text-red-800" title="Hapus"><i class="fa-solid fa-trash"></i></button></div></td></tr>`;
+                });
+            }
+
+            const pager=document.getElementById('pagination-haflah');
+            if(pager){
+                pager.innerHTML='';
+                for(let page=1;page<=totalPages;page++){
+                    const active=page===halamanHaflah;
+                    pager.innerHTML+=`<button onclick="halamanHaflah=${page}; renderTabelHaflah()" class="min-w-9 px-3 py-1 rounded border ${active?'bg-primary text-white border-primary':'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}">${page}</button>`;
+                }
+            }
         }
 
         async function hapusHaflah(id){
@@ -4132,69 +4243,118 @@ function renderSemuaData() {
             return new Date().toISOString().slice(0,7);
         }
 
+        function populatePKGManualGuruSelect() {
+            const select=document.getElementById('pkg-manual-nama');
+            if(!select) return;
+            const current=select.value;
+            select.innerHTML='<option value="">-- Pilih Guru --</option>';
+            dataGuru.slice().sort((a,b)=>String(a.nama||'').localeCompare(String(b.nama||''),'id',{sensitivity:'base'})).forEach(g=>{
+                select.innerHTML+=`<option value="${escapeHtml(g.nama||'')}">${escapeHtml(g.nama||'')}</option>`;
+            });
+            if([...select.options].some(o=>o.value===current)) select.value=current;
+        }
+
+        async function simpanPKGManual() {
+            if(currentRole !== 'admin_global') {
+                tampilkanNotif('Fitur input manual PKG hanya dapat digunakan Admin Global.');
+                return;
+            }
+            const nama=document.getElementById('pkg-manual-nama')?.value.trim()||'';
+            const poin=Number(document.getElementById('pkg-manual-poin')?.value||0);
+            const keterangan=document.getElementById('pkg-manual-ket')?.value.trim()||'';
+            if(!nama || !Number.isFinite(poin) || poin===0 || !keterangan){
+                tampilkanNotif('Lengkapi nama guru, poin plus/minus, dan keterangan.');
+                return;
+            }
+            const guru=dataGuru.find(g=>String(g.nama||'').trim().toLowerCase()===nama.toLowerCase());
+            if(!guru){ tampilkanNotif('Nama guru tidak ditemukan.'); return; }
+            dataPKGManual.unshift({ id:Date.now(), nama:guru.nama, poin, keterangan, tglRaw:new Date().toISOString().split('T')[0] });
+            await persistData('rutasy_pkg_manual', dataPKGManual);
+            document.getElementById('pkg-manual-poin').value='';
+            document.getElementById('pkg-manual-ket').value='';
+            renderPKG();
+            tampilkanNotif('Poin manual PKG berhasil disimpan.');
+        }
+
         function renderPKG() {
-            const tbody = document.querySelector('#table-pkg tbody');
-            if(!tbody) return;
+            const tbody=document.querySelector('#table-pkg tbody');
+            populatePKGManualGuruSelect();
 
-            const bulan = getBulanPKG();
-            const filter = document.getElementById('filter-pkg-bulan');
-            if(filter && !filter.value) filter.value = bulan;
-
-            const jamPKG = String(dataSettings.pkgJamMasuk || '16:00').slice(0,5);
-            const poinMasuk = Math.max(0, parseInt(dataSettings.pkgPoinMasuk,10) || 0);
-            const poinTelat = Math.max(0, parseInt(dataSettings.pkgPoinTelat,10) || 0);
-            const targetMinutes = timeToMinutesPkg(jamPKG);
-
-            const infoJam = document.getElementById('pkg-info-jam');
-            const infoMasuk = document.getElementById('pkg-info-poin-masuk');
-            const infoTelat = document.getElementById('pkg-info-poin-telat');
-            if(infoJam) infoJam.innerText = jamPKG;
-            if(infoMasuk) infoMasuk.innerText = `+${poinMasuk}`;
-            if(infoTelat) infoTelat.innerText = `-${poinTelat}`;
-
-            const ranking = dataGuru.map(guru => {
-                const nama = String(guru.nama || '').trim();
-                const records = absenGuruRecord.filter(a => String(a.guru || '').trim().toLowerCase() === nama.toLowerCase() && String(a.tglRaw || '').slice(0,7) === bulan);
-                let totalPoin = 0;
-                let datangAwal = 0;
-                let terlambat = 0;
-
-                records.forEach(record => {
-                    const jam = getJamAbsenGuru(record);
-                    const actual = timeToMinutesPkg(jam);
-                    if(Number.isNaN(actual) || Number.isNaN(targetMinutes)) return;
-                    if(actual < targetMinutes) {
-                        totalPoin += poinMasuk;
-                        datangAwal++;
-                    } else if(actual > targetMinutes) {
-                        totalPoin -= poinTelat;
-                        terlambat++;
-                    }
-                });
-
-                return { nama, hariAbsen: records.length, datangAwal, terlambat, totalPoin };
-            }).sort((a,b) => b.totalPoin - a.totalPoin || b.datangAwal - a.datangAwal || a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }));
-
-            tbody.innerHTML = '';
-            if(ranking.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada data guru.</td></tr>';
+            const guruOnly=document.querySelector('.pkg-guru-only');
+            const adminOnly=document.querySelectorAll('.pkg-admin-only');
+            if(currentRole==='guru') {
+                adminOnly.forEach(el=>el.style.display='none');
+                if(guruOnly) guruOnly.classList.remove('hidden');
+                const jamPKG=String(dataSettings.pkgJamMasuk||'16:00').slice(0,5);
+                const poinMasuk=Math.max(0,parseInt(dataSettings.pkgPoinMasuk,10)||0);
+                const poinTelat=Math.max(0,parseInt(dataSettings.pkgPoinTelat,10)||0);
+                const targetMinutes=timeToMinutesPkg(jamPKG);
+                const ranking=dataGuru.map(guru=>{
+                    const nama=String(guru.nama||'').trim();
+                    const attendancePoints=absenGuruRecord.filter(a=>String(a.guru||'').trim().toLowerCase()===nama.toLowerCase()).reduce((sum,record)=>{
+                        const actual=timeToMinutesPkg(getJamAbsenGuru(record));
+                        if(Number.isNaN(actual)||Number.isNaN(targetMinutes)) return sum;
+                        if(actual<targetMinutes) return sum+poinMasuk;
+                        if(actual>targetMinutes) return sum-poinTelat;
+                        return sum;
+                    },0);
+                    const manualPoints=dataPKGManual.filter(m=>String(m.nama||'').trim().toLowerCase()===nama.toLowerCase()).reduce((sum,m)=>sum+(Number(m.poin)||0),0);
+                    return {nama,totalPoin:attendancePoints+manualPoints};
+                }).sort((a,b)=>b.totalPoin-a.totalPoin||a.nama.localeCompare(b.nama,'id',{sensitivity:'base'}));
+                const myName=String(loggedInSantri?.nama||'').trim().toLowerCase();
+                const myRank=ranking.findIndex(r=>r.nama.toLowerCase()===myName)+1;
+                const rankEl=document.getElementById('pkg-guru-rank');
+                if(rankEl) rankEl.innerText=myRank>0?`#${myRank}`:'-';
                 return;
             }
 
-            ranking.forEach((row, index) => {
-                const rank = index + 1;
-                const crown = rank === 1 ? '<span class="text-yellow-500 text-lg mr-1" title="Juara 1"><i class="fa-solid fa-crown"></i></span>' : '';
-                const poinClass = row.totalPoin > 0 ? 'text-green-600' : (row.totalPoin < 0 ? 'text-red-600' : 'text-gray-700');
-                tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50 ${rank === 1 ? 'bg-yellow-50' : ''}">
-                        <td class="p-3 text-center font-bold">${crown}${rank}</td>
-                        <td class="p-3 font-semibold">${row.nama || '-'}</td>
-                        <td class="p-3 text-center">${row.hariAbsen}</td>
-                        <td class="p-3 text-center text-green-600 font-medium">${row.datangAwal}</td>
-                        <td class="p-3 text-center text-red-600 font-medium">${row.terlambat}</td>
-                        <td class="p-3 text-center font-bold ${poinClass}">${row.totalPoin}</td>
-                    </tr>
-                `;
+            adminOnly.forEach(el=>el.style.display='');
+            if(guruOnly) guruOnly.classList.add('hidden');
+            if(!tbody) return;
+
+            const bulan=getBulanPKG();
+            const filter=document.getElementById('filter-pkg-bulan');
+            if(filter && !filter.value) filter.value=bulan;
+            const jamPKG=String(dataSettings.pkgJamMasuk||'16:00').slice(0,5);
+            const poinMasuk=Math.max(0,parseInt(dataSettings.pkgPoinMasuk,10)||0);
+            const poinTelat=Math.max(0,parseInt(dataSettings.pkgPoinTelat,10)||0);
+            const targetMinutes=timeToMinutesPkg(jamPKG);
+
+            const infoJam=document.getElementById('pkg-info-jam');
+            const infoMasuk=document.getElementById('pkg-info-poin-masuk');
+            const infoTelat=document.getElementById('pkg-info-poin-telat');
+            if(infoJam) infoJam.innerText=jamPKG;
+            if(infoMasuk) infoMasuk.innerText=`+${poinMasuk}`;
+            if(infoTelat) infoTelat.innerText=`-${poinTelat}`;
+
+            const ranking=dataGuru.map(guru=>{
+                const nama=String(guru.nama||'').trim();
+                const allRecords=absenGuruRecord.filter(a=>String(a.guru||'').trim().toLowerCase()===nama.toLowerCase());
+                const monthRecords=allRecords.filter(a=>String(a.tglRaw||'').slice(0,7)===bulan);
+                let attendancePoints=0,datangAwal=0,terlambat=0;
+                allRecords.forEach(record=>{
+                    const actual=timeToMinutesPkg(getJamAbsenGuru(record));
+                    if(Number.isNaN(actual)||Number.isNaN(targetMinutes)) return;
+                    if(actual<targetMinutes) attendancePoints+=poinMasuk;
+                    else if(actual>targetMinutes) attendancePoints-=poinTelat;
+                });
+                monthRecords.forEach(record=>{
+                    const actual=timeToMinutesPkg(getJamAbsenGuru(record));
+                    if(Number.isNaN(actual)||Number.isNaN(targetMinutes)) return;
+                    if(actual<targetMinutes) datangAwal++;
+                    else if(actual>targetMinutes) terlambat++;
+                });
+                const manualPoints=dataPKGManual.filter(m=>String(m.nama||'').trim().toLowerCase()===nama.toLowerCase()).reduce((sum,m)=>sum+(Number(m.poin)||0),0);
+                return {nama,hariAbsen:monthRecords.length,datangAwal,terlambat,totalPoin:attendancePoints+manualPoints};
+            }).sort((a,b)=>b.totalPoin-a.totalPoin||b.datangAwal-a.datangAwal||a.nama.localeCompare(b.nama,'id',{sensitivity:'base'}));
+
+            tbody.innerHTML='';
+            if(ranking.length===0){ tbody.innerHTML='<tr><td colspan="6" class="p-3 text-center text-gray-500 italic">Belum ada data guru.</td></tr>'; return; }
+            ranking.forEach((row,index)=>{
+                const rank=index+1;
+                const crown=rank===1?'<span class="text-yellow-500 text-lg mr-1" title="Juara 1"><i class="fa-solid fa-crown"></i></span>':'';
+                const poinClass=row.totalPoin>0?'text-green-600':(row.totalPoin<0?'text-red-600':'text-gray-700');
+                tbody.innerHTML+=`<tr class="border-b hover:bg-gray-50 ${rank===1?'bg-yellow-50':''}"><td class="p-3 text-center font-bold">${crown}${rank}</td><td class="p-3 font-semibold">${escapeHtml(row.nama||'-')}</td><td class="p-3 text-center">${row.hariAbsen}</td><td class="p-3 text-center text-green-600 font-medium">${row.datangAwal}</td><td class="p-3 text-center text-red-600 font-medium">${row.terlambat}</td><td class="p-3 text-center font-bold ${poinClass}">${row.totalPoin}</td></tr>`;
             });
         }
 
