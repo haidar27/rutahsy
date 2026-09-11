@@ -272,7 +272,7 @@
                                 <option value="SPP">SPP</option>
                             </select>
                             <input type="text" id="man-ket" placeholder="Keterangan..." class="border p-2 rounded md:col-span-2">
-                            <input type="number" id="man-nominal" placeholder="Nominal (Rp)" class="border p-2 rounded">
+                            <input type="text" id="man-nominal" inputmode="numeric" autocomplete="off" placeholder="Nominal (Rp)" class="border p-2 rounded money-input" oninput="formatNominalInput(this)">
                             <button class="bg-primary text-white p-2 rounded hover:bg-dark transition" onclick="simpanKeuanganManual()"><i class="fa-solid fa-save"></i> Simpan</button>
                         </div>
                         <div id="manual-spp-fields" class="hidden mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -291,8 +291,8 @@
                                 <div id="manual-spp-suggestions" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-56 overflow-y-auto"></div>
                             </div>
                             <datalist id="list-santri-manual-spp"></datalist>
-                            <input type="number" id="man-spp-nominal" placeholder="Nominal SPP (Rp)" class="border p-2 rounded">
-                            <input type="number" id="man-spp-infaq" placeholder="Nominal Infaq (Rp)" class="border p-2 rounded">
+                            <input type="text" id="man-spp-nominal" inputmode="numeric" autocomplete="off" placeholder="Nominal SPP (Rp)" class="border p-2 rounded money-input" oninput="formatNominalInput(this)">
+                            <input type="text" id="man-spp-infaq" inputmode="numeric" autocomplete="off" placeholder="Nominal Infaq (Rp)" class="border p-2 rounded money-input" oninput="formatNominalInput(this)">
                             <input type="text" id="man-spp-ket" placeholder="Keterangan SPP..." class="border p-2 rounded">
                         </div>
                     </div>
@@ -349,8 +349,8 @@
                                 <option value="E-Wallet">E-Wallet</option>
                                 <option value="Tunai">Tunai</option>
                             </select>
-                            <input type="number" id="ortu-spp" placeholder="Nominal SPP (Rp)" class="border p-2 rounded">
-                            <input type="number" id="ortu-infaq" placeholder="Nominal Infaq (Rp)" class="border p-2 rounded">
+                            <input type="text" id="ortu-spp" inputmode="numeric" autocomplete="off" placeholder="Nominal SPP (Rp)" class="border p-2 rounded money-input" oninput="formatNominalInput(this)">
+                            <input type="text" id="ortu-infaq" inputmode="numeric" autocomplete="off" placeholder="Nominal Infaq (Rp)" class="border p-2 rounded money-input" oninput="formatNominalInput(this)">
                             <button class="bg-primary text-white p-2 rounded hover:bg-dark transition" onclick="ajukanPembayaranOrtu()"><i class="fa-solid fa-paper-plane"></i> Ajukan</button>
                         </div>
                         <p class="text-xs text-gray-500 mt-2">* Kosongkan kolom infaq jika hanya membayar SPP, begitupun sebaliknya. Setelah diajukan, menunggu Approve Admin Keuangan.</p>
@@ -805,9 +805,20 @@
                     </div>
 
                     <div class="card hidden pkg-guru-only">
-                        <div class="text-center">
-                            <p class="text-sm text-gray-500 mb-2">Peringkat PKG Anda</p>
-                            <h3 id="pkg-guru-rank" class="text-5xl font-bold text-primary">-</h3>
+                        <div class="mb-4">
+                            <h3 class="font-bold text-lg text-primary">Peringkat PKG Guru</h3>
+                            <p class="text-sm text-gray-500 mt-1">Menampilkan seluruh urutan peringkat guru.</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm" id="table-pkg-guru-ranking">
+                                <thead>
+                                    <tr class="table-header">
+                                        <th class="p-3 border-b text-center">Peringkat</th>
+                                        <th class="p-3 border-b">Guru</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -1183,6 +1194,48 @@
             const parsed = Number(num);
             return Number.isFinite(parsed) ? parsed.toLocaleString('id-ID') : String(num);
         }
+
+        function parseNominalInput(value) {
+            const cleaned = String(value ?? '').replace(/[^0-9]/g, '');
+            return cleaned ? Number(cleaned) : 0;
+        }
+
+        function formatNominalInput(input) {
+            if(!input) return;
+            const numeric = parseNominalInput(input.value);
+            input.value = numeric > 0 ? formatRupiah(numeric) : '';
+        }
+
+        function formatNominalFieldById(id) {
+            const input = document.getElementById(id);
+            if(input && input.value) formatNominalInput(input);
+        }
+
+        function migrateExistingFinancialData() {
+            let changed = false;
+            const migrateArray = (arr, fields) => {
+                if(!Array.isArray(arr)) return;
+                arr.forEach(record => {
+                    if(!record || record._rupiahV2 === true) return;
+                    fields.forEach(field => {
+                        if(record[field] !== undefined && record[field] !== null && record[field] !== '') {
+                            const n = Number(String(record[field]).replace(/[^0-9-]/g, ''));
+                            if(Number.isFinite(n) && n !== 0) record[field] = n * 1000;
+                        }
+                    });
+                    record._rupiahV2 = true;
+                    changed = true;
+                });
+            };
+            migrateArray(dataKeuanganRiwayat, ['spp','infaq']);
+            migrateArray(dataKeuanganPengajuan, ['spp','infaq']);
+            migrateArray(dataKeuanganManual, ['nominal']);
+            if(changed) {
+                localStorage.setItem('rutasy_keu_riwayat', JSON.stringify(dataKeuanganRiwayat));
+                localStorage.setItem('rutasy_keu_pengajuan', JSON.stringify(dataKeuanganPengajuan));
+                localStorage.setItem('rutasy_keu_manual', JSON.stringify(dataKeuanganManual));
+            }
+        }
         
         function tampilkanNotif(pesan) {
             const container = document.getElementById('toast-container');
@@ -1342,9 +1395,9 @@ const firebaseConfig = {
             switch(key) {
                 case 'rutasy_santri': dataSantri = safeValue; break;
                 case 'rutasy_guru': dataGuru = safeValue; break;
-                case 'rutasy_keu_pengajuan': dataKeuanganPengajuan = safeValue; break;
-                case 'rutasy_keu_riwayat': dataKeuanganRiwayat = safeValue; break;
-                case 'rutasy_keu_manual': dataKeuanganManual = safeValue; break;
+                case 'rutasy_keu_pengajuan': dataKeuanganPengajuan = safeValue; migrateExistingFinancialData(); break;
+                case 'rutasy_keu_riwayat': dataKeuanganRiwayat = safeValue; migrateExistingFinancialData(); break;
+                case 'rutasy_keu_manual': dataKeuanganManual = safeValue; migrateExistingFinancialData(); break;
                 case 'rutasy_pkg_manual': dataPKGManual = safeValue; break;
                 case 'rutasy_ujian': dataUjian = safeValue; break;
                 case 'rutasy_mutasi_santri': dataMutasiSantri = safeValue; break;
@@ -1757,6 +1810,7 @@ const firebaseConfig = {
             buildSidebar(currentRole);
             applyRoleRestrictions(currentRole);
             
+            migrateExistingFinancialData();
             const defaultMenu = roleMenus[currentRole]?.[0];
             try {
                 renderSemuaData();
@@ -2654,8 +2708,8 @@ function renderSemuaData() {
             const nama = document.getElementById('ortu-nama').value;
             const bulan = document.getElementById('ortu-bulan').value;
             const metode = document.getElementById('ortu-metode').value;
-            const spp = parseInt(document.getElementById('ortu-spp').value) || 0;
-            const infaq = parseInt(document.getElementById('ortu-infaq').value) || 0;
+            const spp = parseNominalInput(document.getElementById('ortu-spp').value);
+            const infaq = parseNominalInput(document.getElementById('ortu-infaq').value);
             
             if(!bulan) { tampilkanNotif('Tolong sebutkan keterangan bulan pembayaran!'); return; }
             if(spp === 0 && infaq === 0) { tampilkanNotif('Tolong masukkan setidaknya satu nominal (SPP / Infaq)!'); return; }
@@ -2876,11 +2930,24 @@ function renderSemuaData() {
 
             if(manualSelect) {
                 const current = manualSelect.value;
-                manualSelect.innerHTML = '<option value="">-- Pilih Bulan Pembayaran (Januari - Agustus) --</option>';
                 const tahunManual = new Date().getFullYear();
-                daftarBulanSPP.slice(0,8).forEach((bulan, index) => {
+                manualSelect.innerHTML = '<option value="">-- Pilih Bulan Pembayaran --</option>';
+                daftarBulanSPP.slice(0,8).forEach((bulan) => {
                     if(namaManual) manualSelect.innerHTML += `<option value="${bulan}" data-tahun="${tahunManual}">${bulan} ${tahunManual}</option>`;
                 });
+
+                if(namaManual) {
+                    const santriManual = dataSantri.find(s => String(s.nama || '').trim().toLowerCase() === namaManual.toLowerCase());
+                    const tunggakanSetelahAgustus = santriManual
+                        ? getPeriodeSPP(santriManual).filter(item => item.tahun === tahunManual && item.bulanIndex >= 8 && !isSppLunas(namaManual, item.bulan, item.tahun) && !isSppSedangDiajukan(namaManual, item.bulan, item.tahun))
+                        : [];
+                    if(tunggakanSetelahAgustus.length) {
+                        manualSelect.insertAdjacentHTML('beforeend', '<option disabled>──────── SPP Otomatis Lewat Agustus ────────</option>');
+                        tunggakanSetelahAgustus.forEach(item => {
+                            manualSelect.innerHTML += `<option value="${item.bulan}" data-tahun="${item.tahun}">${item.label} • Tunggakan Otomatis</option>`;
+                        });
+                    }
+                }
                 if([...manualSelect.options].some(o => o.value === current)) manualSelect.value = current;
             }
             buildOptions(ortuSelect, namaOrtu, '-- Pilih Bulan --');
@@ -3065,8 +3132,8 @@ function renderSemuaData() {
             if(jenis === 'SPP') {
                 const bulan = document.getElementById('man-spp-bulan').value;
                 const nama = document.getElementById('man-spp-nama').value.trim();
-                const spp = parseInt(document.getElementById('man-spp-nominal').value) || 0;
-                const infaq = parseInt(document.getElementById('man-spp-infaq').value) || 0;
+                const spp = parseNominalInput(document.getElementById('man-spp-nominal').value);
+                const infaq = parseNominalInput(document.getElementById('man-spp-infaq').value);
                 const ket = document.getElementById('man-spp-ket').value.trim();
 
                 if(!bulan || !nama || spp <= 0) {
@@ -3120,7 +3187,7 @@ function renderSemuaData() {
             }
 
             const ket = document.getElementById('man-ket').value.trim();
-            const nominal = parseInt(document.getElementById('man-nominal').value) || 0;
+            const nominal = parseNominalInput(document.getElementById('man-nominal').value);
 
             if(!ket || nominal <= 0) {
                 tampilkanNotif('Harap isi keterangan dan nominal dengan benar!');
@@ -4301,10 +4368,17 @@ function renderSemuaData() {
                     const manualPoints=dataPKGManual.filter(m=>String(m.nama||'').trim().toLowerCase()===nama.toLowerCase()).reduce((sum,m)=>sum+(Number(m.poin)||0),0);
                     return {nama,totalPoin:attendancePoints+manualPoints};
                 }).sort((a,b)=>b.totalPoin-a.totalPoin||a.nama.localeCompare(b.nama,'id',{sensitivity:'base'}));
-                const myName=String(loggedInSantri?.nama||'').trim().toLowerCase();
-                const myRank=ranking.findIndex(r=>r.nama.toLowerCase()===myName)+1;
-                const rankEl=document.getElementById('pkg-guru-rank');
-                if(rankEl) rankEl.innerText=myRank>0?`#${myRank}`:'-';
+                const guruTbody=document.querySelector('#table-pkg-guru-ranking tbody');
+                if(guruTbody) {
+                    guruTbody.innerHTML='';
+                    ranking.forEach((row,index)=>{
+                        const rank=index+1;
+                        const crown=rank===1?'<span class="text-yellow-500 mr-1"><i class="fa-solid fa-crown"></i></span>':'';
+                        const current=loggedInSantri && String(loggedInSantri.nama||'').trim().toLowerCase()===row.nama.toLowerCase();
+                        guruTbody.innerHTML += `<tr class="border-b hover:bg-gray-50 ${current?'bg-green-50':''}"><td class="p-3 text-center font-bold">${crown}${rank}</td><td class="p-3 font-semibold">${escapeHtml(row.nama||'-')}${current?' <span class="text-xs text-primary font-bold">(Anda)</span>':''}</td></tr>`;
+                    });
+                    if(!ranking.length) guruTbody.innerHTML='<tr><td colspan="2" class="p-3 text-center text-gray-500 italic">Belum ada data guru.</td></tr>';
+                }
                 return;
             }
 
