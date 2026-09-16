@@ -3380,7 +3380,7 @@ function renderSemuaData() {
             });
         }
 
-        function absenGuruMasuk() {
+        async function absenGuruMasuk() {
             if(!loggedInSantri || currentRole !== 'guru') {
                 tampilkanNotif('Hanya guru yang dapat melakukan absen masuk!');
                 return;
@@ -3411,7 +3411,7 @@ function renderSemuaData() {
                 btn.innerHTML = '<i class="fa-solid fa-location-crosshairs fa-spin"></i> Menstabilkan lokasi...';
             }
 
-            ambilLokasiAkurat(20000).then((position) => {
+            ambilLokasiAkurat(20000).then(async (position) => {
                 const userLat = Number(position.latitude);
                 const userLng = Number(position.longitude);
                 const akurasi = Number(position.accuracy);
@@ -3456,10 +3456,7 @@ function renderSemuaData() {
                 const sudahAbsen = absenGuruRecord.find(a => a.guru === loggedInSantri.nama && a.tglRaw === todayKey);
                 if(sudahAbsen) {
                     tampilkanNotif('Anda sudah melakukan absensi hari ini!');
-                    if(btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="fa-solid fa-fingerprint"></i> Lakukan Absensi Masuk';
-                    }
+                    updateStatusTombolAbsenGuru();
                     return;
                 }
 
@@ -3488,16 +3485,32 @@ function renderSemuaData() {
                 };
 
                 absenGuruRecord.unshift(record);
-                persistData('rutasy_absen_guru', absenGuruRecord);
+                localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
+
+                try {
+                    if(rutasyCloudEnabled && rutasyDatabase && rutasyCloudInitialized && !rutasyCloudApplying) {
+                        const expectedResetAt = rutasyCloudResetAt;
+                        const cloudSnapshot = await rutasyDatabase.ref('rutasy').once('value');
+                        const cloudState = cloudSnapshot.val();
+                        const cloudResetAt = cloudState && cloudState._meta && cloudState._meta.lastResetAt
+                            ? String(cloudState._meta.lastResetAt)
+                            : '';
+
+                        if(cloudResetAt === expectedResetAt) {
+                            await rutasyDatabase.ref('rutasy/rutasy_absen_guru').set(absenGuruRecord);
+                        } else {
+                            throw new Error('State reset Firebase berubah sebelum penyimpanan absensi selesai.');
+                        }
+                    }
+                } catch(saveError) {
+                    console.error('Gagal menyimpan absensi guru ke Firebase:', saveError);
+                    tampilkanNotif('Absensi tersimpan di perangkat, tetapi gagal disinkronkan ke database online. Periksa koneksi/Firebase lalu coba lagi.');
+                }
 
                 renderAbsenGuruPribadi();
                 renderAbsenGuruGlobal();
+                updateStatusTombolAbsenGuru();
                 tampilkanNotif(`Absensi Masuk Berhasil! Jarak Anda ${jarak < 10 ? jarak.toFixed(1) : Math.round(jarak).toLocaleString('id-ID')} meter dari titik absensi. Akurasi GPS ±${Number.isFinite(akurasi) ? (akurasi < 10 ? akurasi.toFixed(1) : Math.round(akurasi).toLocaleString('id-ID')) : '-'} meter.`);
-
-                if(btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-fingerprint"></i> Lakukan Absensi Masuk';
-                }
             }).catch((error) => {
                 let pesan = 'Gagal mendapatkan lokasi GPS.';
                 if(error && error.code === error.PERMISSION_DENIED) pesan = 'Izin lokasi ditolak. Aktifkan izin lokasi untuk browser ini lalu coba lagi.';
@@ -3512,6 +3525,42 @@ function renderSemuaData() {
             });
         }
 
+        function updateStatusTombolAbsenGuru() {
+            const btn = document.getElementById('btn-absen-guru');
+            if(!btn) return;
+
+            const isGuru = currentRole === 'guru' && !!loggedInSantri;
+            const todayKey = new Date().toISOString().split('T')[0];
+            const sudahAbsenHariIni = isGuru && absenGuruRecord.some(a =>
+                String(a.guru || '') === String(loggedInSantri.nama || '') &&
+                String(a.tglRaw || '').slice(0, 10) === todayKey
+            );
+
+            if(sudahAbsenHariIni) {
+                btn.disabled = true;
+                btn.className = 'bg-gray-400 text-white px-6 py-2 rounded shadow w-full md:w-auto mb-6 cursor-not-allowed';
+                btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Sudah Absen Hari Ini';
+            } else {
+                btn.disabled = false;
+                btn.className = 'bg-primary hover:bg-dark transition text-white px-6 py-2 rounded shadow w-full md:w-auto mb-6';
+                btn.innerHTML = '<i class="fa-solid fa-fingerprint"></i> Lakukan Absensi Masuk';
+            }
+        }
+
+        async function refreshAbsenGuruFromCloud() {
+            if(!(rutasyCloudEnabled && rutasyDatabase)) return;
+            try {
+                const snapshot = await rutasyDatabase.ref('rutasy/rutasy_absen_guru').once('value');
+                const remoteValue = snapshot.val();
+                if(Array.isArray(remoteValue)) {
+                    absenGuruRecord = remoteValue;
+                    localStorage.setItem('rutasy_absen_guru', JSON.stringify(remoteValue));
+                }
+            } catch(error) {
+                console.error('Gagal memuat ulang riwayat absensi guru:', error);
+            }
+        }
+
         function renderAbsenGuruPribadi() {
             const tbody = document.querySelector('#table-absen-guru-pribadi tbody');
             if(!tbody) return;
@@ -3522,6 +3571,7 @@ function renderSemuaData() {
             const myRecords = absenGuruRecord.filter(a => a.guru === loggedInSantri.nama);
             if(myRecords.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-gray-500 italic">Belum ada riwayat absensi.</td></tr>';
+                updateStatusTombolAbsenGuru();
                 return;
             }
 
@@ -3537,6 +3587,7 @@ function renderSemuaData() {
                     </tr>
                 `;
             });
+            updateStatusTombolAbsenGuru();
         }
 
         function renderAbsenGuruGlobal() {
