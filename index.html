@@ -620,7 +620,7 @@
                             </select>
 
                             <input type="number" id="prog-ayat" placeholder="Ayat Berapa" min="1" class="border p-2 rounded bg-white">
-                            <input type="number" id="prog-baris" placeholder="Jml Baris" class="border p-2 rounded bg-white">
+                            <input type="number" id="prog-baris" placeholder="Jml Baris" min="0" step="1" class="border p-2 rounded bg-white">
                             <button class="bg-primary hover:bg-dark text-white p-2 rounded transition" onclick="simpanProgresSantri()"><i class="fa-solid fa-save"></i> Simpan</button>
                         </div>
                     </div>
@@ -3264,16 +3264,120 @@ function renderSemuaData() {
             return R * c;
         }
 
-        function tampilkanJarakGeofencingGuru(jarak, diDalamRadius = null) {
+        function tampilkanJarakGeofencingGuru(jarak, diDalamRadius = null, akurasi = null) {
             const el = document.getElementById('jarak-geofencing-guru');
             if(!el || !Number.isFinite(jarak)) return;
             const angka = jarak < 10 ? jarak.toFixed(1) : Math.round(jarak).toLocaleString('id-ID');
-            el.textContent = `${angka} Meter`;
+            const akurasiText = Number.isFinite(akurasi)
+                ? ` | Akurasi GPS ±${akurasi < 10 ? akurasi.toFixed(1) : Math.round(akurasi).toLocaleString('id-ID')} m`
+                : '';
+            el.textContent = `${angka} Meter${akurasiText}`;
             el.className = diDalamRadius === true
                 ? 'font-bold text-green-600'
                 : diDalamRadius === false
                     ? 'font-bold text-red-600'
                     : 'font-bold text-gray-700';
+        }
+
+        function ambilLokasiAkurat(timeoutMs = 20000) {
+            return new Promise((resolve, reject) => {
+                if(!('geolocation' in navigator)) {
+                    reject({ code: 'UNSUPPORTED', message: 'Perangkat atau browser ini tidak mendukung geolokasi.' });
+                    return;
+                }
+
+                const samples = [];
+                let watchId = null;
+                let settled = false;
+                const startedAt = Date.now();
+                const MIN_SAMPLES = 2;
+                const TARGET_ACCURACY = 30;
+
+                const cleanup = () => {
+                    if(watchId !== null) {
+                        try { navigator.geolocation.clearWatch(watchId); } catch(_) {}
+                        watchId = null;
+                    }
+                };
+
+                const finish = (result) => {
+                    if(settled) return;
+                    settled = true;
+                    cleanup();
+                    resolve(result);
+                };
+
+                const fail = (error) => {
+                    if(settled) return;
+                    settled = true;
+                    cleanup();
+                    reject(error);
+                };
+
+                const addSample = (position) => {
+                    const latitude = Number(position?.coords?.latitude);
+                    const longitude = Number(position?.coords?.longitude);
+                    const accuracy = Number(position?.coords?.accuracy);
+                    if(!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(accuracy)) return;
+                    if(latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return;
+
+                    samples.push({
+                        latitude,
+                        longitude,
+                        accuracy,
+                        timestamp: Number(position.timestamp) || Date.now()
+                    });
+
+                    samples.sort((a, b) => a.accuracy - b.accuracy || b.timestamp - a.timestamp);
+                    if(samples.length > 5) samples.length = 5;
+
+                    const elapsed = Date.now() - startedAt;
+                    const best = samples[0];
+                    if(best && best.accuracy <= TARGET_ACCURACY && samples.length >= MIN_SAMPLES) {
+                        finish(best);
+                    } else if(best && elapsed >= Math.min(8000, timeoutMs - 1000)) {
+                        finish(best);
+                    }
+                };
+
+                const handleError = (error) => {
+                    if(samples.length > 0) {
+                        finish(samples[0]);
+                        return;
+                    }
+                    if(error && error.code === error.PERMISSION_DENIED) {
+                        fail(error);
+                    }
+                    // Untuk POSITION_UNAVAILABLE/TIMEOUT, jangan langsung menggagalkan proses.
+                    // watchPosition masih diberi kesempatan mendapatkan pembacaan GPS yang lebih baik.
+                };
+
+                try {
+                    navigator.geolocation.getCurrentPosition(addSample, handleError, {
+                        enableHighAccuracy: true,
+                        timeout: Math.min(12000, timeoutMs),
+                        maximumAge: 0
+                    });
+
+                    watchId = navigator.geolocation.watchPosition(addSample, handleError, {
+                        enableHighAccuracy: true,
+                        timeout: timeoutMs,
+                        maximumAge: 0
+                    });
+                } catch(error) {
+                    fail(error);
+                    return;
+                }
+
+                setTimeout(() => {
+                    if(settled) return;
+                    if(samples.length > 0) {
+                        finish(samples[0]);
+                    } else {
+                        fail({ code: 'TIMEOUT', message: 'Tidak mendapatkan pembacaan lokasi.' });
+                    }
+                }, timeoutMs);
+            });
         }
 
         function absenGuruMasuk() {
@@ -3304,20 +3408,24 @@ function renderSemuaData() {
             const btn = document.getElementById('btn-absen-guru');
             if(btn) {
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs fa-spin"></i> Memeriksa lokasi...';
+                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs fa-spin"></i> Menstabilkan lokasi...';
             }
 
-            navigator.geolocation.getCurrentPosition((position) => {
-                const userLat = Number(position.coords.latitude);
-                const userLng = Number(position.coords.longitude);
-                const akurasi = Number(position.coords.accuracy);
+            ambilLokasiAkurat(20000).then((position) => {
+                const userLat = Number(position.latitude);
+                const userLng = Number(position.longitude);
+                const akurasi = Number(position.accuracy);
                 const jarak = hitungJarakGeofencing(userLat, userLng, geoLat, geoLng);
                 const diDalamRadius = jarak <= geoRadius;
-                tampilkanJarakGeofencingGuru(jarak, diDalamRadius);
+                tampilkanJarakGeofencingGuru(jarak, diDalamRadius, akurasi);
 
                 if(!diDalamRadius) {
                     const jarakText = jarak < 10 ? jarak.toFixed(1) : Math.round(jarak).toLocaleString('id-ID');
-                    tampilkanNotif(`Absensi ditolak. Anda berada ${jarakText} meter dari lokasi yang diizinkan (maksimal ${geoRadius} meter).`);
+                    const akurasiText = Number.isFinite(akurasi) ? ` Akurasi GPS ±${akurasi < 10 ? akurasi.toFixed(1) : Math.round(akurasi).toLocaleString('id-ID')} meter.` : '';
+                    const saran = Number.isFinite(akurasi) && akurasi > Math.max(25, geoRadius)
+                        ? ' Coba aktifkan Lokasi Presisi/GPS dan lakukan absensi dari tempat terbuka, lalu ulangi.'
+                        : '';
+                    tampilkanNotif(`Absensi ditolak. Jarak terukur ${jarakText} meter dari lokasi yang diizinkan (maksimal ${geoRadius} meter).${akurasiText}${saran}`);
                     if(btn) {
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fa-solid fa-fingerprint"></i> Lakukan Absensi Masuk';
@@ -3384,23 +3492,24 @@ function renderSemuaData() {
 
                 renderAbsenGuruPribadi();
                 renderAbsenGuruGlobal();
-                tampilkanNotif(`Absensi Masuk Berhasil! Jarak Anda ${jarak < 10 ? jarak.toFixed(1) : Math.round(jarak).toLocaleString('id-ID')} meter dari titik absensi.`);
+                tampilkanNotif(`Absensi Masuk Berhasil! Jarak Anda ${jarak < 10 ? jarak.toFixed(1) : Math.round(jarak).toLocaleString('id-ID')} meter dari titik absensi. Akurasi GPS ±${Number.isFinite(akurasi) ? (akurasi < 10 ? akurasi.toFixed(1) : Math.round(akurasi).toLocaleString('id-ID')) : '-'} meter.`);
 
                 if(btn) {
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fa-solid fa-fingerprint"></i> Lakukan Absensi Masuk';
                 }
-            }, (error) => {
+            }).catch((error) => {
                 let pesan = 'Gagal mendapatkan lokasi GPS.';
                 if(error && error.code === error.PERMISSION_DENIED) pesan = 'Izin lokasi ditolak. Aktifkan izin lokasi untuk browser ini lalu coba lagi.';
                 else if(error && error.code === error.POSITION_UNAVAILABLE) pesan = 'Lokasi tidak tersedia. Pastikan GPS/lokasi perangkat aktif.';
-                else if(error && error.code === error.TIMEOUT) pesan = 'Pemeriksaan lokasi timeout. Pastikan GPS aktif lalu coba lagi.';
+                else if(error && (error.code === error.TIMEOUT || error.code === 'TIMEOUT')) pesan = 'Pemeriksaan lokasi timeout. Pastikan GPS/Lokasi Presisi aktif lalu coba lagi.';
+                else if(error && error.code === 'UNSUPPORTED') pesan = error.message || 'Perangkat atau browser ini tidak mendukung geolokasi.';
                 tampilkanNotif(pesan);
                 if(btn) {
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fa-solid fa-fingerprint"></i> Lakukan Absensi Masuk';
                 }
-            }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+            });
         }
 
         function renderAbsenGuruPribadi() {
@@ -3799,8 +3908,10 @@ function renderSemuaData() {
             const nama = document.getElementById('prog-nama').value.trim();
             const pekan = document.getElementById('prog-pekan').value;
             const kategori = document.getElementById('prog-kategori').value;
-            const ayat = parseInt(document.getElementById('prog-ayat').value) || 0;
-            const baris = parseInt(document.getElementById('prog-baris').value) || 0;
+            const ayatRaw = document.getElementById('prog-ayat').value.trim();
+            const barisRaw = document.getElementById('prog-baris').value.trim();
+            const ayat = ayatRaw === '' ? NaN : Number(ayatRaw);
+            const baris = barisRaw === '' ? NaN : Number(barisRaw);
 
             let suratOrJilid = '';
             if(kategori === 'Iqro') {
@@ -3825,13 +3936,13 @@ function renderSemuaData() {
                 return;
             }
 
-            if(ayat <= 0) {
+            if(!Number.isInteger(ayat) || ayat <= 0) {
                 tampilkanNotif(kategori === 'Iqro' ? 'Hal berapa harus lebih dari 0!' : 'Nomor ayat harus lebih dari 0!');
                 return;
             }
 
-            if(baris <= 0) {
-                tampilkanNotif(kategori === 'Iqro' ? 'Jumlah hal harus lebih dari 0!' : 'Jumlah baris harus lebih dari 0!');
+            if(!Number.isInteger(baris) || baris < 0) {
+                tampilkanNotif(kategori === 'Iqro' ? 'Jumlah hal tidak boleh kurang dari 0!' : 'Jumlah baris tidak boleh kurang dari 0!');
                 return;
             }
 
@@ -4571,12 +4682,18 @@ function renderSemuaData() {
 
         function deteksiGeofencingOtomatis() {
             if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition((position) => {
-                    document.getElementById('set-geo-lat').value = position.coords.latitude;
-                    document.getElementById('set-geo-lng').value = position.coords.longitude;
-                    tampilkanNotif('Koordinat lokasi berhasil terdeteksi!');
-                }, () => {
-                    tampilkanNotif('Gagal mendeteksi lokasi. Pastikan izin GPS diaktifkan!');
+                ambilLokasiAkurat(20000).then((position) => {
+                    document.getElementById('set-geo-lat').value = Number(position.latitude).toFixed(7);
+                    document.getElementById('set-geo-lng').value = Number(position.longitude).toFixed(7);
+                    const akurasi = Number(position.accuracy);
+                    const akurasiText = Number.isFinite(akurasi) ? ` Akurasi GPS ±${akurasi < 10 ? akurasi.toFixed(1) : Math.round(akurasi).toLocaleString('id-ID')} meter.` : '';
+                    tampilkanNotif(`Koordinat lokasi berhasil terdeteksi.${akurasiText}`);
+                }).catch((error) => {
+                    if(error && error.code === error.PERMISSION_DENIED) {
+                        tampilkanNotif('Izin lokasi ditolak. Aktifkan izin lokasi/GPS pada browser lalu coba lagi!');
+                    } else {
+                        tampilkanNotif('Gagal mendeteksi lokasi. Pastikan GPS/Lokasi Presisi diaktifkan lalu coba lagi!');
+                    }
                 });
             } else {
                 tampilkanNotif('Geolocation tidak didukung pada browser Anda!');
