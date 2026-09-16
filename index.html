@@ -1545,9 +1545,9 @@ const firebaseConfig = {
                             jamMasuk: '07:30', pkgJamMasuk: '16:00', pkgPoinMasuk: '10', pkgPoinTelat: '5', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
                             payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
                         } : (key === 'rutasy_absen' || key === 'rutasy_progres_hafalan' ? {} : []);
-                        if(key === 'rutasy_absen_guru' && Array.isArray(localValue) && localValue.length > 0 && !hasCloudReset) {
-                            // Pertahankan riwayat lokal sampai ada data online yang sah.
-                            return;
+                        if(key === 'rutasy_absen_guru') {
+                            // Node absensi guru yang tidak ada di Firebase berarti riwayat online memang kosong.
+                            // Jangan mempertahankan data localStorage lama karena itu membuat tombol tampak sudah absen.
                         }
                         assignRuntimeStateByKey(key, emptyValue);
                         if(hasCloudReset) localStorage.removeItem(key);
@@ -1675,6 +1675,8 @@ const firebaseConfig = {
                 } finally {
                     rutasyCloudApplying = false;
                 }
+
+                await refreshAbsenGuruFromCloud();
 
                 if(!rutasyCloudListenerAttached) {
                     rootRef.on('value', (snapshot) => {
@@ -3526,9 +3528,6 @@ function renderSemuaData() {
                     lokasi: { latitude: userLat, longitude: userLng, jarakMeter: Math.round(jarak * 100) / 100, akurasiMeter: Number.isFinite(akurasi) ? Math.round(akurasi * 100) / 100 : null }
                 };
 
-                absenGuruRecord.unshift(record);
-                localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
-
                 try {
                     if(rutasyCloudEnabled && rutasyDatabase && rutasyCloudInitialized && !rutasyCloudApplying) {
                         const expectedResetAt = rutasyCloudResetAt;
@@ -3538,20 +3537,31 @@ function renderSemuaData() {
                             ? String(cloudState._meta.lastResetAt)
                             : '';
 
-                        if(cloudResetAt === expectedResetAt) {
-                            const recordRef = rutasyDatabase.ref(`rutasy/rutasy_absen_guru/${record.id}`);
-                            await recordRef.set(record);
-                            const verifySnapshot = await recordRef.once('value');
-                            if(!verifySnapshot.exists()) {
-                                throw new Error('Record absensi tidak ditemukan setelah penyimpanan Firebase.');
-                            }
-                        } else {
+                        if(cloudResetAt !== expectedResetAt) {
                             throw new Error('State reset Firebase berubah sebelum penyimpanan absensi selesai.');
                         }
+
+                        const recordRef = rutasyDatabase.ref(`rutasy/rutasy_absen_guru/${record.id}`);
+                        await recordRef.set(record);
+                        const verifySnapshot = await recordRef.once('value');
+                        if(!verifySnapshot.exists()) {
+                            throw new Error('Record absensi tidak ditemukan setelah penyimpanan Firebase.');
+                        }
+
+                        // Firebase adalah sumber kebenaran saat mode online aktif.
+                        await refreshAbsenGuruFromCloud();
+                    } else {
+                        // Hanya gunakan localStorage sebagai sumber data jika Firebase memang tidak aktif.
+                        absenGuruRecord.unshift(record);
+                        localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
                     }
                 } catch(saveError) {
                     console.error('Gagal menyimpan absensi guru ke Firebase:', saveError);
-                    tampilkanNotif('Absensi tersimpan di perangkat, tetapi gagal disinkronkan ke database online. Periksa koneksi/Firebase lalu coba lagi.');
+                    tampilkanNotif('Absensi gagal disimpan ke database online. Tombol absensi tetap aktif. Periksa koneksi/Firebase lalu coba lagi.');
+                    renderAbsenGuruPribadi();
+                    renderAbsenGuruGlobal();
+                    updateStatusTombolAbsenGuru();
+                    return;
                 }
 
                 renderAbsenGuruPribadi();
@@ -3595,16 +3605,22 @@ function renderSemuaData() {
         }
 
         async function refreshAbsenGuruFromCloud() {
-            if(!(rutasyCloudEnabled && rutasyDatabase)) return;
+            if(!(rutasyCloudEnabled && rutasyDatabase)) return false;
             try {
                 const snapshot = await rutasyDatabase.ref('rutasy/rutasy_absen_guru').once('value');
                 const remoteValue = snapshot.val();
-                if(remoteValue !== null && remoteValue !== undefined) {
-                    absenGuruRecord = normalisasiAbsenGuruCloud(remoteValue);
-                    localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
-                }
+
+                // Saat online, Firebase adalah sumber kebenaran.
+                // Jika node tidak ada, berarti memang belum ada riwayat absensi guru.
+                absenGuruRecord = normalisasiAbsenGuruCloud(remoteValue);
+                localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
+                renderAbsenGuruPribadi();
+                renderAbsenGuruGlobal();
+                updateStatusTombolAbsenGuru();
+                return true;
             } catch(error) {
                 console.error('Gagal memuat ulang riwayat absensi guru:', error);
+                return false;
             }
         }
 
