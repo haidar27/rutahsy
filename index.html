@@ -1403,7 +1403,7 @@ const firebaseConfig = {
                 case 'rutasy_mutasi_santri': dataMutasiSantri = safeValue; break;
                 case 'rutasy_settings': dataSettings = safeValue; break;
                 case 'rutasy_absen': riwayatAbsensi = safeValue; break;
-                case 'rutasy_absen_guru': absenGuruRecord = safeValue; break;
+                case 'rutasy_absen_guru': absenGuruRecord = normalisasiAbsenGuruCloud(safeValue); break;
                 case 'rutasy_progres_hafalan': riwayatProgres = safeValue; break;
                 case 'rutasy_kalender': eventsKalender = safeValue; break;
                 case 'rutasy_haflah': dataHaflah = safeValue; break;
@@ -1411,10 +1411,48 @@ const firebaseConfig = {
             }
         }
 
+        function normalisasiAbsenGuruCloud(value) {
+            if(Array.isArray(value)) return value.filter(item => item && typeof item === 'object');
+            if(value && typeof value === 'object') {
+                return Object.values(value).filter(item => item && typeof item === 'object');
+            }
+            return [];
+        }
+
+        function bentukAbsenGuruCloud(records) {
+            const output = {};
+            (Array.isArray(records) ? records : []).forEach((record, index) => {
+                if(!record || typeof record !== 'object') return;
+                const id = String(record.id || `legacy-${index}`);
+                output[id] = record;
+            });
+            return output;
+        }
+
         function persistData(key, value) {
             localStorage.setItem(key, JSON.stringify(value));
 
             if(rutasyCloudEnabled && rutasyDatabase && !rutasyCloudApplying) {
+                if(key === 'rutasy_absen_guru' && Array.isArray(value)) {
+                    const expectedResetAt = rutasyCloudResetAt;
+                    Promise.resolve().then(async () => {
+                        try {
+                            const cloudSnapshot = await rutasyDatabase.ref('rutasy').once('value');
+                            const cloudState = cloudSnapshot.val();
+                            const cloudResetAt = cloudState && cloudState._meta && cloudState._meta.lastResetAt ? String(cloudState._meta.lastResetAt) : '';
+                            if(cloudResetAt !== expectedResetAt) throw new Error('State reset Firebase berubah sebelum penyimpanan absensi selesai.');
+                            const updates = {};
+                            value.forEach((record, index) => {
+                                if(record && typeof record === 'object') updates[`rutasy/rutasy_absen_guru/${String(record.id || `legacy-${index}`)}`] = record;
+                            });
+                            await rutasyDatabase.ref().update(updates);
+                        } catch(error) {
+                            console.error('Gagal menyimpan absensi guru ke Firebase:', error);
+                            tampilkanNotif('Gagal menyimpan absensi guru ke database online.');
+                        }
+                    });
+                    return;
+                }
                 const expectedResetAt = rutasyCloudResetAt;
                 rutasyDatabase.ref('rutasy').transaction((current) => {
                     current = (current && typeof current === 'object') ? current : {};
@@ -1501,12 +1539,16 @@ const firebaseConfig = {
                         }
 
                         assignRuntimeStateByKey(key, remoteValue);
-                        localStorage.setItem(key, JSON.stringify(remoteValue));
+                        localStorage.setItem(key, JSON.stringify(key === 'rutasy_absen_guru' ? absenGuruRecord : remoteValue));
                     } else {
                         const emptyValue = key === 'rutasy_settings' ? {
                             jamMasuk: '07:30', pkgJamMasuk: '16:00', pkgPoinMasuk: '10', pkgPoinTelat: '5', batasAbsen: '09:00', potongan: '1000', hariKerja: '24', geoRadius: '10', geoLat: '-3.595196', geoLng: '98.672223',
                             payBank: 'Transfer Bank BSI 12345678 a.n RUTASY', payEwallet: 'DANA / OVO / GoPay: 081234567890 a.n RUTASY', payCash: 'Bayar Tunai melalui Loket Tata Usaha RUTASY'
                         } : (key === 'rutasy_absen' || key === 'rutasy_progres_hafalan' ? {} : []);
+                        if(key === 'rutasy_absen_guru' && Array.isArray(localValue) && localValue.length > 0 && !hasCloudReset) {
+                            // Pertahankan riwayat lokal sampai ada data online yang sah.
+                            return;
+                        }
                         assignRuntimeStateByKey(key, emptyValue);
                         if(hasCloudReset) localStorage.removeItem(key);
                     }
@@ -1589,7 +1631,7 @@ const firebaseConfig = {
                                     restoreLocalSantriToCloud = localSantriAtStartup;
                                 } else {
                                     assignRuntimeStateByKey(key, remoteValue);
-                                    localStorage.setItem(key, JSON.stringify(remoteValue));
+                                    localStorage.setItem(key, JSON.stringify(key === 'rutasy_absen_guru' ? absenGuruRecord : remoteValue));
                                 }
                             } else if(cloudWasReset) {
                                 const emptyValue = key === 'rutasy_settings' ? {
@@ -1624,7 +1666,7 @@ const firebaseConfig = {
                         const initialPayload = { _meta: initialMeta };
                         for(const key of Object.keys(RUTASY_CLOUD_MAP)) {
                             const localValue = getRuntimeStateByKey(key);
-                            if(localValue !== undefined) initialPayload[key] = localValue;
+                            if(localValue !== undefined) initialPayload[key] = key === 'rutasy_absen_guru' ? bentukAbsenGuruCloud(localValue) : localValue;
                         }
                         await rootRef.set(initialPayload);
                         rutasyCloudResetAt = '';
@@ -3497,7 +3539,12 @@ function renderSemuaData() {
                             : '';
 
                         if(cloudResetAt === expectedResetAt) {
-                            await rutasyDatabase.ref('rutasy/rutasy_absen_guru').set(absenGuruRecord);
+                            const recordRef = rutasyDatabase.ref(`rutasy/rutasy_absen_guru/${record.id}`);
+                            await recordRef.set(record);
+                            const verifySnapshot = await recordRef.once('value');
+                            if(!verifySnapshot.exists()) {
+                                throw new Error('Record absensi tidak ditemukan setelah penyimpanan Firebase.');
+                            }
                         } else {
                             throw new Error('State reset Firebase berubah sebelum penyimpanan absensi selesai.');
                         }
@@ -3552,9 +3599,9 @@ function renderSemuaData() {
             try {
                 const snapshot = await rutasyDatabase.ref('rutasy/rutasy_absen_guru').once('value');
                 const remoteValue = snapshot.val();
-                if(Array.isArray(remoteValue)) {
-                    absenGuruRecord = remoteValue;
-                    localStorage.setItem('rutasy_absen_guru', JSON.stringify(remoteValue));
+                if(remoteValue !== null && remoteValue !== undefined) {
+                    absenGuruRecord = normalisasiAbsenGuruCloud(remoteValue);
+                    localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
                 }
             } catch(error) {
                 console.error('Gagal memuat ulang riwayat absensi guru:', error);
@@ -3639,9 +3686,23 @@ function renderSemuaData() {
         }
 
         function hapusAbsenGuru(index) {
-            bukaKonfirmasi('Hapus Absen Guru', 'Yakin ingin menghapus catatan absen guru ini?', () => {
+            bukaKonfirmasi('Hapus Absen Guru', 'Yakin ingin menghapus catatan absen guru ini?', async () => {
+                const record = absenGuruRecord[index];
+                if(!record) return;
                 absenGuruRecord.splice(index, 1);
-                persistData('rutasy_absen_guru', absenGuruRecord);
+                localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
+
+                try {
+                    if(rutasyCloudEnabled && rutasyDatabase && rutasyCloudInitialized && !rutasyCloudApplying && record.id !== undefined) {
+                        await rutasyDatabase.ref(`rutasy/rutasy_absen_guru/${record.id}`).remove();
+                    } else if(!rutasyCloudEnabled) {
+                        localStorage.setItem('rutasy_absen_guru', JSON.stringify(absenGuruRecord));
+                    }
+                } catch(error) {
+                    console.error('Gagal menghapus absensi guru dari Firebase:', error);
+                    tampilkanNotif('Data lokal terhapus, tetapi penghapusan online gagal.');
+                }
+
                 renderAbsenGuruPribadi();
                 renderAbsenGuruGlobal();
                 tampilkanNotif('Data absen guru berhasil dihapus!');
