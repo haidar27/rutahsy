@@ -1431,6 +1431,156 @@ const firebaseConfig = {
             return output;
         }
 
+        function normalisasiTeksLookup(value) {
+            return String(value ?? '')
+                .normalize('NFKC')
+                .replace(/\u00A0/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLocaleLowerCase('id-ID');
+        }
+
+        function cariSantriDenganNama(value) {
+            const target = normalisasiTeksLookup(value);
+            if(!target) return null;
+            return dataSantri.find(s => normalisasiTeksLookup(s?.nama) === target) || null;
+        }
+
+        function cariKunciRiwayatAbsensi(nama) {
+            const target = normalisasiTeksLookup(nama);
+            if(!target) return '';
+            const keys = Object.keys(riwayatAbsensi || {});
+            return keys.find(key => normalisasiTeksLookup(key) === target) || '';
+        }
+
+        async function persistSantriAman(obj, mode, indexSebelumnya = -1) {
+            const normalizedNis = normalisasiTeksLookup(obj?.nis);
+            const normalizedUser = normalisasiTeksLookup(obj?.user);
+            const normalizedOldNis = indexSebelumnya >= 0 && dataSantri[indexSebelumnya]
+                ? normalisasiTeksLookup(dataSantri[indexSebelumnya].nis)
+                : normalizedNis;
+            const normalizedOldUser = indexSebelumnya >= 0 && dataSantri[indexSebelumnya]
+                ? normalisasiTeksLookup(dataSantri[indexSebelumnya].user)
+                : normalizedUser;
+
+            if(!(rutasyCloudEnabled && rutasyDatabase && rutasyCloudInitialized && !rutasyCloudApplying)) {
+                if(mode === 'add') dataSantri.push(obj);
+                else if(mode === 'edit' && indexSebelumnya >= 0) dataSantri[indexSebelumnya] = obj;
+                localStorage.setItem('rutasy_santri', JSON.stringify(dataSantri));
+                return true;
+            }
+
+            const expectedResetAt = rutasyCloudResetAt;
+            try {
+                let conflictType = '';
+                const result = await rutasyDatabase.ref('rutasy/rutasy_santri').transaction((current) => {
+                    const cloudArray = Array.isArray(current) ? current : [];
+                    const next = cloudArray.map(item => item && typeof item === 'object' ? {...item} : item);
+                    if(expectedResetAt !== rutasyCloudResetAt) return;
+
+                    if(mode === 'add') {
+                        const duplicateNis = normalizedNis && next.some(s => normalisasiTeksLookup(s?.nis) === normalizedNis);
+                        const duplicateUser = normalizedUser && next.some(s => normalisasiTeksLookup(s?.user) === normalizedUser);
+                        if(duplicateNis) {
+                            conflictType = 'NIS';
+                            return;
+                        }
+                        if(duplicateUser) {
+                            conflictType = 'Username';
+                            return;
+                        }
+                        next.push({...obj});
+                        return next;
+                    }
+
+                    const targetIndex = next.findIndex(s =>
+                        (normalizedOldNis && normalisasiTeksLookup(s?.nis) === normalizedOldNis) ||
+                        (normalizedOldUser && normalisasiTeksLookup(s?.user) === normalizedOldUser)
+                    );
+
+                    if(targetIndex === -1) {
+                        conflictType = 'not-found';
+                        return;
+                    }
+
+                    const duplicateOther = next.some((s, i) => {
+                        if(i === targetIndex) return false;
+                        const sameNis = normalizedNis && normalisasiTeksLookup(s?.nis) === normalizedNis;
+                        const sameUser = normalizedUser && normalisasiTeksLookup(s?.user) === normalizedUser;
+                        return sameNis || sameUser;
+                    });
+
+                    if(duplicateOther) {
+                        conflictType = 'duplicate';
+                        return;
+                    }
+
+                    next[targetIndex] = {...obj};
+                    return next;
+                });
+
+                if(conflictType === 'NIS') throw new Error(`NIS ${obj.nis} sudah digunakan di database online.`);
+                if(conflictType === 'Username') throw new Error(`Username ${obj.user} sudah digunakan di database online.`);
+                if(conflictType === 'duplicate') throw new Error('NIS atau Username sudah digunakan oleh santri lain di database online.');
+                if(conflictType === 'not-found') throw new Error('Data santri yang akan diperbarui tidak ditemukan di database online. Muat ulang data lalu coba lagi.');
+                if(!result.committed) throw new Error('Perubahan database santri tidak berhasil dikomit ke Firebase.');
+
+                const cloudValue = result.snapshot.val();
+                dataSantri = Array.isArray(cloudValue) ? cloudValue : [];
+                localStorage.setItem('rutasy_santri', JSON.stringify(dataSantri));
+                return true;
+            } catch(error) {
+                console.error('Gagal menyimpan database santri ke Firebase:', error);
+                throw error;
+            }
+        }
+
+        async function simpanAbsensiPekananAman(namaKey, dataAbsen) {
+            const localCopy = (riwayatAbsensi && typeof riwayatAbsensi === 'object') ? riwayatAbsensi : {};
+
+            if(!(rutasyCloudEnabled && rutasyDatabase && rutasyCloudInitialized && !rutasyCloudApplying)) {
+                const current = localCopy[namaKey];
+                if(!Array.isArray(current)) localCopy[namaKey] = [];
+                const existingIdx = localCopy[namaKey].findIndex(a => normalisasiTeksLookup(a?.pekan) === normalisasiTeksLookup(dataAbsen.pekan) && normalisasiTeksLookup(a?.bulan) === normalisasiTeksLookup(dataAbsen.bulan));
+                if(existingIdx > -1) localCopy[namaKey][existingIdx] = dataAbsen;
+                else localCopy[namaKey].unshift(dataAbsen);
+                riwayatAbsensi = localCopy;
+                localStorage.setItem('rutasy_absen', JSON.stringify(riwayatAbsensi));
+                return true;
+            }
+
+            try {
+                const result = await rutasyDatabase.ref('rutasy/rutasy_absen').transaction((current) => {
+                    const next = current && typeof current === 'object' ? {...current} : {};
+                    const matchingKey = Object.keys(next).find(key => normalisasiTeksLookup(key) === normalisasiTeksLookup(namaKey));
+                    const targetKey = matchingKey || namaKey;
+
+                    const records = Array.isArray(next[targetKey]) ? [...next[targetKey]] : [];
+                    const existingIdx = records.findIndex(a =>
+                        normalisasiTeksLookup(a?.pekan) === normalisasiTeksLookup(dataAbsen.pekan) &&
+                        normalisasiTeksLookup(a?.bulan) === normalisasiTeksLookup(dataAbsen.bulan)
+                    );
+
+                    if(existingIdx > -1) records[existingIdx] = dataAbsen;
+                    else records.unshift(dataAbsen);
+
+                    next[targetKey] = records;
+                    return next;
+                });
+
+                if(!result.committed) throw new Error('Absensi pekanan tidak berhasil dikomit ke Firebase.');
+
+                const cloudValue = result.snapshot.val();
+                riwayatAbsensi = cloudValue && typeof cloudValue === 'object' ? cloudValue : {};
+                localStorage.setItem('rutasy_absen', JSON.stringify(riwayatAbsensi));
+                return true;
+            } catch(error) {
+                console.error('Gagal menyimpan absensi pekanan ke Firebase:', error);
+                throw error;
+            }
+        }
+
+
         function persistData(key, value) {
             localStorage.setItem(key, JSON.stringify(value));
 
@@ -2548,8 +2698,8 @@ function renderSemuaData() {
                 tampilkanNotif('Data Santri Berhasil Dihapus!'); 
             }); 
         }
-        
-        function prosesTambahSantri() {
+
+        async function prosesTambahSantri() {
             const idxVal = document.getElementById('ms-index').value;
             const idx = parseInt(idxVal, 10);
             const obj = { 
@@ -2571,14 +2721,33 @@ function renderSemuaData() {
                 haflahStatus: (isNaN(idx) || idx < 0) ? 'Nonaktif' : (dataSantri[idx].haflahStatus || 'Nonaktif')
             };
             if(!obj.nis || !obj.nama || !obj.user) { tampilkanNotif('Isi minimal NIS, Nama, Username!'); return; }
-            const nisNormal = String(obj.nis).trim().toLowerCase();
-            const duplicateNisIndex = dataSantri.findIndex((s, i) => String(s.nis || '').trim().toLowerCase() === nisNormal && i !== idx);
-            if(duplicateNisIndex !== -1) {
-                tampilkanNotif(`NIS ${obj.nis} sudah digunakan oleh ${dataSantri[duplicateNisIndex].nama}!`);
+
+            const nisNormal = normalisasiTeksLookup(obj.nis);
+            const userNormal = normalisasiTeksLookup(obj.user);
+            const duplicateIndex = dataSantri.findIndex((s, i) =>
+                i !== idx && (
+                    (nisNormal && normalisasiTeksLookup(s?.nis) === nisNormal) ||
+                    (userNormal && normalisasiTeksLookup(s?.user) === userNormal)
+                )
+            );
+            if(duplicateIndex !== -1) {
+                const duplicateField = normalisasiTeksLookup(dataSantri[duplicateIndex]?.nis) === nisNormal ? 'NIS' : 'Username';
+                tampilkanNotif(`${duplicateField} ${duplicateField === 'NIS' ? obj.nis : obj.user} sudah digunakan oleh ${dataSantri[duplicateIndex].nama}!`);
                 return;
             }
-            if(isNaN(idx) || idx < 0) { dataSantri.push(obj); tampilkanNotif('Data Santri Berhasil Ditambahkan!'); } else { dataSantri[idx] = obj; tampilkanNotif('Data Santri Berhasil Diperbarui!'); }
-            persistData('rutasy_santri', dataSantri); renderSantri(); renderBelumBayarSPP(); document.getElementById('modal-tambah-santri').classList.add('hidden');
+
+            try {
+                const mode = (isNaN(idx) || idx < 0) ? 'add' : 'edit';
+                await persistSantriAman(obj, mode, idx);
+
+                renderSantri(); 
+                renderBelumBayarSPP(); 
+                document.getElementById('modal-tambah-santri').classList.add('hidden');
+                tampilkanNotif(mode === 'add' ? 'Data Santri Berhasil Ditambahkan!' : 'Data Santri Berhasil Diperbarui!');
+            } catch(error) {
+                console.error('Gagal menyimpan data santri:', error);
+                tampilkanNotif(error?.message || 'Data Santri gagal disimpan ke database.');
+            }
         }
 
         function bukaModalTambahGuru() { 
@@ -2610,9 +2779,13 @@ function renderSemuaData() {
             const dl = document.getElementById('list-santri');
             if(dl) { 
                 dl.innerHTML = ''; 
+                const guruLoginNormal = currentRole === 'guru' && loggedInSantri
+                    ? normalisasiTeksLookup(loggedInSantri.nama)
+                    : '';
                 dataSantri.forEach(s => { 
-                    if (currentRole === 'guru' && s.guru !== loggedInSantri.nama) return;
-                    dl.innerHTML += `<option value="${s.nama}"></option>`; 
+                    if (currentRole === 'guru' && normalisasiTeksLookup(s?.guru) !== guruLoginNormal) return;
+                    if(!s?.nama) return;
+                    dl.innerHTML += `<option value="${String(s.nama).replace(/"/g, '&quot;')}"></option>`; 
                 }); 
             }
         }
@@ -3848,19 +4021,28 @@ function renderSemuaData() {
             });
         }
 
-        function simpanAbsenPekanan() {
-            const nama = document.getElementById('input-nama-absen').value.trim();
+        async function simpanAbsenPekanan() {
+            const namaInput = document.getElementById('input-nama-absen').value;
             const pekan = document.getElementById('absen-pekan').value;
 
-            if(!nama) {
+            if(!String(namaInput).trim()) {
                 tampilkanNotif('Silakan cari/pilih nama santri!');
                 return;
             }
 
-            const santriObj = dataSantri.find(s => s.nama.toLowerCase() === nama.toLowerCase());
+            const santriObj = cariSantriDenganNama(namaInput);
             if(!santriObj) {
                 tampilkanNotif('Nama santri tidak ditemukan di database!');
                 return;
+            }
+
+            if(currentRole === 'guru' && loggedInSantri) {
+                const guruSantri = normalisasiTeksLookup(santriObj.guru);
+                const guruLogin = normalisasiTeksLookup(loggedInSantri.nama);
+                if(!guruSantri || guruSantri !== guruLogin) {
+                    tampilkanNotif('Santri tersebut tidak terdaftar pada kelompok Anda.');
+                    return;
+                }
             }
 
             const senin = document.querySelector('.val-senin').value;
@@ -3868,24 +4050,29 @@ function renderSemuaData() {
             const rabu = document.querySelector('.val-rabu').value;
             const kamis = document.querySelector('.val-kamis').value;
 
-            if(!riwayatAbsensi[santriObj.nama]) riwayatAbsensi[santriObj.nama] = [];
+            const bulanIni = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date());
+            const dataAbsen = { 
+                pekan, 
+                bulan: bulanIni, 
+                tgl: new Date().toLocaleDateString('id-ID'), 
+                senin, 
+                selasa, 
+                rabu, 
+                kamis,
+            };
 
-            const bulanIni = new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+            const existingKey = cariKunciRiwayatAbsensi(santriObj.nama);
+            const namaKey = existingKey || String(santriObj.nama).replace(/\s+/g, ' ').trim();
 
-            const existingIdx = riwayatAbsensi[santriObj.nama].findIndex(a => a.pekan === pekan && a.bulan === bulanIni);
-            const dataAbsen = { pekan, bulan: bulanIni, tgl: new Date().toLocaleDateString('id-ID'), senin, selasa, rabu, kamis };
-
-            if(existingIdx > -1) {
-                riwayatAbsensi[santriObj.nama][existingIdx] = dataAbsen;
-            } else {
-                riwayatAbsensi[santriObj.nama].unshift(dataAbsen);
+            try {
+                await simpanAbsensiPekananAman(namaKey, dataAbsen);
+                document.getElementById('input-nama-absen').value = '';
+                renderTabelRiwayatAbsen();
+                tampilkanNotif(`Absensi ${pekan} ${bulanIni} berhasil disimpan!`);
+            } catch(error) {
+                console.error('Gagal menyimpan absensi pekanan:', error);
+                tampilkanNotif(error?.message || 'Absensi pekanan gagal disimpan ke database.');
             }
-
-            persistData('rutasy_absen', riwayatAbsensi);
-            document.getElementById('input-nama-absen').value = '';
-
-            renderTabelRiwayatAbsen();
-            tampilkanNotif('Absensi pekanan santri berhasil disimpan!');
         }
 
         function renderTabelRiwayatAbsen() {
@@ -3903,13 +4090,13 @@ function renderSemuaData() {
             }
 
             santriList.forEach(nama => {
-                if (currentRole === 'ortu' && loggedInSantri && nama.toLowerCase() !== loggedInSantri.nama.toLowerCase()) return;
+                if (currentRole === 'ortu' && loggedInSantri && normalisasiTeksLookup(nama) !== normalisasiTeksLookup(loggedInSantri.nama)) return;
 
-                const sObj = dataSantri.find(s => s.nama.toLowerCase() === nama.toLowerCase());
+                const sObj = cariSantriDenganNama(nama);
                 const kel = sObj ? sObj.guru : '-';
 
                 if (currentRole === 'guru') {
-                    if(!loggedInSantri || !loggedInSantri.nama || kel === '-' || kel.toLowerCase() !== loggedInSantri.nama.toLowerCase()) return;
+                    if(!loggedInSantri || !loggedInSantri.nama || kel === '-' || normalisasiTeksLookup(kel) !== normalisasiTeksLookup(loggedInSantri.nama)) return;
                 }
 
                 let matchNama = nama.toLowerCase().includes(qNama);
@@ -3940,7 +4127,8 @@ function renderSemuaData() {
             const ul = document.getElementById('modal-absen-list');
             ul.innerHTML = '';
 
-            const records = riwayatAbsensi[nama] || [];
+            const historyKey = cariKunciRiwayatAbsensi(nama) || nama;
+            const records = riwayatAbsensi[historyKey] || [];
             if(records.length === 0) {
                 ul.innerHTML = '<li class="py-2 text-center text-gray-500 italic">Belum ada data.</li>';
             } else {
