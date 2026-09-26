@@ -3505,40 +3505,45 @@ function renderSemuaData() {
 
         function rangkumSampelLokasi(samples) {
             const valid = (Array.isArray(samples) ? samples : [])
-                .filter(s => s && Number.isFinite(s.latitude) && Number.isFinite(s.longitude) && Number.isFinite(s.accuracy));
+                .filter(s => s && Number.isFinite(s.latitude) && Number.isFinite(s.longitude) && Number.isFinite(s.accuracy))
+                .map(s => ({
+                    latitude: Number(s.latitude),
+                    longitude: Number(s.longitude),
+                    accuracy: Number(s.accuracy),
+                    timestamp: Number(s.timestamp) || Date.now()
+                }));
+
             if(!valid.length) return null;
 
-            // Gunakan sampai 5 pembacaan terbaik berdasarkan akurasi, lalu cari posisi
-            // yang paling representatif (medoid) agar satu titik GPS yang menyimpang
-            // tidak otomatis menjadi posisi final.
+            // Jangan langsung percaya pada pembacaan pertama. Ambil beberapa
+            // pembacaan terbaik dan pilih titik dengan akurasi terbaik sebagai
+            // representasi utama. Sampel tetap disimpan untuk validasi geofence.
             const kandidat = valid
                 .slice()
                 .sort((a, b) => a.accuracy - b.accuracy || b.timestamp - a.timestamp)
-                .slice(0, 5);
+                .slice(0, 8);
 
-            let medoid = kandidat[0];
-            let skorTerbaik = Infinity;
-            kandidat.forEach(candidate => {
-                const skor = kandidat.reduce((sum, item) => sum + hitungJarakAntarKoordinat(candidate, item), 0);
-                if(skor < skorTerbaik) {
-                    skorTerbaik = skor;
-                    medoid = candidate;
-                }
-            });
+            const best = kandidat[0];
 
-            const jarakKeMedoid = kandidat.map(item => hitungJarakAntarKoordinat(item, medoid)).sort((a, b) => a - b);
-            const medianSpread = jarakKeMedoid[Math.floor(jarakKeMedoid.length / 2)] || 0;
+            // Hitung sebaran terhadap titik terbaik supaya kita tahu apakah
+            // pembacaan GPS sudah cukup stabil.
+            const jarakKeBest = kandidat
+                .map(item => hitungJarakAntarKoordinat(item, best))
+                .sort((a, b) => a - b);
+
+            const medianSpread = jarakKeBest[Math.floor(jarakKeBest.length / 2)] || 0;
             const avgAccuracy = kandidat.reduce((sum, item) => sum + item.accuracy, 0) / kandidat.length;
 
             return {
-                ...medoid,
+                ...best,
                 sampleCount: valid.length,
                 medianSpread,
-                avgAccuracy
+                avgAccuracy,
+                samples: valid
             };
         }
 
-        function ambilLokasiAkurat(timeoutMs = 20000) {
+        function ambilLokasiAkurat(timeoutMs = 25000) {
             return new Promise((resolve, reject) => {
                 if(!('geolocation' in navigator)) {
                     reject({ code: 'UNSUPPORTED', message: 'Perangkat atau browser ini tidak mendukung geolokasi.' });
@@ -3549,10 +3554,15 @@ function renderSemuaData() {
                 let watchId = null;
                 let settled = false;
                 const startedAt = Date.now();
-                const MIN_SAMPLES = 3;
+
+                // GPS / lokasi perangkat sering mengirim posisi awal yang masih
+                // berbasis Wi-Fi/jaringan. Jangan berhenti terlalu cepat hanya
+                // karena 2-3 sampel awal terlihat stabil.
+                const MIN_WAIT_BEFORE_ACCEPT = 5000;
                 const GOOD_ACCURACY = 20;
-                const MAX_USEFUL_ACCURACY = 50;
-                const STABLE_SPREAD = 20;
+                const ACCEPTABLE_ACCURACY = 50;
+                const MAX_USEFUL_ACCURACY = 150;
+                const STABLE_SPREAD = 35;
 
                 const cleanup = () => {
                     if(watchId !== null) {
@@ -3579,6 +3589,7 @@ function renderSemuaData() {
                     const latitude = Number(position?.coords?.latitude);
                     const longitude = Number(position?.coords?.longitude);
                     const accuracy = Number(position?.coords?.accuracy);
+
                     if(!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(accuracy)) return;
                     if(latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return;
 
@@ -3589,44 +3600,55 @@ function renderSemuaData() {
                         timestamp: Number(position.timestamp) || Date.now()
                     });
 
+                    // Simpan sampel terbaru dan terbaik, bukan hanya sampel pertama.
                     samples.sort((a, b) => a.accuracy - b.accuracy || b.timestamp - a.timestamp);
-                    if(samples.length > 8) samples.length = 8;
+                    if(samples.length > 12) samples.length = 12;
 
                     const summary = rangkumSampelLokasi(samples);
                     if(!summary) return;
 
                     const elapsed = Date.now() - startedAt;
-                    const goodSamples = samples.filter(s => s.accuracy <= GOOD_ACCURACY).length;
-                    const usableSamples = samples.filter(s => s.accuracy <= MAX_USEFUL_ACCURACY).length;
+                    const goodSamples = samples.filter(s => s.accuracy <= GOOD_ACCURACY);
+                    const acceptableSamples = samples.filter(s => s.accuracy <= ACCEPTABLE_ACCURACY);
                     const stable = summary.medianSpread <= STABLE_SPREAD;
 
-                    // Jangan buru-buru memakai pembacaan pertama. Jika GPS sudah punya
-                    // beberapa sampel yang bagus dan saling berdekatan, gunakan posisi
-                    // yang paling representatif.
-                    if(goodSamples >= MIN_SAMPLES && stable) {
+                    // Bila GPS sudah benar-benar bagus, tidak perlu menunggu sampai timeout.
+                    if(
+                        elapsed >= MIN_WAIT_BEFORE_ACCEPT &&
+                        goodSamples.length >= 2 &&
+                        stable
+                    ) {
                         finish(summary);
-                    } else if(usableSamples >= MIN_SAMPLES && stable && elapsed >= Math.min(10000, timeoutMs - 1500)) {
-                        finish(summary);
-                    } else if(elapsed >= Math.min(15000, timeoutMs - 1000) && usableSamples >= 2) {
+                        return;
+                    }
+
+                    // Lokasi yang cukup baik juga boleh dipakai setelah beberapa detik,
+                    // tetapi hanya jika ada minimal 3 pembacaan dan posisinya stabil.
+                    if(
+                        elapsed >= 8000 &&
+                        acceptableSamples.length >= 3 &&
+                        stable
+                    ) {
                         finish(summary);
                     }
                 };
 
                 const handleError = (error) => {
-                    // Error sementara tidak boleh membuat hasil GPS pertama langsung
-                    // dipakai. Beri watchPosition kesempatan melanjutkan pembacaan.
                     if(error && error.code === error.PERMISSION_DENIED && samples.length === 0) {
                         fail(error);
                     }
                 };
 
                 try {
+                    // Pembacaan langsung untuk memulai proses.
                     navigator.geolocation.getCurrentPosition(addSample, handleError, {
                         enableHighAccuracy: true,
-                        timeout: Math.min(12000, timeoutMs),
+                        timeout: Math.min(15000, timeoutMs),
                         maximumAge: 0
                     });
 
+                    // Watch dipakai agar browser punya kesempatan mengganti
+                    // lokasi awal jaringan/Wi-Fi dengan posisi GPS yang lebih akurat.
                     watchId = navigator.geolocation.watchPosition(addSample, handleError, {
                         enableHighAccuracy: true,
                         timeout: timeoutMs,
@@ -3639,9 +3661,19 @@ function renderSemuaData() {
 
                 setTimeout(() => {
                     if(settled) return;
+
                     const summary = rangkumSampelLokasi(samples);
+
                     if(summary) {
-                        finish(summary);
+                        const hasUsefulAccuracy = Number(summary.accuracy) <= MAX_USEFUL_ACCURACY;
+                        if(hasUsefulAccuracy) {
+                            finish(summary);
+                        } else {
+                            fail({
+                                code: 'INACCURATE',
+                                message: `Browser hanya memberikan lokasi dengan akurasi sekitar ${Math.round(Number(summary.accuracy))} meter.`
+                            });
+                        }
                     } else {
                         fail({ code: 'TIMEOUT', message: 'Tidak mendapatkan pembacaan lokasi.' });
                     }
@@ -3650,64 +3682,152 @@ function renderSemuaData() {
         }
 
         async function validasiLokasiAbsensiGuru(geoLat, geoLng, geoRadius) {
+            // Lakukan sampai dua fase pembacaan. Ini penting karena posisi awal
+            // browser bisa berasal dari jaringan/Wi-Fi dan bisa meleset jauh.
+            const percobaan = [];
+
             const ambilDanUkur = async (timeoutMs) => {
                 const position = await ambilLokasiAkurat(timeoutMs);
-                const jarak = hitungJarakGeofencing(position.latitude, position.longitude, geoLat, geoLng);
+                const samples = Array.isArray(position.samples) && position.samples.length
+                    ? position.samples
+                    : [position];
+
+                const measured = samples
+                    .filter(s => s && Number.isFinite(Number(s.latitude)) && Number.isFinite(Number(s.longitude)))
+                    .map(s => {
+                        const latitude = Number(s.latitude);
+                        const longitude = Number(s.longitude);
+                        const akurasi = Number(s.accuracy);
+                        return {
+                            position: {
+                                ...s,
+                                latitude,
+                                longitude,
+                                accuracy: akurasi,
+                                sampleCount: position.sampleCount || 1,
+                                medianSpread: Number(position.medianSpread) || 0,
+                                avgAccuracy: Number(position.avgAccuracy) || akurasi
+                            },
+                            jarak: hitungJarakGeofencing(latitude, longitude, geoLat, geoLng),
+                            akurasi,
+                            timestamp: Number(s.timestamp) || Date.now()
+                        };
+                    })
+                    .filter(item => Number.isFinite(item.jarak));
+
+                if(!measured.length) {
+                    throw { code: 'TIMEOUT', message: 'Tidak mendapatkan koordinat lokasi yang valid.' };
+                }
+
+                measured.sort((a, b) =>
+                    (a.jarak - b.jarak) ||
+                    (a.akurasi - b.akurasi) ||
+                    (b.timestamp - a.timestamp)
+                );
+
                 return {
-                    position,
-                    jarak,
-                    akurasi: Number(position.accuracy),
-                    spread: Number(position.medianSpread) || 0,
-                    sampleCount: Number(position.sampleCount) || 0
+                    ...position,
+                    samples: measured.map(item => item.position),
+                    kandidatTerdekat: measured[0],
+                    jarak: measured[0].jarak,
+                    akurasi: measured[0].akurasi,
+                    position: measured[0].position
                 };
             };
 
-            const pertama = await ambilDanUkur(20000);
-            const pertamaAkurasiBaik = Number.isFinite(pertama.akurasi) && pertama.akurasi <= 25;
-            const pertamaStabil = pertama.spread <= 20;
+            // Percobaan pertama menggunakan waktu cukup panjang agar GPS punya
+            // kesempatan memperoleh fix yang lebih baik.
+            try {
+                const pertama = await ambilDanUkur(18000);
+                percobaan.push(pertama);
 
-            // Kondisi normal: langsung masuk hanya jika posisi masuk radius DAN kualitas
-            // GPS cukup baik. Jadi titik yang kebetulan terlihat dekat tetapi sinyalnya
-            // sangat buruk tidak langsung diterima.
-            if(pertama.jarak <= geoRadius && pertamaAkurasiBaik && pertamaStabil) {
-                return { ...pertama, verifikasiUlang: false };
+                // Jika sudah jelas masuk radius dengan akurasi layak, selesai.
+                if(pertama.jarak <= geoRadius && Number.isFinite(pertama.akurasi) && pertama.akurasi <= 100) {
+                    return {
+                        ...pertama,
+                        verifikasiUlang: false,
+                        percobaanLokasi: 1
+                    };
+                }
+            } catch(error) {
+                // Permission denied harus langsung diteruskan. Error akurasi/timeout
+                // masih boleh dicoba sekali lagi.
+                if(error && error.code === 'PERMISSION_DENIED') throw error;
             }
 
-            // Jangan langsung menolak jika hasil berada dekat batas, atau jangan langsung
-            // menerima bila hasil masuk tetapi akurasinya buruk. Kedua kondisi ini perlu
-            // satu pembacaan tambahan agar keputusan tidak bergantung pada satu sampel.
-            const akurasiAman = Number.isFinite(pertama.akurasi) ? Math.min(Math.max(pertama.akurasi, 5), 25) : 25;
-            const zonaVerifikasi = Math.max(8, akurasiAman * 0.75);
-            const dekatBatas = pertama.jarak <= geoRadius + zonaVerifikasi;
-            const perluVerifikasiKarenaKualitas = pertama.jarak <= geoRadius && (!pertamaAkurasiBaik || !pertamaStabil);
-
-            if(!dekatBatas && !perluVerifikasiKarenaKualitas) {
-                return { ...pertama, verifikasiUlang: false };
+            // Percobaan kedua sengaja tetap dilakukan walaupun percobaan pertama
+            // menunjukkan jarak ratusan/ribuan meter. Ini memperbaiki kasus ketika
+            // pembacaan pertama masih berupa lokasi jaringan/Wi-Fi yang keliru.
+            try {
+                const kedua = await ambilDanUkur(12000);
+                percobaan.push(kedua);
+            } catch(error) {
+                if(!percobaan.length) throw error;
             }
 
-            const kedua = await ambilDanUkur(12000);
-            const posisiBerbeda = hitungJarakGeofencing(
-                pertama.position.latitude,
-                pertama.position.longitude,
-                kedua.position.latitude,
-                kedua.position.longitude
-            );
+            // Gabungkan semua kandidat dari kedua percobaan dan cari koordinat
+            // terdekat ke titik geofence. Dengan demikian satu pembacaan buruk
+            // tidak otomatis menjadi keputusan akhir.
+            const semuaKandidat = percobaan
+                .flatMap(percobaanLokasi => {
+                    const samples = Array.isArray(percobaanLokasi.samples) ? percobaanLokasi.samples : [];
+                    return samples.map(sample => ({
+                        position: sample,
+                        jarak: hitungJarakGeofencing(
+                            Number(sample.latitude),
+                            Number(sample.longitude),
+                            geoLat,
+                            geoLng
+                        ),
+                        akurasi: Number(sample.accuracy),
+                        sampleCount: Number(percobaanLokasi.sampleCount) || samples.length || 1,
+                        spread: Number(percobaanLokasi.medianSpread) || 0,
+                        timestamp: Number(sample.timestamp) || Date.now()
+                    }));
+                })
+                .filter(item => Number.isFinite(item.jarak))
+                .sort((a, b) =>
+                    (a.jarak - b.jarak) ||
+                    (a.akurasi - b.akurasi) ||
+                    (b.timestamp - a.timestamp)
+                );
 
-            // Jika dua pembacaan masih cukup dekat dan ada bukti yang layak bahwa posisi
-            // berada di dalam radius, terima. Radius konfigurasi tetap 10 m; verifikasi ini
-            // hanya mencegah false reject/false decision karena variasi GPS.
-            const salahSatuDiDalam = pertama.jarak <= geoRadius || kedua.jarak <= geoRadius;
-            const pembacaanKonsisten = posisiBerbeda <= 20;
-            const akurasiLayak = [pertama.akurasi, kedua.akurasi].some(a => Number.isFinite(a) && a <= 25);
-
-            if(salahSatuDiDalam && pembacaanKonsisten && akurasiLayak) {
-                const terpilih = kedua.jarak <= geoRadius ? kedua : pertama;
-                return { ...terpilih, verifikasiUlang: true, pembacaanKeduaJarak: kedua.jarak };
+            if(!semuaKandidat.length) {
+                throw { code: 'TIMEOUT', message: 'Tidak mendapatkan koordinat lokasi yang valid.' };
             }
 
-            // Bila kedua pembacaan tetap di luar atau tidak konsisten, jangan dipaksakan.
-            // Gunakan hasil kedua sebagai keputusan akhir karena merupakan pengukuran ulang.
-            return { ...kedua, verifikasiUlang: true, pembacaanPertamaJarak: pertama.jarak, posisiBerbeda };
+            const kandidatDalamRadius = semuaKandidat
+                .filter(item => item.jarak <= geoRadius)
+                .sort((a, b) => a.akurasi - b.akurasi || a.jarak - b.jarak);
+
+            // Posisi yang benar-benar berada di dalam radius adalah keputusan utama.
+            if(kandidatDalamRadius.length) {
+                const terpilih = kandidatDalamRadius[0];
+                return {
+                    position: terpilih.position,
+                    jarak: terpilih.jarak,
+                    akurasi: terpilih.akurasi,
+                    sampleCount: terpilih.sampleCount,
+                    spread: terpilih.spread,
+                    verifikasiUlang: percobaan.length > 1,
+                    percobaanLokasi: percobaan.length
+                };
+            }
+
+            const terdekat = semuaKandidat[0];
+
+            // Jangan pernah menganggap pembacaan 1 km sebagai posisi pasti hanya
+            // karena pembacaan tersebut stabil. Kembalikan titik terbaik agar pengguna
+            // mendapat diagnosis yang benar dan dapat memperbaiki GPS perangkat.
+            return {
+                position: terdekat.position,
+                jarak: terdekat.jarak,
+                akurasi: terdekat.akurasi,
+                sampleCount: terdekat.sampleCount,
+                spread: terdekat.spread,
+                verifikasiUlang: percobaan.length > 1,
+                percobaanLokasi: percobaan.length
+            };
         }
 
         async function absenGuruMasuk() {
