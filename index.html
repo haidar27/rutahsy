@@ -48,6 +48,17 @@
         .calendar-header-day { font-weight: bold; padding: 5px; color: #374151; font-size: 0.875rem; }
         .calendar-day.event { background: #10b981; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .calendar-day.event:hover { background: #047857; }
+        .attendance-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+        .attendance-calendar-day { min-height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid transparent; background: #f9fafb; color: #374151; font-weight: 600; transition: background-color .15s, border-color .15s, color .15s; }
+        .attendance-calendar-day:hover { background: #d1fae5; }
+        .attendance-calendar-day.is-today { background: #fef3c7; color: #92400e; border-color: #f59e0b; font-weight: 800; }
+        .attendance-calendar-day.is-selected { background: #047857; color: white; border-color: #047857; }
+        .attendance-calendar-day.is-selected.is-today { background: #047857; color: white; border-color: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
+        .attendance-calendar-day.is-empty { visibility: hidden; pointer-events: none; }
+        @media (max-width: 480px) {
+            .attendance-calendar-grid { gap: 3px; }
+            .attendance-calendar-day { min-height: 36px; font-size: .8rem; }
+        }
         @keyframes modalSppIn {
             0% { opacity: 0; transform: translateY(24px) scale(0.96); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
@@ -486,45 +497,70 @@
                         <div id="pagination-absen-guru-global" class="flex flex-wrap justify-center gap-1 mt-4"></div>
                     </div>
 
-                    <!-- Absen Santri (Input Pekanan) -->
+                    <!-- Input Absensi Santri Per Tanggal -->
                     <div class="card mb-6 form-absen-guru-only">
-                        <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
-                            <h3 class="font-bold w-full md:w-auto">Form Input Absensi Santri (Per Pekan)</h3>
-                            <div class="flex gap-2 w-full md:w-auto">
-                                <select class="border p-2 rounded text-sm w-full md:w-auto" disabled><option>Bulan Ini</option></select>
-                                <select id="absen-pekan" class="border p-2 rounded text-sm w-full md:w-auto"><option>Pekan 1</option><option>Pekan 2</option><option>Pekan 3</option><option>Pekan 4</option></select>
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg">Form Input Absensi Santri (Per Tanggal)</h3>
+                                <p class="text-sm text-gray-500 mt-1">Pilih satu tanggal di kalender, lalu simpan status kehadiran santri.</p>
+                            </div>
+                            <div class="flex items-center justify-between sm:justify-end gap-2">
+                                <button type="button" onclick="geserBulanAbsensi(-1)" class="border rounded-lg px-3 py-2 hover:bg-gray-100" aria-label="Bulan sebelumnya"><i class="fa-solid fa-chevron-left"></i></button>
+                                <div id="label-bulan-absen" class="font-bold text-primary min-w-32 text-center">Bulan</div>
+                                <button type="button" onclick="geserBulanAbsensi(1)" class="border rounded-lg px-3 py-2 hover:bg-gray-100" aria-label="Bulan berikutnya"><i class="fa-solid fa-chevron-right"></i></button>
                             </div>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm text-center min-w-[700px]" id="table-input-absen">
-                                <thead>
-                                    <tr class="table-header">
-                                        <th class="p-3 text-left w-1/3">Nama Santri</th>
-                                        <th class="p-3">Senin</th><th class="p-3">Selasa</th><th class="p-3">Rabu</th><th class="p-3">Kamis</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr class="border-b">
-                                        <td class="p-3 text-left">
-                                            <div class="relative w-full min-w-[200px]">
-                                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                                                <input type="text" id="input-nama-absen" list="list-santri" placeholder="Cari / Pilih Nama..." class="border border-gray-300 p-2 pl-9 rounded w-full text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white">
-                                            </div>
-                                        </td>
-                                        <td><select class="border p-1 rounded text-xs val-senin"><option>Hadir</option><option>Izin</option><option>Sakit</option><option>Alpha</option><option>Libur</option></select></td>
-                                        <td><select class="border p-1 rounded text-xs val-selasa"><option>Hadir</option><option>Izin</option><option>Sakit</option><option>Alpha</option><option>Libur</option></select></td>
-                                        <td><select class="border p-1 rounded text-xs val-rabu"><option>Hadir</option><option>Izin</option><option>Sakit</option><option>Alpha</option><option>Libur</option></select></td>
-                                        <td><select class="border p-1 rounded text-xs val-kamis"><option>Hadir</option><option>Izin</option><option>Sakit</option><option>Alpha</option><option>Libur</option></select></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="mt-4">
-                            <button class="bg-secondary text-white px-4 py-2 rounded text-sm w-full md:w-auto hover:bg-green-600 transition" onclick="simpanAbsenPekanan()"><i class="fa-solid fa-save"></i> Simpan Absensi Pekanan</button>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div>
+                                <div class="calendar-grid mb-2">
+                                    <div class="calendar-header-day">Sen</div><div class="calendar-header-day">Sel</div>
+                                    <div class="calendar-header-day">Rab</div><div class="calendar-header-day">Kam</div>
+                                    <div class="calendar-header-day">Jum</div><div class="calendar-header-day">Sab</div>
+                                    <div class="calendar-header-day">Min</div>
+                                </div>
+                                <div id="kalender-absen-grid" class="attendance-calendar-grid" aria-label="Kalender tanggal absensi"></div>
+                                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-600 mt-4">
+                                    <span class="inline-flex items-center gap-2"><span class="inline-block w-3 h-3 rounded-full bg-amber-200 border-2 border-amber-500"></span> Hari ini</span>
+                                    <span class="inline-flex items-center gap-2"><span class="inline-block w-3 h-3 rounded-full bg-primary"></span> Tanggal dipilih</span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="rounded-lg border border-green-200 bg-green-50 p-3">
+                                    <p class="text-xs font-semibold text-green-800">Tanggal absensi yang dipilih</p>
+                                    <p id="label-tanggal-absen" class="text-lg font-bold text-green-900 mt-1">-</p>
+                                    <label for="tanggal-absen-manual" class="block text-xs text-gray-600 mt-3 mb-1">Atau pilih tanggal langsung</label>
+                                    <input type="date" id="tanggal-absen-manual" class="border p-2 rounded w-full bg-white" onchange="pilihTanggalAbsensi(this.value)">
+                                </div>
+
+                                <div>
+                                    <label for="input-nama-absen" class="block text-sm font-semibold text-gray-700 mb-1">Nama Santri</label>
+                                    <div class="relative w-full">
+                                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                        <input type="text" id="input-nama-absen" list="list-santri" placeholder="Cari / pilih nama santri..." class="border border-gray-300 p-2 pl-9 rounded w-full text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white" onchange="sinkronkanStatusAbsensiTerpilih()" autocomplete="off">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label for="nilai-absen-harian" class="block text-sm font-semibold text-gray-700 mb-1">Status Kehadiran</label>
+                                    <select id="nilai-absen-harian" class="border p-3 rounded w-full bg-white">
+                                        <option value="Hadir">Hadir</option>
+                                        <option value="Izin">Izin</option>
+                                        <option value="Sakit">Sakit</option>
+                                        <option value="Alpha">Alpha</option>
+                                        <option value="Libur">Libur</option>
+                                    </select>
+                                </div>
+
+                                <button type="button" class="bg-secondary text-white px-4 py-3 rounded text-sm w-full hover:bg-green-600 transition" onclick="simpanAbsensiHarian()">
+                                    <i class="fa-solid fa-save"></i> Simpan Absensi Tanggal Ini
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Riwayat Absensi Pekanan Santri -->
+                    <!-- Riwayat Absensi Santri -->
                     <div class="card">
                         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
                             <h3 class="font-bold">Riwayat Absensi Santri</h3>
@@ -592,9 +628,9 @@
                     <!-- Form Input Capaian Hafalan -->
                     <div class="card mb-6 form-input-hafalan">
                         <h3 class="font-bold mb-4 text-green-700">Input Capaian Belajar / Hafalan</h3>
-                        <div id="container-form-progres" class="grid grid-cols-1 md:grid-cols-9 gap-3">
+                        <div id="container-form-progres" class="grid grid-cols-1 md:grid-cols-10 gap-3">
                             <input type="text" id="prog-nama" list="list-santri" placeholder="Cari Nama Santri..." class="border p-2 rounded md:col-span-2 bg-white">
-                            
+                            <input type="month" id="prog-bulan" class="border p-2 rounded bg-white" aria-label="Bulan capaian hafalan" title="Bulan capaian hafalan">
                             <select id="prog-pekan" class="border p-2 rounded bg-white">
                                 <option value="Pekan 1">Pekan 1</option>
                                 <option value="Pekan 2">Pekan 2</option>
@@ -1073,7 +1109,18 @@
         <div class="bg-white p-6 rounded-lg w-11/12 md:w-96 max-h-[80vh] overflow-y-auto">
             <h3 class="font-bold text-lg mb-2">Detail Absensi Santri</h3>
             <p id="modal-nama-santri" class="text-gray-600 mb-4 font-bold border-b pb-2"></p>
-            <ul id="modal-absen-list" class="divide-y text-sm"></ul>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 rounded-lg bg-gray-50 border p-3">
+                <div>
+                    <label for="filter-absen-dari" class="block text-xs font-semibold text-gray-600 mb-1">Dari tanggal</label>
+                    <input type="date" id="filter-absen-dari" class="border p-2 rounded w-full bg-white text-sm" onchange="lihatDetailAbsen(detailAbsensiSantriAktif)">
+                </div>
+                <div>
+                    <label for="filter-absen-sampai" class="block text-xs font-semibold text-gray-600 mb-1">Sampai tanggal</label>
+                    <input type="date" id="filter-absen-sampai" class="border p-2 rounded w-full bg-white text-sm" onchange="lihatDetailAbsen(detailAbsensiSantriAktif)">
+                </div>
+                <button type="button" onclick="resetFilterDetailAbsen()" class="sm:col-span-2 bg-gray-200 hover:bg-gray-300 rounded py-2 text-sm">Reset rentang tanggal</button>
+            </div>
+            <div id="modal-absen-list" class="divide-y text-sm"></div>
             <button onclick="document.getElementById('modal-detail-absen').classList.add('hidden')" class="mt-6 w-full bg-gray-200 py-2 rounded hover:bg-gray-300 transition">Tutup Detail</button>
         </div>
     </div>
@@ -1289,6 +1336,9 @@
         let riwayatAbsensi = JSON.parse(localStorage.getItem('rutasy_absen')) || {};
         let absenGuruRecord = JSON.parse(localStorage.getItem('rutasy_absen_guru')) || [];
         let riwayatProgres = JSON.parse(localStorage.getItem('rutasy_progres_hafalan')) || {};
+        let tanggalAbsensiDipilih = '';
+        let bulanKalenderAbsensi = '';
+        let detailAbsensiSantriAktif = '';
         let eventsKalender = JSON.parse(localStorage.getItem('rutasy_kalender')) || [];
         let haflahEditId = null;
         let dataHaflah = JSON.parse(localStorage.getItem('rutasy_haflah')) || [];
@@ -1440,6 +1490,47 @@ const firebaseConfig = {
                 .toLocaleLowerCase('id-ID');
         }
 
+        function tanggalKeyLokal(date = new Date()) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function tanggalBulanLokal(date = new Date()) {
+            return tanggalKeyLokal(date).slice(0, 7);
+        }
+
+        function tanggalDariKeyLokal(value) {
+            const key = String(value || '').slice(0, 10);
+            if(!/^\d{4}-\d{2}-\d{2}$/.test(key)) return null;
+            const [year, month, day] = key.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
+            if(date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+            return date;
+        }
+
+        function formatTanggalIndonesiaKey(value) {
+            const date = tanggalDariKeyLokal(value);
+            return date ? date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : String(value || '-');
+        }
+
+        function getTanggalKeyAbsensiRecord(record) {
+            const raw = String(record?.tglRaw || record?.tanggal || record?.date || '').trim();
+            if(/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+            const display = String(record?.tgl || record?.waktu || '').trim();
+            const match = display.match(/(\d{1,2})[\u002f.\-](\d{1,2})[\u002f.\-](\d{4})/);
+            if(match) return `${match[3]}-${String(match[2]).padStart(2, '0')}-${String(match[1]).padStart(2, '0')}`;
+            return '';
+        }
+
+        function parseTanggalAbsensiKey(key) {
+            const match = String(key || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if(!match) return null;
+            const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+            return Number.isNaN(date.getTime()) ? null : date;
+        }
+
         function cariSantriDenganNama(value) {
             const target = normalisasiTeksLookup(value);
             if(!target) return null;
@@ -1451,6 +1542,14 @@ const firebaseConfig = {
             if(!target) return '';
             const keys = Object.keys(riwayatAbsensi || {});
             return keys.find(key => normalisasiTeksLookup(key) === target) || '';
+        }
+
+        function normalisasiCatatanAbsensi(value) {
+            if(Array.isArray(value)) return value.filter(item => item && typeof item === 'object');
+            if(value && typeof value === 'object') {
+                return Object.values(value).filter(item => item && typeof item === 'object');
+            }
+            return [];
         }
 
         async function persistSantriAman(obj, mode, indexSebelumnya = -1) {
@@ -1535,51 +1634,48 @@ const firebaseConfig = {
             }
         }
 
-        async function simpanAbsensiPekananAman(namaKey, dataAbsen) {
+        async function simpanAbsensiHarianAman(namaKey, dataAbsen) {
             const localCopy = (riwayatAbsensi && typeof riwayatAbsensi === 'object') ? riwayatAbsensi : {};
+            const upsertHarian = (records) => {
+                const next = normalisasiCatatanAbsensi(records);
+                const existingIdx = next.findIndex(record =>
+                    record && record.tipe === 'harian' && getTanggalKeyAbsensiRecord(record) === dataAbsen.tglRaw
+                );
+                if(existingIdx > -1) next[existingIdx] = dataAbsen;
+                else next.unshift(dataAbsen);
+                return next;
+            };
 
             if(!(rutasyCloudEnabled && rutasyDatabase && rutasyCloudInitialized && !rutasyCloudApplying)) {
-                const current = localCopy[namaKey];
-                if(!Array.isArray(current)) localCopy[namaKey] = [];
-                const existingIdx = localCopy[namaKey].findIndex(a => normalisasiTeksLookup(a?.pekan) === normalisasiTeksLookup(dataAbsen.pekan) && normalisasiTeksLookup(a?.bulan) === normalisasiTeksLookup(dataAbsen.bulan));
-                if(existingIdx > -1) localCopy[namaKey][existingIdx] = dataAbsen;
-                else localCopy[namaKey].unshift(dataAbsen);
+                const matchingKey = Object.keys(localCopy).find(key => normalisasiTeksLookup(key) === normalisasiTeksLookup(namaKey));
+                const targetKey = matchingKey || namaKey;
+                localCopy[targetKey] = upsertHarian(localCopy[targetKey]);
                 riwayatAbsensi = localCopy;
                 localStorage.setItem('rutasy_absen', JSON.stringify(riwayatAbsensi));
                 return true;
             }
 
+            const expectedResetAt = rutasyCloudResetAt;
             try {
                 const result = await rutasyDatabase.ref('rutasy/rutasy_absen').transaction((current) => {
                     const next = current && typeof current === 'object' ? {...current} : {};
+                    if(expectedResetAt !== rutasyCloudResetAt) return;
                     const matchingKey = Object.keys(next).find(key => normalisasiTeksLookup(key) === normalisasiTeksLookup(namaKey));
                     const targetKey = matchingKey || namaKey;
-
-                    const records = Array.isArray(next[targetKey]) ? [...next[targetKey]] : [];
-                    const existingIdx = records.findIndex(a =>
-                        normalisasiTeksLookup(a?.pekan) === normalisasiTeksLookup(dataAbsen.pekan) &&
-                        normalisasiTeksLookup(a?.bulan) === normalisasiTeksLookup(dataAbsen.bulan)
-                    );
-
-                    if(existingIdx > -1) records[existingIdx] = dataAbsen;
-                    else records.unshift(dataAbsen);
-
-                    next[targetKey] = records;
+                    next[targetKey] = upsertHarian(next[targetKey]);
                     return next;
                 });
 
-                if(!result.committed) throw new Error('Absensi pekanan tidak berhasil dikomit ke Firebase.');
-
+                if(!result.committed) throw new Error('Absensi harian tidak berhasil disimpan ke database online. Muat ulang halaman lalu coba lagi.');
                 const cloudValue = result.snapshot.val();
                 riwayatAbsensi = cloudValue && typeof cloudValue === 'object' ? cloudValue : {};
                 localStorage.setItem('rutasy_absen', JSON.stringify(riwayatAbsensi));
                 return true;
             } catch(error) {
-                console.error('Gagal menyimpan absensi pekanan ke Firebase:', error);
+                console.error('Gagal menyimpan absensi harian ke Firebase:', error);
                 throw error;
             }
         }
-
 
         function persistData(key, value) {
             localStorage.setItem(key, JSON.stringify(value));
@@ -1918,14 +2014,14 @@ const firebaseConfig = {
             currentRole = savedRole;
             loggedInSantri = null;
             if(currentRole === 'ortu' && savedUser) {
-                loggedInSantri = dataSantri.find(s => String(s.user || '').toLowerCase() === savedUser.toLowerCase()) || null;
+                loggedInSantri = dataSantri.find(s => normalisasiTeksLookup(s?.user) === normalisasiTeksLookup(savedUser)) || null;
                 if(!loggedInSantri) {
                     localStorage.removeItem('rutasy_role');
                     localStorage.removeItem('rutasy_username');
                     return;
                 }
             } else if(currentRole === 'guru' && savedUser) {
-                loggedInSantri = dataGuru.find(g => String(g.user || '').toLowerCase() === savedUser.toLowerCase()) || null;
+                loggedInSantri = dataGuru.find(g => normalisasiTeksLookup(g?.user) === normalisasiTeksLookup(savedUser)) || null;
                 if(!loggedInSantri) {
                     localStorage.removeItem('rutasy_role');
                     localStorage.removeItem('rutasy_username');
@@ -1943,10 +2039,10 @@ const firebaseConfig = {
             
             if(!user || !pass) { tampilkanNotif('Silahkan masukkan Username dan Password!'); return; }
 
-            let matchedSantri = dataSantri.find(s => s.user.toLowerCase() === user && s.pass === pass);
-            let matchedGuru = dataGuru.find(g => g.user.toLowerCase() === user && g.pass === pass);
+            let matchedSantri = dataSantri.find(s => normalisasiTeksLookup(s?.user) === normalisasiTeksLookup(user) && String(s?.pass ?? '') === pass);
+            let matchedGuru = dataGuru.find(g => normalisasiTeksLookup(g?.user) === normalisasiTeksLookup(user) && String(g?.pass ?? '') === pass);
 
-            const matchedAdmin = dataAdminAccounts.find(a => a.username.toLowerCase() === user && a.password === pass);
+            const matchedAdmin = dataAdminAccounts.find(a => normalisasiTeksLookup(a?.username) === normalisasiTeksLookup(user) && String(a?.password ?? '') === pass);
 
             if (matchedAdmin) {
                 currentRole = matchedAdmin.role;
@@ -2026,7 +2122,9 @@ const firebaseConfig = {
 function renderSemuaData() {
             renderGuru(); renderSantri(); renderKeuangan(); renderKeuanganManual(); renderSettings(); renderAdminAccounts();
             renderKalenderInit(); renderSelectHaflahSantri(); renderTabelHaflah(); 
-            renderTabelRiwayatAbsen(); renderDatalistSantri(); renderTabelProgres(); renderHistoryUjian();
+            renderTabelRiwayatAbsen(); renderKalenderAbsensi(); renderDatalistSantri(); renderTabelProgres(); renderHistoryUjian();
+            const inputBulanProgres = document.getElementById('prog-bulan');
+            if(inputBulanProgres && !inputBulanProgres.value) inputBulanProgres.value = tanggalBulanLokal();
             renderAbsenGuruPribadi(); renderAbsenGuruGlobal(); renderBelumBayarSPP();
             renderMutasiSantriDatalist(); renderMutasiSantriManual(); populatePKGManualGuruSelect(); renderPKG();
             sesuaikanFormUjian(); sesuaikanFormProgres(); sesuaikanFormKeuanganManual();
@@ -2241,7 +2339,7 @@ function renderSemuaData() {
                         let dateStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
                         labels.push(dateStr);
                         
-                        let keyDate = d.toISOString().split('T')[0];
+                        let keyDate = tanggalKeyLokal(d);
                         let dateFormatted = d.toLocaleDateString('id-ID');
                         
                         let totalCapaian = 0;
@@ -2263,7 +2361,7 @@ function renderSemuaData() {
                         let dateStr = d.getDate() + '/' + (d.getMonth() + 1);
                         labels.push(dateStr);
                         
-                        let keyDate = d.toISOString().split('T')[0];
+                        let keyDate = tanggalKeyLokal(d);
                         let dateFormatted = d.toLocaleDateString('id-ID');
                         
                         let totalCapaian = 0;
@@ -2291,10 +2389,11 @@ function renderSemuaData() {
                         Object.keys(riwayatProgres).forEach(santri => {
                             if(Array.isArray(riwayatProgres[santri])) {
                                 riwayatProgres[santri].forEach(p => {
+                                    const targetMonthKey = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
+                                    const progressMonthKey = String(p.bulanRaw || (p.tglRaw ? String(p.tglRaw).slice(0, 7) : '')).slice(0, 7);
                                     let pDate = new Date(p.tglRaw || p.tgl);
-                                    if(!isNaN(pDate.getTime()) && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear) {
-                                        totalCapaian += parseInt(p.baris || 1);
-                                    }
+                                    const matchesSelectedMonth = progressMonthKey ? progressMonthKey === targetMonthKey : (!isNaN(pDate.getTime()) && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear);
+                                    if(matchesSelectedMonth) totalCapaian += parseInt(p.baris || 1);
                                 });
                             }
                         });
@@ -3633,9 +3732,13 @@ function renderSemuaData() {
                     }
                 };
 
+                let lastGeoError = null;
                 const handleError = (error) => {
-                    if(error && error.code === error.PERMISSION_DENIED && samples.length === 0) {
-                        fail(error);
+                    if(!error) return;
+                    lastGeoError = error;
+                    const code = Number(error.code);
+                    if(code === 1 || error.code === 'PERMISSION_DENIED') {
+                        fail({ code: 'PERMISSION_DENIED', message: 'Izin lokasi ditolak. Aktifkan izin lokasi untuk situs ini dan pilih Lokasi Presisi.' });
                     }
                 };
 
@@ -3675,7 +3778,7 @@ function renderSemuaData() {
                             });
                         }
                     } else {
-                        fail({ code: 'TIMEOUT', message: 'Tidak mendapatkan pembacaan lokasi.' });
+                        fail(lastGeoError || { code: 'TIMEOUT', message: 'Tidak mendapatkan pembacaan lokasi. Pastikan GPS aktif dan izin lokasi browser diizinkan.' });
                     }
                 }, timeoutMs);
             });
@@ -3887,7 +3990,7 @@ function renderSemuaData() {
                 const now = new Date();
                 const tglStr = now.toLocaleDateString('id-ID');
                 const jamStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                const todayKey = now.toISOString().split('T')[0];
+                const todayKey = tanggalKeyLokal(now);
 
                 const batasAbsen = String(dataSettings.batasAbsen || '').trim();
                 if(batasAbsen) {
@@ -3904,7 +4007,7 @@ function renderSemuaData() {
                     }
                 }
 
-                const sudahAbsen = absenGuruRecord.find(a => a.guru === loggedInSantri.nama && a.tglRaw === todayKey);
+                const sudahAbsen = absenGuruRecord.find(a => normalisasiTeksLookup(a?.guru) === normalisasiTeksLookup(loggedInSantri.nama) && String(a?.tglRaw || '').slice(0, 10) === todayKey);
                 if(sudahAbsen) {
                     tampilkanNotif('Anda sudah melakukan absensi hari ini!');
                     updateStatusTombolAbsenGuru();
@@ -3985,11 +4088,13 @@ function renderSemuaData() {
                 const verifikasiText = hasilLokasi.verifikasiUlang ? ' Lokasi telah diverifikasi ulang karena pembacaan awal berada di area batas.' : '';
                 tampilkanNotif(`Absensi Masuk Berhasil! Jarak Anda ${jarak < 10 ? jarak.toFixed(1) : Math.round(jarak).toLocaleString('id-ID')} meter dari titik absensi. Akurasi GPS ±${Number.isFinite(akurasi) ? (akurasi < 10 ? akurasi.toFixed(1) : Math.round(akurasi).toLocaleString('id-ID')) : '-'} meter.${verifikasiText}`);
             }).catch((error) => {
-                let pesan = 'Gagal mendapatkan lokasi GPS.';
-                if(error && error.code === error.PERMISSION_DENIED) pesan = 'Izin lokasi ditolak. Aktifkan izin lokasi untuk browser ini lalu coba lagi.';
-                else if(error && error.code === error.POSITION_UNAVAILABLE) pesan = 'Lokasi tidak tersedia. Pastikan GPS/lokasi perangkat aktif.';
-                else if(error && (error.code === error.TIMEOUT || error.code === 'TIMEOUT')) pesan = 'Pemeriksaan lokasi timeout. Pastikan GPS/Lokasi Presisi aktif lalu coba lagi.';
-                else if(error && error.code === 'UNSUPPORTED') pesan = error.message || 'Perangkat atau browser ini tidak mendukung geolokasi.';
+                let pesan = error?.message || 'Gagal mendapatkan lokasi GPS.';
+                const geoErrorCode = Number(error?.code);
+                if(geoErrorCode === 1 || error?.code === 'PERMISSION_DENIED') pesan = 'Izin lokasi ditolak. Buka setelan situs di Chrome, izinkan Lokasi, aktifkan Lokasi Presisi/GPS, lalu muat ulang halaman.';
+                else if(geoErrorCode === 2 || error?.code === 'POSITION_UNAVAILABLE') pesan = 'Lokasi tidak tersedia. Aktifkan GPS/Lokasi perangkat, nonaktifkan mode hemat baterai sementara, lalu coba lagi.';
+                else if(geoErrorCode === 3 || error?.code === 'TIMEOUT') pesan = 'Pemeriksaan lokasi melewati batas waktu. Aktifkan Lokasi Presisi/GPS dan coba lagi di area yang lebih terbuka.';
+                else if(error?.code === 'UNSUPPORTED') pesan = error.message || 'Perangkat atau browser ini tidak mendukung geolokasi.';
+                else if(error?.code === 'INACCURATE') pesan = error.message || 'Akurasi lokasi belum cukup. Aktifkan Lokasi Presisi/GPS lalu coba lagi.';
                 tampilkanNotif(pesan);
                 if(btn) {
                     btn.disabled = false;
@@ -4003,10 +4108,10 @@ function renderSemuaData() {
             if(!btn) return;
 
             const isGuru = currentRole === 'guru' && !!loggedInSantri;
-            const todayKey = new Date().toISOString().split('T')[0];
+            const todayKey = tanggalKeyLokal();
             const sudahAbsenHariIni = isGuru && absenGuruRecord.some(a =>
-                String(a.guru || '') === String(loggedInSantri.nama || '') &&
-                String(a.tglRaw || '').slice(0, 10) === todayKey
+                normalisasiTeksLookup(a?.guru) === normalisasiTeksLookup(loggedInSantri.nama) &&
+                (String(a?.tglRaw || '').slice(0, 10) || getTanggalKeyAbsensiRecord(a)) === todayKey
             );
 
             if(sudahAbsenHariIni) {
@@ -4047,7 +4152,7 @@ function renderSemuaData() {
 
             if(!loggedInSantri) return;
 
-            const myRecords = absenGuruRecord.filter(a => a.guru === loggedInSantri.nama);
+            const myRecords = absenGuruRecord.filter(a => normalisasiTeksLookup(a?.guru) === normalisasiTeksLookup(loggedInSantri.nama));
             if(myRecords.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-gray-500 italic">Belum ada riwayat absensi.</td></tr>';
                 updateStatusTombolAbsenGuru();
@@ -4141,57 +4246,138 @@ function renderSemuaData() {
             });
         }
 
-        async function simpanAbsenPekanan() {
-            const namaInput = document.getElementById('input-nama-absen').value;
-            const pekan = document.getElementById('absen-pekan').value;
+        function renderKalenderAbsensi() {
+            const grid = document.getElementById('kalender-absen-grid');
+            const labelBulan = document.getElementById('label-bulan-absen');
+            if(!grid || !labelBulan) return;
+
+            const todayKey = tanggalKeyLokal();
+            if(!tanggalAbsensiDipilih) tanggalAbsensiDipilih = todayKey;
+            if(!parseTanggalAbsensiKey(tanggalAbsensiDipilih)) tanggalAbsensiDipilih = todayKey;
+            if(!bulanKalenderAbsensi) bulanKalenderAbsensi = tanggalAbsensiDipilih.slice(0, 7);
+
+            const firstDay = parseTanggalAbsensiKey(`${bulanKalenderAbsensi}-01`) || new Date();
+            const year = firstDay.getFullYear();
+            const month = firstDay.getMonth();
+            labelBulan.textContent = firstDay.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+            const totalDays = new Date(year, month + 1, 0).getDate();
+            const leadingBlanks = (new Date(year, month, 1).getDay() + 6) % 7;
+            let html = '';
+            for(let i = 0; i < leadingBlanks; i++) html += '<span class="attendance-calendar-day is-empty" aria-hidden="true"></span>';
+            for(let day = 1; day <= totalDays; day++) {
+                const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const classes = ['attendance-calendar-day'];
+                if(key === todayKey) classes.push('is-today');
+                if(key === tanggalAbsensiDipilih) classes.push('is-selected');
+                html += `<button type="button" class="${classes.join(' ')}" onclick="pilihTanggalAbsensi('${key}')" aria-label="Pilih ${formatTanggalIndonesiaKey(key)}" aria-pressed="${key === tanggalAbsensiDipilih}">${day}</button>`;
+            }
+            grid.innerHTML = html;
+
+            const inputTanggal = document.getElementById('tanggal-absen-manual');
+            if(inputTanggal) inputTanggal.value = tanggalAbsensiDipilih;
+            const labelTanggal = document.getElementById('label-tanggal-absen');
+            if(labelTanggal) labelTanggal.textContent = formatTanggalIndonesiaKey(tanggalAbsensiDipilih);
+        }
+
+        function geserBulanAbsensi(arah) {
+            const current = parseTanggalAbsensiKey(`${bulanKalenderAbsensi || tanggalBulanLokal()}-01`) || new Date();
+            current.setDate(1);
+            current.setMonth(current.getMonth() + Number(arah || 0));
+            bulanKalenderAbsensi = tanggalBulanLokal(current);
+            renderKalenderAbsensi();
+        }
+
+        function pilihTanggalAbsensi(value) {
+            const date = parseTanggalAbsensiKey(value);
+            if(!date) {
+                tampilkanNotif('Tanggal absensi tidak valid.');
+                return;
+            }
+            tanggalAbsensiDipilih = tanggalKeyLokal(date);
+            bulanKalenderAbsensi = tanggalBulanLokal(date);
+            renderKalenderAbsensi();
+            sinkronkanStatusAbsensiTerpilih();
+        }
+
+        function sinkronkanStatusAbsensiTerpilih() {
+            const namaInput = document.getElementById('input-nama-absen')?.value || '';
+            const selectStatus = document.getElementById('nilai-absen-harian');
+            if(!selectStatus) return;
+            const student = cariSantriDenganNama(namaInput);
+            if(!student || !tanggalAbsensiDipilih) {
+                selectStatus.value = 'Hadir';
+                return;
+            }
+            const key = cariKunciRiwayatAbsensi(student.nama) || student.nama;
+            const record = normalisasiCatatanAbsensi(riwayatAbsensi[key]).find(item =>
+                item?.tipe === 'harian' && getTanggalKeyAbsensiRecord(item) === tanggalAbsensiDipilih
+            );
+            selectStatus.value = record?.status || 'Hadir';
+        }
+
+        async function simpanAbsensiHarian() {
+            const namaInput = document.getElementById('input-nama-absen')?.value || '';
+            const status = document.getElementById('nilai-absen-harian')?.value || '';
+            const tanggal = tanggalAbsensiDipilih || tanggalKeyLokal();
+            const date = parseTanggalAbsensiKey(tanggal);
 
             if(!String(namaInput).trim()) {
                 tampilkanNotif('Silakan cari/pilih nama santri!');
                 return;
             }
-
             const santriObj = cariSantriDenganNama(namaInput);
             if(!santriObj) {
-                tampilkanNotif('Nama santri tidak ditemukan di database!');
+                tampilkanNotif('Nama santri tidak ditemukan di database! Pilih nama dari daftar santri.');
+                return;
+            }
+            if(!date) {
+                tampilkanNotif('Silakan pilih tanggal absensi yang valid.');
+                return;
+            }
+            if(!['Hadir', 'Izin', 'Sakit', 'Alpha', 'Libur'].includes(status)) {
+                tampilkanNotif('Silakan pilih status kehadiran yang valid.');
                 return;
             }
 
-            if(currentRole === 'guru' && loggedInSantri) {
-                const guruSantri = normalisasiTeksLookup(santriObj.guru);
-                const guruLogin = normalisasiTeksLookup(loggedInSantri.nama);
-                if(!guruSantri || guruSantri !== guruLogin) {
-                    tampilkanNotif('Santri tersebut tidak terdaftar pada kelompok Anda.');
+            if(currentRole === 'guru') {
+                if(!loggedInSantri || !normalisasiTeksLookup(santriObj.guru) || normalisasiTeksLookup(santriObj.guru) !== normalisasiTeksLookup(loggedInSantri.nama)) {
+                    tampilkanNotif('Santri tersebut tidak terdaftar pada kelompok Anda. Periksa kelompok guru pada Database Santri.');
                     return;
                 }
             }
 
-            const senin = document.querySelector('.val-senin').value;
-            const selasa = document.querySelector('.val-selasa').value;
-            const rabu = document.querySelector('.val-rabu').value;
-            const kamis = document.querySelector('.val-kamis').value;
-
-            const bulanIni = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date());
-            const dataAbsen = { 
-                pekan, 
-                bulan: bulanIni, 
-                tgl: new Date().toLocaleDateString('id-ID'), 
-                senin, 
-                selasa, 
-                rabu, 
-                kamis,
+            const historyKey = cariKunciRiwayatAbsensi(santriObj.nama) || String(santriObj.nama).replace(/\s+/g, ' ').trim();
+            const dataAbsen = {
+                id: `${normalisasiTeksLookup(santriObj.nis || santriObj.nama).replace(/[^a-z0-9]+/g, '-')}-${tanggal}`,
+                tipe: 'harian',
+                tanggal,
+                tglRaw: tanggal,
+                tgl: formatTanggalIndonesiaKey(tanggal),
+                status,
+                dicatatPada: new Date().toISOString(),
+                dicatatOleh: loggedInSantri?.nama || currentRole || ''
             };
 
-            const existingKey = cariKunciRiwayatAbsensi(santriObj.nama);
-            const namaKey = existingKey || String(santriObj.nama).replace(/\s+/g, ' ').trim();
-
+            const button = document.querySelector('button[onclick="simpanAbsensiHarian()"]');
+            if(button) {
+                button.disabled = true;
+                button.classList.add('opacity-60', 'cursor-wait');
+            }
             try {
-                await simpanAbsensiPekananAman(namaKey, dataAbsen);
-                document.getElementById('input-nama-absen').value = '';
+                await simpanAbsensiHarianAman(historyKey, dataAbsen);
                 renderTabelRiwayatAbsen();
-                tampilkanNotif(`Absensi ${pekan} ${bulanIni} berhasil disimpan!`);
+                sinkronkanStatusAbsensiTerpilih();
+                if(chartsRendered) renderGlobalCharts();
+                tampilkanNotif(`Absensi ${santriObj.nama} tanggal ${formatTanggalIndonesiaKey(tanggal)} berhasil disimpan (${status}).`);
             } catch(error) {
-                console.error('Gagal menyimpan absensi pekanan:', error);
-                tampilkanNotif(error?.message || 'Absensi pekanan gagal disimpan ke database.');
+                console.error('Gagal menyimpan absensi harian:', error);
+                tampilkanNotif(error?.message || 'Absensi gagal disimpan. Periksa koneksi internet lalu coba lagi.');
+            } finally {
+                if(button) {
+                    button.disabled = false;
+                    button.classList.remove('opacity-60', 'cursor-wait');
+                }
             }
         }
 
@@ -4200,99 +4386,149 @@ function renderSemuaData() {
             if(!tbody) return;
             tbody.innerHTML = '';
 
-            const qKelompok = document.getElementById('filter-absen-kelompok') ? document.getElementById('filter-absen-kelompok').value.toLowerCase() : '';
-            const qNama = document.getElementById('cari-riwayat-absen') ? document.getElementById('cari-riwayat-absen').value.toLowerCase() : '';
-
-            const santriList = Object.keys(riwayatAbsensi);
+            const qKelompok = normalisasiTeksLookup(document.getElementById('filter-absen-kelompok')?.value || '');
+            const qNama = normalisasiTeksLookup(document.getElementById('cari-riwayat-absen')?.value || '');
+            const santriList = Object.keys(riwayatAbsensi || {});
             if(santriList.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="3" class="p-3 text-center text-gray-500 italic">Belum ada riwayat absensi santri.</td></tr>';
                 return;
             }
 
+            let rendered = 0;
             santriList.forEach(nama => {
-                if (currentRole === 'ortu' && loggedInSantri && normalisasiTeksLookup(nama) !== normalisasiTeksLookup(loggedInSantri.nama)) return;
-
+                if(currentRole === 'ortu' && loggedInSantri && normalisasiTeksLookup(nama) !== normalisasiTeksLookup(loggedInSantri.nama)) return;
                 const sObj = cariSantriDenganNama(nama);
-                const kel = sObj ? sObj.guru : '-';
+                const kel = sObj ? String(sObj.guru || '-') : '-';
 
-                if (currentRole === 'guru') {
-                    if(!loggedInSantri || !loggedInSantri.nama || kel === '-' || normalisasiTeksLookup(kel) !== normalisasiTeksLookup(loggedInSantri.nama)) return;
-                }
+                if(currentRole === 'guru' && (!loggedInSantri || !normalisasiTeksLookup(kel) || normalisasiTeksLookup(kel) !== normalisasiTeksLookup(loggedInSantri.nama))) return;
+                if(qKelompok && normalisasiTeksLookup(kel) !== qKelompok) return;
+                if(qNama && !normalisasiTeksLookup(nama).includes(qNama)) return;
 
-                let matchNama = nama.toLowerCase().includes(qNama);
-                let matchKel = qKelompok === '' || kel.toLowerCase() === qKelompok;
-
-                if(matchNama && matchKel) {
-                    tbody.innerHTML += `
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="p-3 font-medium">${nama}</td>
-                            <td class="p-3 text-gray-600">${kel}</td>
-                            <td class="p-3">
-                                <button onclick="lihatDetailAbsen('${nama.replace(/'/g, "\\'")}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold transition">
-                                    <i class="fa-solid fa-eye"></i> Detail
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                }
+                const studentRecords = normalisasiCatatanAbsensi(riwayatAbsensi[nama]);
+                const total = studentRecords.length;
+                const totalHarian = studentRecords.filter(item => item?.tipe === 'harian').length;
+                rendered++;
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3 font-medium">${escapeHtml(nama)}</td>
+                        <td class="p-3 text-gray-600">${escapeHtml(kel)}<div class="text-xs text-gray-400 mt-1">${totalHarian} catatan harian · ${Math.max(0, total-totalHarian)} catatan lama</div></td>
+                        <td class="p-3">
+                            <button onclick="lihatDetailAbsen(${escapeHtml(JSON.stringify(nama))})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold transition">
+                                <i class="fa-solid fa-eye"></i> Detail
+                            </button>
+                        </td>
+                    </tr>
+                `;
             });
+            if(rendered === 0) tbody.innerHTML = '<tr><td colspan="3" class="p-3 text-center text-gray-500 italic">Tidak ada data yang sesuai dengan filter.</td></tr>';
         }
 
         function lihatDetailAbsen(nama) {
-            if(currentRole === 'ortu' && loggedInSantri && String(nama).toLowerCase() !== String(loggedInSantri.nama || '').toLowerCase()) {
+            if(!nama) return;
+            if(currentRole === 'ortu' && loggedInSantri && normalisasiTeksLookup(nama) !== normalisasiTeksLookup(loggedInSantri.nama)) {
                 tampilkanNotif('Anda hanya dapat melihat history santri Anda sendiri.');
                 return;
             }
-            document.getElementById('modal-nama-santri').innerText = `Santri: ${nama}`;
-            const ul = document.getElementById('modal-absen-list');
-            ul.innerHTML = '';
 
-            const historyKey = cariKunciRiwayatAbsensi(nama) || nama;
-            const records = riwayatAbsensi[historyKey] || [];
-            if(records.length === 0) {
-                ul.innerHTML = '<li class="py-2 text-center text-gray-500 italic">Belum ada data.</li>';
-            } else {
-                records.forEach(r => {
-                    ul.innerHTML += `
-                        <li class="py-3">
-                            <div class="flex justify-between font-bold text-primary mb-1">
-                                <span>${r.pekan} (${r.bulan})</span>
-                                <span class="flex items-center gap-2">
-                                    <span class="text-xs text-gray-500">${r.tgl}</span>
-                                    <button onclick="hapusDetailAbsen('${String(nama).replace(/'/g, "\\'")}', ${records.indexOf(r)})" class="text-red-600 hover:text-red-800 text-xs" title="Hapus Absen"><i class="fa-solid fa-trash"></i></button>
-                                </span>
-                            </div>
-                            <div class="grid grid-cols-4 gap-1 text-center text-xs mt-2">
-                                <div class="bg-gray-100 p-1 rounded">Sen<br><b class="${getBadgeAbsenColor(r.senin)}">${r.senin}</b></div>
-                                <div class="bg-gray-100 p-1 rounded">Sel<br><b class="${getBadgeAbsenColor(r.selasa)}">${r.selasa}</b></div>
-                                <div class="bg-gray-100 p-1 rounded">Rab<br><b class="${getBadgeAbsenColor(r.rabu)}">${r.rabu}</b></div>
-                                <div class="bg-gray-100 p-1 rounded">Kam<br><b class="${getBadgeAbsenColor(r.kamis)}">${r.kamis}</b></div>
-                            </div>
-                        </li>
-                    `;
-                });
+            const changedStudent = normalisasiTeksLookup(detailAbsensiSantriAktif) !== normalisasiTeksLookup(nama);
+            detailAbsensiSantriAktif = nama;
+            if(changedStudent) {
+                const dari = document.getElementById('filter-absen-dari');
+                const sampai = document.getElementById('filter-absen-sampai');
+                if(dari) dari.value = '';
+                if(sampai) sampai.value = '';
             }
 
+            document.getElementById('modal-nama-santri').innerText = `Santri: ${nama}`;
+            const container = document.getElementById('modal-absen-list');
+            container.innerHTML = '';
+            const startKey = document.getElementById('filter-absen-dari')?.value || '';
+            const endKey = document.getElementById('filter-absen-sampai')?.value || '';
+            if(startKey && endKey && startKey > endKey) {
+                container.innerHTML = '<p class="py-4 text-center text-amber-700">Rentang tanggal tidak valid. Tanggal awal harus sebelum atau sama dengan tanggal akhir.</p>';
+                document.getElementById('modal-detail-absen').classList.remove('hidden');
+                return;
+            }
+
+            const historyKey = cariKunciRiwayatAbsensi(nama) || nama;
+            const records = normalisasiCatatanAbsensi(riwayatAbsensi[historyKey]);
+            const filtered = records.map((record, index) => ({record, index, dateKey: getTanggalKeyAbsensiRecord(record)}))
+                .filter(item => {
+                    if(startKey && (!item.dateKey || item.dateKey < startKey)) return false;
+                    if(endKey && (!item.dateKey || item.dateKey > endKey)) return false;
+                    return true;
+                })
+                .sort((a, b) => (b.dateKey || '').localeCompare(a.dateKey || '') || b.index - a.index);
+
+            if(filtered.length === 0) {
+                container.innerHTML = '<p class="py-4 text-center text-gray-500 italic">Belum ada catatan absensi pada rentang tanggal tersebut.</p>';
+            } else {
+                filtered.forEach(({record: r, index, dateKey}) => {
+                    if(r?.tipe === 'harian' || (r?.status && (r?.tanggal || r?.tglRaw))) {
+                        container.innerHTML += `
+                            <div class="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div>
+                                    <p class="font-bold text-gray-800">${escapeHtml(formatTanggalIndonesiaKey(dateKey || r.tgl || '-'))}</p>
+                                    <p class="text-xs text-gray-500 mt-1">Absensi harian</p>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="${getBadgeAbsenColor(r.status)} px-2 py-1 rounded text-xs font-bold">${escapeHtml(r.status || '-')}</span>
+                                    ${currentRole === 'ortu' ? '' : `<button type="button" onclick="hapusDetailAbsen(${escapeHtml(JSON.stringify(nama))}, ${index})" class="text-red-600 hover:text-red-800 text-xs" title="Hapus catatan absensi"><i class="fa-solid fa-trash"></i></button>`}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        const hariValues = [
+                            ['Sen', r?.senin], ['Sel', r?.selasa], ['Rab', r?.rabu], ['Kam', r?.kamis]
+                        ];
+                        container.innerHTML += `
+                            <div class="py-3">
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 font-bold text-primary mb-2">
+                                    <span>Catatan lama: ${escapeHtml(r?.pekan || 'Pekanan')} (${escapeHtml(r?.bulan || '-')})</span>
+                                    <span class="text-xs text-gray-500">Disimpan ${escapeHtml(r?.tgl || dateKey || '-')}</span>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                                    ${hariValues.map(([day, value]) => `<div class="bg-gray-100 p-2 rounded">${day}<br><b class="${getBadgeAbsenColor(value)}">${escapeHtml(value || '-')}</b></div>`).join('')}
+                                </div>
+                                ${currentRole === 'ortu' ? '' : `<div class="text-right mt-2"><button type="button" onclick="hapusDetailAbsen(${escapeHtml(JSON.stringify(nama))}, ${index})" class="text-red-600 hover:text-red-800 text-xs" title="Hapus catatan absensi pekanan"><i class="fa-solid fa-trash"></i> Hapus</button></div>`}
+                            </div>
+                        `;
+                    }
+                });
+            }
             document.getElementById('modal-detail-absen').classList.remove('hidden');
         }
 
+        function resetFilterDetailAbsen() {
+            const dari = document.getElementById('filter-absen-dari');
+            const sampai = document.getElementById('filter-absen-sampai');
+            if(dari) dari.value = '';
+            if(sampai) sampai.value = '';
+            if(detailAbsensiSantriAktif) lihatDetailAbsen(detailAbsensiSantriAktif);
+        }
+
         async function hapusDetailAbsen(nama, index) {
-            if(currentRole === 'ortu') { tampilkanNotif('Akun santri tidak dapat menghapus history.'); return; }
-            bukaKonfirmasi('Hapus Absen Santri', 'Yakin ingin menghapus riwayat absensi ini?', async () => {
-                if(!riwayatAbsensi[nama] || index < 0 || index >= riwayatAbsensi[nama].length) return;
-                riwayatAbsensi[nama].splice(index, 1);
-                if(riwayatAbsensi[nama].length === 0) delete riwayatAbsensi[nama];
-                await persistData('rutasy_absen', riwayatAbsensi);
+            if(currentRole === 'ortu') { tampilkanNotif('Akun orang tua tidak dapat menghapus riwayat absensi.'); return; }
+            const historyKey = cariKunciRiwayatAbsensi(nama) || nama;
+            const records = normalisasiCatatanAbsensi(riwayatAbsensi[historyKey]);
+            if(index < 0 || index >= records.length) return;
+            bukaKonfirmasi('Hapus Absen Santri', 'Yakin ingin menghapus catatan absensi ini?', async () => {
+                records.splice(index, 1);
+                if(records.length === 0) delete riwayatAbsensi[historyKey];
+                else riwayatAbsensi[historyKey] = records;
+                await persistMultipleData({ rutasy_absen: riwayatAbsensi });
                 renderTabelRiwayatAbsen();
                 lihatDetailAbsen(nama);
-                tampilkanNotif('Riwayat absensi santri berhasil dihapus!');
+                tampilkanNotif('Riwayat absensi santri berhasil dihapus.');
             });
         }
 
         function getBadgeAbsenColor(val) {
-            if(val === 'Hadir') return 'text-green-600';
-            if(val === 'Izin') return 'text-amber-600';
-            return 'text-red-600';
+            if(val === 'Hadir') return 'text-green-700 bg-green-100';
+            if(val === 'Izin') return 'text-amber-700 bg-amber-100';
+            if(val === 'Sakit') return 'text-blue-700 bg-blue-100';
+            if(val === 'Libur') return 'text-gray-700 bg-gray-200';
+            return 'text-red-700 bg-red-100';
         }
 
         // --- PROGRES & HAFALAN SANTRI ---
@@ -4466,6 +4702,7 @@ function renderSemuaData() {
         function simpanProgresSantri() {
             const nama = document.getElementById('prog-nama').value.trim();
             const pekan = document.getElementById('prog-pekan').value;
+            const bulanRaw = document.getElementById('prog-bulan')?.value || tanggalBulanLokal();
             const kategori = document.getElementById('prog-kategori').value;
             const ayatRaw = document.getElementById('prog-ayat').value.trim();
             const barisRaw = document.getElementById('prog-baris').value.trim();
@@ -4505,15 +4742,23 @@ function renderSemuaData() {
                 return;
             }
 
+            if(!/^\d{4}-\d{2}$/.test(bulanRaw)) {
+                tampilkanNotif('Silakan pilih bulan capaian hafalan yang valid.');
+                return;
+            }
+            const [tahunCapaian, bulanCapaian] = bulanRaw.split('-').map(Number);
+            const labelBulanCapaian = new Date(tahunCapaian, bulanCapaian - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
             const now = new Date();
             const tglStr = now.toLocaleDateString('id-ID');
-            const tglRawStr = now.toISOString().split('T')[0];
+            const tglRawStr = tanggalKeyLokal(now);
 
             if(!riwayatProgres[santriObj.nama]) riwayatProgres[santriObj.nama] = [];
 
             riwayatProgres[santriObj.nama].unshift({
                 tgl: tglStr,
                 tglRaw: tglRawStr,
+                bulanRaw: bulanRaw,
+                bulan: labelBulanCapaian,
                 pekan: pekan,
                 kategori: kategori,
                 surat: suratOrJilid,
@@ -4656,7 +4901,7 @@ function renderSemuaData() {
                     let badgeKat = p.kategori === 'Tahfidz' ? 'bg-green-100 text-green-700' : (p.kategori === 'Tahsin' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700');
                     tbody.innerHTML += `
                         <tr class="border-b">
-                            <td class="p-2">${p.tgl} (${p.pekan || '-'})</td>
+                            <td class="p-2">${escapeHtml(p.tgl || '-')}<div class="text-xs text-primary font-semibold mt-1">Capaian: ${escapeHtml(p.bulan || (p.bulanRaw ? new Date(Number(p.bulanRaw.slice(0,4)), Number(p.bulanRaw.slice(5,7))-1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : '-'))}</div><div class="text-xs text-gray-500">${escapeHtml(p.pekan || '-')}</div></td>
                             <td class="p-2"><span class="${badgeKat} px-2 py-0.5 rounded text-xs font-bold">${p.kategori}</span></td>
                             <td class="p-2 font-medium">${p.surat}</td>
                             <td class="p-2 font-bold text-blue-700">${p.kategori === 'Iqro' ? (p.ayat ? 'Hal ' + p.ayat : '-') : (p.ayat || '-')}</td>
